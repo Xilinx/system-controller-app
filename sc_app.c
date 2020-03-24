@@ -31,17 +31,24 @@
 
 
 extern I2C_Buses_t I2C_Buses;
+extern BootModes_t BootModes;
 extern Clocks_t Clocks;
 extern Ina226s_t Ina226s;
 extern Voltages_t Voltages;
 
 int Parse_Options(int argc, char **argv);
+int BootMode_Ops(void);
 int Clock_Ops(void);
 int Power_Ops(void);
+extern int Plat_Reset_Ops(void);
+extern int Plat_Workaround_Ops(void);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
+	listbootmode - lists the supported boot mode targets\n\
+	setbootmode - set boot mode to <target>\n\
+	reset - apply power-on-reset\n\
 	listclock - lists the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
@@ -51,6 +58,10 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 ";
 
 typedef enum {
+	LISTBOOTMODE,
+	SETBOOTMODE,
+	RESET,
+	WORKAROUND,
 	LISTCLOCK,
 	GETCLOCK,
 	SETCLOCK,
@@ -67,6 +78,10 @@ typedef struct {
 } Command_t;
 
 static Command_t Commands[] = {
+	{ .CmdId = LISTBOOTMODE, .CmdStr = "listbootmode", .CmdOps = BootMode_Ops, },
+	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
+	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Plat_Reset_Ops, },
+	{ .CmdId = WORKAROUND, .CmdStr = "workaround", .CmdOps = Plat_Workaround_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },
@@ -74,7 +89,7 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTPOWER, .CmdStr = "listpower", .CmdOps = Power_Ops, },
 	{ .CmdId = GETPOWER, .CmdStr = "getpower", .CmdOps = Power_Ops, },
 };
- 
+
 char Command_Arg[STRLEN_MAX];
 char Target_Arg[STRLEN_MAX];
 char Value_Arg[STRLEN_MAX];
@@ -150,6 +165,58 @@ Parse_Options(int argc, char **argv)
 	}
 
 	return -1;
+}
+
+/*
+ * Boot Mode Operations
+ */
+int
+BootMode_Ops(void)
+{
+	int Target_Index = -1;
+	char System_Cmd[SYSCMD_MAX];
+
+	if (Command.CmdId == LISTBOOTMODE) {
+		for (int i = 0; i < BootModes.Numbers; i++) {
+			printf("%s\n", BootModes.BootMode[i].Name);
+		}
+		return 0;
+	}
+
+	/* Validate the bootmode target */
+	if (T_Flag == 0) {
+		printf("ERROR: no bootmode target\n");
+		return -1;
+	}
+
+	for (int i = 0; i < BootModes.Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)BootModes.BootMode[i].Name) == 0) {
+			Target_Index = i;
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: invalid bootmode target\n");
+		return -1;
+	}
+
+	switch (Command.CmdId) {
+	case SETBOOTMODE:
+		/* Boot Mode */
+		for (int i = 0; i < 4; i++) {
+			sprintf(System_Cmd, "gpioset %s=%d",
+			    (char *)&BootModes.Mode_Lines[i],
+			    ((BootModes.BootMode[Target_Index].Value >> i) & 0x1));
+			system(System_Cmd);
+		}
+		break;
+	default:
+		printf("ERROR: invalid bootmode command\n");
+		break;
+	}
+
+	return 0;
 }
 
 /*

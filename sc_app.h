@@ -49,6 +49,20 @@ typedef struct {
 } I2C_Route_t;
 
 /*
+ * Boot Modes
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	int	Value;
+} BootMode_t;
+
+typedef struct BootModes {
+	int	Numbers;
+	char	Mode_Lines[4][SYSCMD_MAX];
+	BootMode_t	BootMode[ITEMS_MAX];
+} BootModes_t;
+
+/*
  * Clocks
  */
 typedef enum {
@@ -101,7 +115,7 @@ typedef struct {
 } Voltage_t;
 
 typedef struct Voltages {
-	int     Numbers;
+	int	Numbers;
 	Voltage_t	Voltage[ITEMS_MAX];
 } Voltages_t;
 

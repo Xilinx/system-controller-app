@@ -22,7 +22,16 @@
 *
 ******************************************************************************/
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/i2c-dev.h>
 #include "sc_app.h"
+
+int Plat_Reset_Ops(void);
+int Plat_Workaround_Ops(void);
 
 /*
  * I2C Buses
@@ -40,6 +49,76 @@ I2C_Buses_t I2C_Buses = {
 	},
 	.I2C_Bus[I2C_BUS_1] = {
 		.Name = "i2c-1",
+	},
+};
+
+/*
+ * Boot Modes
+ */
+typedef enum {
+	JTAG,
+	QSPI24,
+	QSPI32,
+	SD0_LS,
+	SD1,
+	EMMC,
+	USB,
+	OSPI,
+	SMAP,
+	DFT,
+	SD1_LS,
+	BOOTMODE_MAX,
+} BootMode_Index;
+
+BootModes_t BootModes = {
+	.Numbers = BOOTMODE_MAX,
+	.Mode_Lines = {
+		 "gpiochip0 78", "gpiochip0 79",
+		 "gpiochip0 80", "gpiochip0 81"
+	},
+	.BootMode[JTAG] = {
+		.Name = "jtag",
+		.Value = 0x0,
+	},
+	.BootMode[QSPI24] = {
+		.Name = "qspi24",
+		.Value = 0x1,
+	},
+	.BootMode[QSPI32] = {
+		.Name = "qspi32",
+		.Value = 0x2,
+	},
+	.BootMode[SD0_LS] = {
+		.Name = "sd0_ls",
+		.Value = 0x3,
+	},
+	.BootMode[SD1] = {
+		.Name = "sd1",
+		.Value = 0x5,
+	},
+	.BootMode[EMMC] = {
+		.Name = "emmc",
+		.Value = 0x6,
+	},
+	.BootMode[USB] = {
+		.Name = "usb",
+		.Value = 0x7,
+	},
+	.BootMode[OSPI] = {
+		.Name = "ospi",
+		.Value = 0x8,
+	},
+	.BootMode[SMAP] = {
+		.Name = "smap",
+		.Value = 0xa,
+	},
+	.BootMode[DFT] = {
+		.Name = "dft",
+		.Value = 0xd,
+	},
+	.BootMode[SD1_LS] = {
+		.Name = "sd1_ls",
+		.Value = 0xe,
 	},
 };
 
@@ -340,3 +419,106 @@ Voltages_t Voltages = {
 		.I2C_Address = 0x41,
 	},
 };
+
+static int
+Vccaux_Workaround(int State)
+{
+	int fd;
+	int Status;
+	char WriteBuffer[10];
+
+	fd = open("/dev/i2c-4", O_RDWR);
+	if (fd < 0) {
+		printf("ERROR: cannot open the I2C device\n");
+		return -1;
+	}
+
+	// Select Mux
+	Status = ioctl(fd, I2C_SLAVE_FORCE, 0x74);
+	if (Status < 0) {
+		printf("ERROR: unable to access MUX address\n");
+		return -1;
+	}
+
+	// Set the Mux to 01
+	WriteBuffer[0] = 0x01;
+	if (write(fd, WriteBuffer, 1) != 1) {
+		printf("ERROR: unable to select mux channel\n");
+		return -1;
+	}
+
+	// Select IRPS5401
+	Status = ioctl(fd, I2C_SLAVE_FORCE, 0x47);
+	if (Status < 0) {
+		printf("ERROR: unable to access IRPS5401 address\n");
+		return -1;
+	}
+
+	// Set the page for the IRPS5401
+	WriteBuffer[0] = 0x00;
+	WriteBuffer[1] = 0x03;
+	if (write(fd, WriteBuffer, 2) != 2) {
+		printf("ERROR: unable to select page for IRPS5401\n");
+		return -1;
+	}
+
+	// Change the state of VOUT (ON: State = 1, OFF: State = 0)
+	WriteBuffer[0] = 0x01;
+	WriteBuffer[1] = (1 == State) ? 0x80 : 0x00;
+	if (write(fd, WriteBuffer, 2) != 2) {
+		printf("ERROR: unable to change VOUT for IRPS5401\n");
+		return -1;
+	}
+
+	// Select Mux
+	Status = ioctl(fd, I2C_SLAVE_FORCE, 0x74);
+	if (Status < 0) {
+		printf("ERROR: unable to access MUX address\n");
+		return -1;
+	}
+
+	// Set the Mux to 0
+	WriteBuffer[0] = 0x00;
+	if (write(fd, WriteBuffer, 1) != 1) {
+		printf("ERROR: unable to reset mux channel\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+Plat_Reset_Ops(void)
+{
+	char System_Cmd[SYSCMD_MAX];
+
+	// Turn VCCINT_RAM off
+	if (Vccaux_Workaround(0) != 0) {
+		printf("ERROR: failed to turn VCCINT_RAM off\n");
+		return -1;
+	}
+
+	// Assert POR
+	sprintf(System_Cmd, "gpioset gpiochip0 82=0");
+	system(System_Cmd);
+
+	sleep(1);
+
+	// De-assert POR
+	sprintf(System_Cmd, "gpioset gpiochip0 82=1");
+	system(System_Cmd);
+
+	return 0;
+}
+
+int
+Plat_Workaround_Ops(void)
+{
+	// Turn VCCINT_RAM on
+	if (Vccaux_Workaround(1) != 0) {
+		printf("ERROR: failed to turn VCCINT_RAM on\n");
+		return -1;
+	}
+
+	return 0;
+}

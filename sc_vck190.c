@@ -424,32 +424,16 @@ static int
 Vccaux_Workaround(int State)
 {
 	int fd;
-	int Status;
 	char WriteBuffer[10];
 
-	fd = open("/dev/i2c-4", O_RDWR);
+	fd = open("/dev/i2c-3", O_RDWR);
 	if (fd < 0) {
 		printf("ERROR: cannot open the I2C device\n");
 		return -1;
 	}
 
-	// Select Mux
-	Status = ioctl(fd, I2C_SLAVE_FORCE, 0x74);
-	if (Status < 0) {
-		printf("ERROR: unable to access MUX address\n");
-		return -1;
-	}
-
-	// Set the Mux to 01
-	WriteBuffer[0] = 0x01;
-	if (write(fd, WriteBuffer, 1) != 1) {
-		printf("ERROR: unable to select mux channel\n");
-		return -1;
-	}
-
 	// Select IRPS5401
-	Status = ioctl(fd, I2C_SLAVE_FORCE, 0x47);
-	if (Status < 0) {
+	if (ioctl(fd, I2C_SLAVE_FORCE, 0x47) < 0) {
 		printf("ERROR: unable to access IRPS5401 address\n");
 		return -1;
 	}
@@ -467,20 +451,6 @@ Vccaux_Workaround(int State)
 	WriteBuffer[1] = (1 == State) ? 0x80 : 0x00;
 	if (write(fd, WriteBuffer, 2) != 2) {
 		printf("ERROR: unable to change VOUT for IRPS5401\n");
-		return -1;
-	}
-
-	// Select Mux
-	Status = ioctl(fd, I2C_SLAVE_FORCE, 0x74);
-	if (Status < 0) {
-		printf("ERROR: unable to access MUX address\n");
-		return -1;
-	}
-
-	// Set the Mux to 0
-	WriteBuffer[0] = 0x00;
-	if (write(fd, WriteBuffer, 1) != 1) {
-		printf("ERROR: unable to reset mux channel\n");
 		return -1;
 	}
 

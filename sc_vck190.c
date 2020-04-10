@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #include "sc_app.h"
@@ -491,4 +492,90 @@ Plat_Workaround_Ops(void)
 	}
 
 	return 0;
+}
+
+/*
+ * Base date for manufacturing.
+ */
+struct tm BuildDate = {
+	.tm_year = 66,
+	.tm_mday = 1,
+};
+
+int
+Plat_EEPROM_Ops(void)
+{
+	int fd;
+	char ReadBuffer[0xFF] = {0};
+	char WriteBuffer[3];
+	char Buffer[STRLEN_MAX];
+	time_t Time;
+
+	fd = open("/dev/i2c-11", O_RDWR);
+	if (fd < 0) {
+		printf("ERROR: cannot open the I2C device\n");
+		return -1;
+	}
+
+	// Select M24128 EEPROM
+	if (ioctl(fd, I2C_SLAVE_FORCE, 0x54) < 0) {
+		printf("ERROR: unable to access M24128 EEPROM address\n");
+		return -1;
+	}
+
+	WriteBuffer[0] = 0x0;
+	WriteBuffer[1] = 0x0;
+	if (write(fd, WriteBuffer, 2) != 2) {
+		printf("ERROR: unable to set address for M24128 EEPROM\n");
+		return -1;
+	}
+
+	if (read(fd, ReadBuffer, 0xFF) != 0xFF) {
+		printf("ERROR: unable to read from M24128 EEPROM\n");
+		return -1;
+	}
+
+	// Language Code
+	printf("Language: %d\n", ReadBuffer[0xA]);
+
+	// Manufacturing Date
+	BuildDate.tm_min = (ReadBuffer[0xB] << 16 | ReadBuffer[0xC] << 8 |
+	    ReadBuffer[0xD]);
+	Time = mktime(&BuildDate);
+	if (Time == -1) {
+		printf("ERROR: invalid manufacturing date\n");
+		return -1;
+	}
+
+	printf("Manufacturing Date: %s", ctime(&Time));
+
+	// Manufacturer
+	snprintf(Buffer, 6+1, "%s", &ReadBuffer[0xF]);
+	printf("Manufacturer: %s\n", Buffer);
+
+	// Product Name
+	snprintf(Buffer, 16+1, "%s", &ReadBuffer[0x16]);
+	printf("Product Name: %s\n", Buffer);
+
+	// Board Serial Number
+	snprintf(Buffer, 16+1, "%s", &ReadBuffer[0x27]);
+	printf("Board Serial Number: %s\n", Buffer);
+
+	// Board Part Number
+	snprintf(Buffer, 9+1, "%s", &ReadBuffer[0x38]);
+	printf("Board Part Number: %s\n", Buffer);
+
+	// Board Revision
+	snprintf(Buffer, 8+1, "%s", &ReadBuffer[0x44]);
+	printf("Board Reversion: %s\n", Buffer);
+
+	// MAC Address 0
+	printf("MAC Address 0: %x:%x:%x:%x:%x:%x\n", ReadBuffer[0x80],
+	    ReadBuffer[0x81], ReadBuffer[0x82], ReadBuffer[0x83],
+	    ReadBuffer[0x84], ReadBuffer[0x85]);
+
+	// MAC Address 1
+	printf("MAC Address 1: %x:%x:%x:%x:%x:%x\n", ReadBuffer[0x86],
+	    ReadBuffer[0x87], ReadBuffer[0x88], ReadBuffer[0x89],
+	    ReadBuffer[0x8A], ReadBuffer[0x8B]);
 }

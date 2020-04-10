@@ -42,6 +42,7 @@ int Clock_Ops(void);
 int Power_Ops(void);
 extern int Plat_Reset_Ops(void);
 extern int Plat_Workaround_Ops(void);
+extern int Plat_EEPROM_Ops(void);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -49,6 +50,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	listbootmode - lists the supported boot mode targets\n\
 	setbootmode - set boot mode to <target>\n\
 	reset - apply power-on-reset\n\
+	eeprom - lists the content of EEPROM\n\
 	listclock - lists the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
@@ -62,6 +64,7 @@ typedef enum {
 	SETBOOTMODE,
 	RESET,
 	WORKAROUND,
+	EEPROM,
 	LISTCLOCK,
 	GETCLOCK,
 	SETCLOCK,
@@ -82,6 +85,7 @@ static Command_t Commands[] = {
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Plat_Reset_Ops, },
 	{ .CmdId = WORKAROUND, .CmdStr = "workaround", .CmdOps = Plat_Workaround_Ops, },
+	{ .CmdId = EEPROM, .CmdStr = "eeprom", .CmdOps = Plat_EEPROM_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },

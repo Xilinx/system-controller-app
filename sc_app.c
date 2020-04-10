@@ -182,7 +182,8 @@ BootMode_Ops(void)
 
 	if (Command.CmdId == LISTBOOTMODE) {
 		for (int i = 0; i < BootModes.Numbers; i++) {
-			printf("%s\n", BootModes.BootMode[i].Name);
+			printf("%s\t0x%x\n", BootModes.BootMode[i].Name,
+			    BootModes.BootMode[i].Value);
 		}
 		return 0;
 	}

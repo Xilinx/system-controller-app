@@ -495,10 +495,10 @@ Plat_Workaround_Ops(void)
 }
 
 /*
- * Base date for manufacturing.
+ * Base build date for manufacturing is 1/1/1996.
  */
 struct tm BuildDate = {
-	.tm_year = 66,
+	.tm_year = 96,
 	.tm_mday = 1,
 };
 

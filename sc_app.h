@@ -119,5 +119,20 @@ typedef struct Voltages {
 	Voltage_t	Voltage[ITEMS_MAX];
 } Voltages_t;
 
+/*
+ * Workarounds
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	int	Arg_Needed;
+	int	(*Plat_Workaround_Op)(void *);
+} Workaround_t;
+
+typedef struct Workarounds {
+	int	Numbers;
+	Workaround_t	Workaround[ITEMS_MAX];
+} Workarounds_t;
+
+
 #endif	/* SC_APP_H_ */
 

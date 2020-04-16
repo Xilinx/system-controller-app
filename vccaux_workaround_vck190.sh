@@ -18,12 +18,13 @@ while [ 1 ]; do
 		if [ ${TRIGGERED} == 1 ]; then
 			echo "$0: falling edge is detecded"
 			TRIGGERED=0
+			/usr/bin/sc_app -c workaround -t vccaux -v 0
 		fi
 	elif [ ${MIO37} == 1 ]; then
 		if [ ${TRIGGERED} == 0 ]; then
 			echo "$0: rising edge is detected"
 			TRIGGERED=1
-			/usr/bin/sc_app -c workaround
+			/usr/bin/sc_app -c workaround -t vccaux -v 1
 		fi
 	fi
 done

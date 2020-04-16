@@ -32,7 +32,7 @@
 #include "sc_app.h"
 
 int Plat_Reset_Ops(void);
-int Plat_Workaround_Ops(void);
+int Workaround_Vccaux(void *Arg);
 
 /*
  * I2C Buses
@@ -421,11 +421,31 @@ Voltages_t Voltages = {
 	},
 };
 
-static int
-Vccaux_Workaround(int State)
+/*
+ * Workarounds
+ */
+typedef enum {
+	WORKAROUND_VCCAUX,
+	WORKAROUND_MAX,
+} Workaround_Index;
+
+Workarounds_t Workarounds = {
+	.Numbers = WORKAROUND_MAX,
+	.Workaround[WORKAROUND_VCCAUX] = {
+		.Name = "vccaux",		// Name of workaround for this platform
+		.Arg_Needed = 1,		// Whether following workaround routine needs argument
+		.Plat_Workaround_Op = Workaround_Vccaux, // Platform workaround routine
+	},
+};
+
+int
+Workaround_Vccaux(void *Arg)
 {
 	int fd;
+	int *State;
 	char WriteBuffer[10];
+
+	State = (int *)Arg;
 
 	fd = open("/dev/i2c-3", O_RDWR);
 	if (fd < 0) {
@@ -449,7 +469,7 @@ Vccaux_Workaround(int State)
 
 	// Change the state of VOUT (ON: State = 1, OFF: State = 0)
 	WriteBuffer[0] = 0x01;
-	WriteBuffer[1] = (1 == State) ? 0x80 : 0x00;
+	WriteBuffer[1] = (1 == *State) ? 0x80 : 0x00;
 	if (write(fd, WriteBuffer, 2) != 2) {
 		printf("ERROR: unable to change VOUT for IRPS5401\n");
 		return -1;
@@ -461,10 +481,12 @@ Vccaux_Workaround(int State)
 int
 Plat_Reset_Ops(void)
 {
+	int State;
 	char System_Cmd[SYSCMD_MAX];
 
 	// Turn VCCINT_RAM off
-	if (Vccaux_Workaround(0) != 0) {
+	State = 0;
+	if (Workaround_Vccaux(&State) != 0) {
 		printf("ERROR: failed to turn VCCINT_RAM off\n");
 		return -1;
 	}
@@ -478,18 +500,6 @@ Plat_Reset_Ops(void)
 	// De-assert POR
 	sprintf(System_Cmd, "gpioset gpiochip0 82=1");
 	system(System_Cmd);
-
-	return 0;
-}
-
-int
-Plat_Workaround_Ops(void)
-{
-	// Turn VCCINT_RAM on
-	if (Vccaux_Workaround(1) != 0) {
-		printf("ERROR: failed to turn VCCINT_RAM on\n");
-		return -1;
-	}
 
 	return 0;
 }

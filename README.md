@@ -15,6 +15,8 @@
 		restoreclock - restore <target> to default value
 		listpower - lists the supported power targets
 		getpower - get the voltage, current, and power of <target>
+		listworkaround - lists the applicable workaround targets
+		workaround - apply <target> workaround (may requires <value>)
 
 
 	How to build:

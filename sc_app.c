@@ -36,12 +36,14 @@ extern Clocks_t Clocks;
 extern Ina226s_t Ina226s;
 extern Voltages_t Voltages;
 extern Workarounds_t Workarounds;
+extern BITs_t BITs;
 
 int Parse_Options(int argc, char **argv);
 int BootMode_Ops(void);
 int Clock_Ops(void);
 int Power_Ops(void);
 int Workaround_Ops(void);
+int BIT_Ops(void);
 extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
 
@@ -60,6 +62,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	getpower - get the voltage, current, and power of <target>\n\
 	listworkaround - lists the applicable workaround targets\n\
 	workaround - apply <target> workaround (may requires <value>)\n\
+	listBIT - lists the supported Board Interface Test targets\n\
+	BIT - run BIT target\n\
 ";
 
 typedef enum {
@@ -75,6 +79,8 @@ typedef enum {
 	GETPOWER,
 	LISTWORKAROUND,
 	WORKAROUND,
+	LISTBIT,
+	BIT,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -97,6 +103,8 @@ static Command_t Commands[] = {
 	{ .CmdId = GETPOWER, .CmdStr = "getpower", .CmdOps = Power_Ops, },
 	{ .CmdId = LISTWORKAROUND, .CmdStr = "listworkaround", .CmdOps = Workaround_Ops, },
 	{ .CmdId = WORKAROUND, .CmdStr = "workaround", .CmdOps = Workaround_Ops, },
+	{ .CmdId = LISTBIT, .CmdStr = "listBIT", .CmdOps = BIT_Ops, },
+	{ .CmdId = BIT, .CmdStr = "BIT", .CmdOps = BIT_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -370,7 +378,6 @@ int Power_Ops(void)
 int Workaround_Ops(void)
 {
 	int Target_Index = -1;
-	char System_Cmd[SYSCMD_MAX];
 	int Value;
 	int Return = -1;
 
@@ -420,3 +427,40 @@ int Workaround_Ops(void)
 	return 0;
 }
 
+/*
+ * BIT Operations
+ */
+int BIT_Ops(void)
+{
+	int Target_Index = -1;
+	int Return = -1;
+
+	if (Command.CmdId == LISTBIT) {
+		for (int i = 0; i < BITs.Numbers; i++) {
+			printf("%s\n", BITs.BIT[i].Name);
+		}
+		return 0;
+	}
+
+	/* Validate the BIT target */
+	if (T_Flag == 0) {
+		printf("ERROR: no BIT target\n");
+		return -1;
+	}
+
+	for (int i = 0; i < BITs.Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)BITs.BIT[i].Name) == 0) {
+			Target_Index = i;
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: invalid BIT target\n");
+		return -1;
+	}
+
+	Return = (*BITs.BIT[Target_Index].Plat_BIT_Op)();
+
+	return Return;
+}

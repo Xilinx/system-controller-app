@@ -17,6 +17,9 @@
 		getpower - get the voltage, current, and power of <target>
 		listworkaround - lists the applicable workaround targets
 		workaround - apply <target> workaround (may requires <value>)
+		listBIT - lists the supported Board Interface Test targets
+		BIT - run BIT target
+
 
 
 	How to build:

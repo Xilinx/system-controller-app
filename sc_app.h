@@ -133,6 +133,18 @@ typedef struct Workarounds {
 	Workaround_t	Workaround[ITEMS_MAX];
 } Workarounds_t;
 
+/*
+ * Board Interface Tests (BITs)
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	int	(*Plat_BIT_Op)(void);
+} BIT_t;
+
+typedef struct BITs {
+	int	Numbers;
+	BIT_t	BIT[ITEMS_MAX];
+} BITs_t;
 
 #endif	/* SC_APP_H_ */
 

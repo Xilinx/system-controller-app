@@ -1,8 +1,9 @@
 CC	:= ${CROSS_COMPILE}gcc
 PLAT	:= vck190
+BIT	:= BIT
 COMMON	= sc_app
 CFLAGS	= -I.
-OBJS	= $(COMMON).o sc_$(PLAT).o
+OBJS	= $(COMMON).o sc_$(PLAT).o sc_$(BIT).o
 DEPS	= $(COMMON).h
 
 %.o: %.c $(DEPS)

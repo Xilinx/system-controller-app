@@ -221,7 +221,8 @@ Clock_Ops(void)
 {
 	int Target_Index = -1;
 	char System_Cmd[SYSCMD_MAX];
-	int Value, Upper, Lower;
+	int Upper, Lower;
+	unsigned long int Value;
 
 	if (Command.CmdId == LISTCLOCK) {
 		for (int i = 0; i < Clocks.Numbers; i++) {
@@ -261,7 +262,7 @@ Clock_Ops(void)
 			return -1;
 		}
 
-		Value = atoi(Value_Arg);
+		Value = atol(Value_Arg);
 		Upper = Clocks.Clock[Target_Index].Upper_Freq;
 		Lower = Clocks.Clock[Target_Index].Lower_Freq;
 		if (Value > Upper || Value < Lower) {
@@ -269,13 +270,13 @@ Clock_Ops(void)
 			    Lower, Upper);
 			return -1;
 		}
-		sprintf(System_Cmd, "echo %d > %s", Value,
+		sprintf(System_Cmd, "echo %d > %s", (int)Value,
 		    Clocks.Clock[Target_Index].Sysfs_Path);
 		system(System_Cmd);
 		break;
 	case RESTORECLOCK:
 		Value = Clocks.Clock[Target_Index].Default_Freq;
-		sprintf(System_Cmd, "echo %d > %s", Value,
+		sprintf(System_Cmd, "echo %d > %s", (int)Value,
 		    Clocks.Clock[Target_Index].Sysfs_Path);
 		system(System_Cmd);
 		break;
@@ -354,7 +355,7 @@ int Power_Ops(void)
 int Workaround_Ops(void)
 {
 	int Target_Index = -1;
-	int Value;
+	unsigned long int Value;
 	int Return = -1;
 
 	if (Command.CmdId == LISTWORKAROUND) {
@@ -391,7 +392,12 @@ int Workaround_Ops(void)
 	if (V_Flag == 0) {
 		Return = (*Workarounds.Workaround[Target_Index].Plat_Workaround_Op)(NULL);
 	} else {
-		Value = atoi(Value_Arg);
+		Value = atol(Value_Arg);
+		if (Value != 0 || Value != 1) {
+			printf("ERROR: invalid value\n");
+			return -1;
+		}
+
 		Return = (*Workarounds.Workaround[Target_Index].Plat_Workaround_Op)(&Value);
 	}
 

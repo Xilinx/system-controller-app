@@ -67,7 +67,7 @@ typedef struct Clocks {
  */
 typedef struct {
 	char	Name[STRLEN_MAX];
-	char	Sensor_Name[STRLEN_MAX];
+	char	Sysfs_Path[SYSCMD_MAX];
 	I2C_Route_t	I2C_Route;
 	int	I2C_Address;
 } Ina226_t;

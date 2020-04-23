@@ -294,7 +294,8 @@ Clock_Ops(void)
 int Power_Ops(void)
 {
 	int Target_Index = -1;
-	char System_Cmd[SYSCMD_MAX];
+	char Buffer[SYSCMD_MAX];
+	int fd, Value;
 
 	if (Command.CmdId == LISTPOWER) {
 		for (int i = 0; i < Ina226s.Numbers; i++) {
@@ -324,22 +325,55 @@ int Power_Ops(void)
 	switch (Command.CmdId) {
 	case GETPOWER:
 		/* Voltage */
-		sprintf(System_Cmd,
-		    "sensors -u %s | grep in2_input | sed \'s/  in2_input: /Voltage(V):\t/\'",
-		    Ina226s.Ina226[Target_Index].Sensor_Name);
-		system(System_Cmd);
+		sprintf(Buffer, "%s/in2_input", Ina226s.Ina226[Target_Index].Sysfs_Path);
+		fd = open(Buffer, O_RDONLY);
+		if (fd == -1) {
+			printf("ERROR: failed to get power\n");
+			return -1;
+		}
+
+		if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
+			printf("ERROR: failed to get power\n");
+			return -1;
+		}
+
+		(void) close(fd);
+		Value = atoi(Buffer);
+		printf("Voltage(mV):\t%d\n", Value);
 
 		/* Current */
-		sprintf(System_Cmd,
-		    "sensors -u %s | grep curr1_input | sed \'s/  curr1_input: /Current(A):\t/\'",
-		    Ina226s.Ina226[Target_Index].Sensor_Name);
-		system(System_Cmd);
+		sprintf(Buffer, "%s/curr1_input", Ina226s.Ina226[Target_Index].Sysfs_Path);
+		fd = open(Buffer, O_RDONLY);
+		if (fd == -1) {
+			printf("ERROR: failed to get power\n");
+			return -1;
+		}
+
+		if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
+			printf("ERROR: failed to get power\n");
+			return -1;
+		}
+
+		(void) close(fd);
+		Value = atoi(Buffer);
+		printf("Current(mA):\t%d\n", Value);
 
 		/* Power */
-		sprintf(System_Cmd,
-		    "sensors -u %s | grep power1_input | sed \'s/  power1_input: /Power(W):\t/\'",
-		    Ina226s.Ina226[Target_Index].Sensor_Name);
-		system(System_Cmd);
+		sprintf(Buffer, "%s/power1_input", Ina226s.Ina226[Target_Index].Sysfs_Path);
+		fd = open(Buffer, O_RDONLY);
+		if (fd == -1) {
+			printf("ERROR: failed to get power\n");
+			return -1;
+		}
+
+		if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
+			printf("ERROR: failed to get power\n");
+			return -1;
+		}
+
+		(void) close(fd);
+		Value = atoi(Buffer);
+		printf("Power(mW):\t%d\n", (Value / 1000));
 		break;
 	default:
 		printf("ERROR: invalid power command\n");

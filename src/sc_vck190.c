@@ -230,7 +230,7 @@ Ina226s_t Ina226s = {
 	.Numbers = INA226_MAX,
 	.Ina226[INA226_VCCINT] = {
 		.Name = "VCCINT",		// Name of the device referenced by application
-		.Sensor_Name = "ina226_vccint-isa-0000", // Name of sensor
+		.Sysfs_Path = "/sys/devices/platform/ina226-vccint/hwmon/hwmon1", // Sysfs path to the device
 		.I2C_Route.Bus_Id = I2C_BUS_0,	// Main I2C bus connected to the device
 		.I2C_Route.Mux_Levels = 1,	// Number of muxes in route to the device
 		.I2C_Route.Mux_Route = {{0x74, 0x02}}, // <I2C address, channel select> pair for each mux
@@ -238,7 +238,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCC_SOC] = {
 		.Name = "VCC_SOC",
-		.Sensor_Name = "ina226_vcc_soc-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-soc/hwmon/hwmon2",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x02}},
@@ -246,7 +246,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCC_PMC] = {
 		.Name = "VCC_PMC",
-		.Sensor_Name = "ina226_vcc_pmc-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-pmc/hwmon/hwmon3",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x02}},
@@ -254,7 +254,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCCINT_RAM] = {
 		.Name = "VCCINT_RAM",
-		.Sensor_Name = "ina226_vcc_ram-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-ram/hwmon/hwmon4",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x02}},
@@ -262,7 +262,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCCINT_PSLP] = {
 		.Name = "VCCINT_PSLP",
-		.Sensor_Name = "ina226_vcc_pslp-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-pslp/hwmon/hwmon5",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x02}},
@@ -270,7 +270,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCCINT_PSFP] = {
 		.Name = "VCCINT_PSFP",
-		.Sensor_Name = "ina226_vcc_psfp-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-psfp/hwmon/hwmon6",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x02}},
@@ -278,7 +278,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCCAUX] = {
 		.Name = "VCCAUX",
-		.Sensor_Name = "ina226_vccaux-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vccaux/hwmon/hwmon7",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -286,7 +286,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCCAUX_PMC] = {
 		.Name = "VCCAUX_PMC",
-		.Sensor_Name = "ina226_vccaux_pmc-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vccaux-pmc/hwmon/hwmon8",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -294,7 +294,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCC_MIO] = {
 		.Name = "VCC_MIO",
-		.Sensor_Name = "ina226_vcco_503-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcco-503/hwmon/hwmon9",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -302,7 +302,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCC1V8] = {
 		.Name = "VCC1V8",
-		.Sensor_Name = "ina226_vcc_1v8-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-1v8/hwmon/hwmon10",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -310,7 +310,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCC3V3] = {
 		.Name = "VCC3V3",
-		.Sensor_Name = "ina226_vcc_3v3-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-3v3/hwmon/hwmon11",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -318,7 +318,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCC1V2_DDR4] = {
 		.Name = "VCC1V2_DDR4",
-		.Sensor_Name = "ina226_vcc_1v2_ddr4-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-1v2-ddr4/hwmon/hwmon12",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -326,7 +326,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VCC1V1_LP4] = {
 		.Name = "VCC1V1_LP4",
-		.Sensor_Name = "ina226_vcc_1v1_lp4-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vcc-1v1-lp4/hwmon/hwmon13",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -334,7 +334,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_VADJ_FMC] = {
 		.Name = "VADJ_FMC",
-		.Sensor_Name = "ina226_vadj_fmc-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-vadj-fmc/hwmon/hwmon14",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -342,7 +342,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_MGTYAVCC] = {
 		.Name = "MGTYAVCC",
-		.Sensor_Name = "ina226_mgtyavcc-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-mgtyavcc/hwmon/hwmon15",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -350,7 +350,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_MGTYAVTT] = {
 		.Name = "MGTYAVTT",
-		.Sensor_Name = "ina226_mgtyavtt-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-mgtyavtt/hwmon/hwmon16",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},
@@ -358,7 +358,7 @@ Ina226s_t Ina226s = {
 	},
 	.Ina226[INA226_MGTYVCCAUX] = {
 		.Name = "MGTYVCCAUX",
-		.Sensor_Name = "ina226_mgtyavtt-isa-0000",
+		.Sysfs_Path = "/sys/devices/platform/ina226-mgtyvccaux/hwmon/hwmon17",
 		.I2C_Route.Bus_Id = I2C_BUS_0,
 		.I2C_Route.Mux_Levels = 1,
 		.I2C_Route.Mux_Route = {{0x74, 0x08}},

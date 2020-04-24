@@ -38,7 +38,8 @@ Check_Clocks()
 		fd = open(Clocks.Clock[i].Sysfs_Path, O_RDONLY);
 		ReadBuffer[0] = '\0';
 		if (read(fd, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {
-			printf("Check Clocks:  FAIL\n");
+			printf("ERROR: failed to open the clock\n");
+			printf("Check Clocks: FAIL\n");
 			return -1;
 		}
 		/* Allow up to 100 Hz delta */
@@ -47,13 +48,15 @@ Check_Clocks()
 		Lower = Clocks.Clock[i].Default_Freq - Delta;
 		Upper = Clocks.Clock[i].Default_Freq + Delta;
 		if (Freq < Lower || Freq > Upper) {
-			printf("Check Clocks:  FAIL\n");
+			printf("Check Clocks: BIT failed for clock \'%s\'\n",
+			    Clocks.Clock[i].Name);
+			printf("Check Clocks: FAIL\n");
 			return -1;
 		}
 		(void) close(fd);
 	}
 
-	printf("Check Clocks:  PASS\n");
+	printf("Check Clocks: PASS\n");
 
 	return 0;
 }

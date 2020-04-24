@@ -157,6 +157,7 @@ Parse_Options(int argc, char **argv)
 		}
 	}
 
+	printf("ERROR: invalid command\n");
 	return -1;
 }
 

@@ -428,7 +428,7 @@ int Workaround_Ops(void)
 		Return = (*Workarounds.Workaround[Target_Index].Plat_Workaround_Op)(NULL);
 	} else {
 		Value = atol(Value_Arg);
-		if (Value != 0 || Value != 1) {
+		if (Value != 0 && Value != 1) {
 			printf("ERROR: invalid value\n");
 			return -1;
 		}

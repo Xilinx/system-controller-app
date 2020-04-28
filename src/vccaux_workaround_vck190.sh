@@ -1,7 +1,6 @@
 #! /bin/sh
 
 PNAME=`basename $0`
-TRIGGERED=0
 
 for pid in `pidof -x ${PNAME}`; do
 	if [ $pid != $$ ]; then
@@ -10,21 +9,18 @@ for pid in `pidof -x ${PNAME}`; do
 	fi
 done
 
-echo "$0: Starting poll for MIO37"
 while [ 1 ]; do
-	# MIO37="$(gpioget `gpiofind "DC_SYS_CTRL4"`)"
-	MIO37=`gpioget gpiochip0 11`
-	if [ ${MIO37} == 0 ]; then
-		if [ ${TRIGGERED} == 1 ]; then
-			echo "$0: falling edge is detecded"
-			TRIGGERED=0
-			/usr/bin/sc_app -c workaround -t vccaux -v 0
-		fi
-	elif [ ${MIO37} == 1 ]; then
-		if [ ${TRIGGERED} == 0 ]; then
-			echo "$0: rising edge is detected"
-			TRIGGERED=1
-			/usr/bin/sc_app -c workaround -t vccaux -v 1
-		fi
-	fi
+	COUNT=5
+
+	# MIO37 == "DC_SYS_CTRL4"
+	MIO37=`gpiomon --format="%e" --num-events=1 gpiochip0 11`
+
+	# Falling edge (MIO37 == 0), Rising edge (MIO37 == 1)
+	/usr/bin/sc_app -c workaround -t vccaux -v ${MIO37} > /dev/null
+
+	# In case sc_app is busy, try few times before giving up
+	while [ $? -ne 0 -a ${COUNT} -ne 0 ]; do
+		/usr/bin/sc_app -c workaround -t vccaux -v ${MIO37} > /dev/null
+		COUNT=`expr ${COUNT} - 1`
+	done
 done

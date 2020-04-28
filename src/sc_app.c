@@ -3,8 +3,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include "sc_app.h"
 
+#define LOCKFILE "/tmp/.sc_app_lock"
 
 extern I2C_Buses_t I2C_Buses;
 extern BootModes_t BootModes;
@@ -15,6 +17,8 @@ extern Workarounds_t Workarounds;
 extern BITs_t BITs;
 
 int Parse_Options(int argc, char **argv);
+int Create_Lockfile(void);
+int Destroy_Lockfile(void);
 int BootMode_Ops(void);
 int Clock_Ops(void);
 int Power_Ops(void);
@@ -97,12 +101,22 @@ main(int argc, char **argv)
 {
 	int Ret;
 
+	if (Create_Lockfile() != 0) {
+		return -1;
+	}
+
 	Ret = Parse_Options(argc, argv);
 	if (Ret != 0) {
-		return Ret;
+		goto Unlock;
 	}
 
 	Ret = (*Command.CmdOps)();
+
+Unlock:
+	if (Destroy_Lockfile() != 0) {
+		return -1;
+	}
+
 	return Ret;
 }
 
@@ -159,6 +173,46 @@ Parse_Options(int argc, char **argv)
 
 	printf("ERROR: invalid command\n");
 	return -1;
+}
+
+/*
+ * Create the lockfile
+ */
+int
+Create_Lockfile(void)
+{
+	FILE *fp = NULL;
+	time_t curtime;
+
+	if (access(LOCKFILE, F_OK) == 0) {
+		printf("ERROR: lockfile \"%s\" exists\n", LOCKFILE);
+		return -1;
+	}
+
+	fp = fopen(LOCKFILE, "w");
+	if (fp == NULL) {
+		printf("ERROR: failed to create lockfile\n");
+		return -1;
+	}
+
+	time(&curtime);
+	fprintf(fp, "%s", ctime(&curtime)); 
+	fclose(fp);
+	return 0;
+}
+
+/*
+ * Destroy the lockfile
+ */
+int
+Destroy_Lockfile(void)
+{
+	if (remove(LOCKFILE) == -1) {
+		printf("ERROR: failed to remove lockfile\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 /*

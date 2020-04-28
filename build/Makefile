@@ -1,4 +1,3 @@
-CC	:= ${CROSS_COMPILE}gcc
 PLAT	:= vck190
 BIT	:= BIT
 COMMON	= sc_app
@@ -11,7 +10,7 @@ DEPS	= $(COMMON).h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(COMMON): $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 clean:
 	rm -f $(COMMON) *.o

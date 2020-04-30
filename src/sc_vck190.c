@@ -455,6 +455,15 @@ Workaround_Vccaux(void *Arg)
 }
 
 int
+Plat_Version_Ops(int *Major, int *Minor)
+{
+	// Same version number as common code.
+	*Major = -1;
+	*Minor = -1;
+	return 0;
+}
+
+int
 Plat_Reset_Ops(void)
 {
 	int State;

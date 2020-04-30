@@ -6,6 +6,14 @@
 #include <time.h>
 #include "sc_app.h"
 
+/*
+ * Version History
+ *
+ * 1.0 - Added version support.
+ */
+#define MAJOR	1
+#define MINOR	0
+
 #define LOCKFILE "/tmp/.sc_app_lock"
 
 extern I2C_Buses_t I2C_Buses;
@@ -19,17 +27,20 @@ extern BITs_t BITs;
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
 int Destroy_Lockfile(void);
+int Version_Ops(void);
 int BootMode_Ops(void);
 int Clock_Ops(void);
 int Power_Ops(void);
 int Workaround_Ops(void);
 int BIT_Ops(void);
+extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
+	version - version number\n\
 	listbootmode - lists the supported boot mode targets\n\
 	setbootmode - set boot mode to <target>\n\
 	reset - apply power-on-reset\n\
@@ -47,6 +58,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 ";
 
 typedef enum {
+	VERSION,
 	LISTBOOTMODE,
 	SETBOOTMODE,
 	RESET,
@@ -71,6 +83,7 @@ typedef struct {
 } Command_t;
 
 static Command_t Commands[] = {
+	{ .CmdId = VERSION, .CmdStr = "version", .CmdOps = Version_Ops, },
 	{ .CmdId = LISTBOOTMODE, .CmdStr = "listbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Plat_Reset_Ops, },
@@ -212,6 +225,24 @@ Destroy_Lockfile(void)
 		return -1;
 	}
 
+	return 0;
+}
+
+/*
+ * Version Operations
+ */
+int
+Version_Ops(void)
+{
+	int Major, Minor;
+
+	(void) (*Plat_Version_Ops)(&Major, &Minor);
+	if (Major == -1 && Minor == -1) {
+		Major = MAJOR;
+		Minor = MINOR;
+	}
+
+	printf("%d.%d\n", Major, Minor);
 	return 0;
 }
 

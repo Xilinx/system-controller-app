@@ -5,6 +5,7 @@
 	sc_app -c <command> [-t <target> [-v <value>]]
 
 	<command> - 
+		version - version number
 		listbootmode - lists the supported boot mode targets
 		setbootmode - set boot mode to <target>
 		reset - apply power-on-reset
@@ -20,9 +21,4 @@
 		listBIT - lists the supported Board Interface Test targets
 		BIT - run BIT target
 
-
-
-	How to build:
-
-	make CROSS_COMPILE=aarch64-linux-gnu-
 

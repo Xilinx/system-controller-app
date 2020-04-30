@@ -5,7 +5,7 @@
 	sc_app -c <command> [-t <target> [-v <value>]]
 
 	<command> - 
-		version - version number
+		version - version and compatibility information
 		listbootmode - lists the supported boot mode targets
 		setbootmode - set boot mode to <target>
 		reset - apply power-on-reset

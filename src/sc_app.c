@@ -14,7 +14,9 @@
 #define MAJOR	1
 #define MINOR	0
 
-#define LOCKFILE "/tmp/.sc_app_lock"
+#define LOCKFILE	"/tmp/.sc_app_lock"
+#define LINUX_VERSION	"5.4.0"
+#define BSP_VERSION	"v2020.1"
 
 extern I2C_Buses_t I2C_Buses;
 extern BootModes_t BootModes;
@@ -40,7 +42,7 @@ extern int Plat_EEPROM_Ops(void);
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
-	version - version number\n\
+	version - version and compatibility information\n\
 	listbootmode - lists the supported boot mode targets\n\
 	setbootmode - set boot mode to <target>\n\
 	reset - apply power-on-reset\n\
@@ -234,7 +236,13 @@ Destroy_Lockfile(void)
 int
 Version_Ops(void)
 {
+	int fd;
 	int Major, Minor;
+	char Buffer[STRLEN_MAX];
+	char Linux_Version[STRLEN_MAX];
+	char BSP_Version[STRLEN_MAX];
+	int Linux_Compatible = 1;
+	int BSP_Compatible = 1;
 
 	(void) (*Plat_Version_Ops)(&Major, &Minor);
 	if (Major == -1 && Minor == -1) {
@@ -242,7 +250,42 @@ Version_Ops(void)
 		Minor = MINOR;
 	}
 
-	printf("%d.%d\n", Major, Minor);
+	printf("Version:\t%d.%d\n", Major, Minor);
+
+	fd = open("/proc/sys/kernel/osrelease", O_RDONLY);
+	if (fd == -1) {
+		printf("ERROR: failed to open file to get OS release.\n");
+		return -1;
+	}
+
+	if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
+		printf("ERROR: failed to read OS release\n");
+		return -1;
+	}
+
+	(void) close(fd);
+
+	// OS release
+	(void) strcpy(Linux_Version, strtok(Buffer, "-"));
+	// Ignore 'xilinx'!
+	(void) strtok(NULL, "-");
+	// BSP version
+	(void) strcpy(BSP_Version, strtok(NULL, "\n"));
+
+	if (Major == 1) {
+		if (strcmp(Linux_Version, LINUX_VERSION) != 0) {
+			Linux_Compatible = 0;
+		}
+
+		if (strcmp(BSP_Version, BSP_VERSION) != 0) {
+			BSP_Compatible = 0;
+		}
+	}
+
+	printf("Linux:\t\t%s (%sCompatible)\n", Linux_Version,
+	    (Linux_Compatible) ? "" : "Not ");
+	printf("BSP:\t\t%s (%sCompatible)\n", BSP_Version,
+	    (BSP_Compatible) ? "" : "Not ");
 	return 0;
 }
 

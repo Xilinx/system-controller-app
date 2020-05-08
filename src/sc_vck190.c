@@ -372,28 +372,170 @@ Ina226s_t Ina226s = {
 typedef enum {
 	VOLTAGE_VCCINT,
 	VOLTAGE_VCCINT_SOC,
+	VOLTAGE_VCCINT_PSLP,
+	VOLTAGE_VCCINT_PSFP,
+	VOLTAGE_VCCAUX,
+	VOLTAGE_VCC_RAM,
+	VOLTAGE_VCC_PMC,
+	VOLTAGE_VCCO_MIO,
+	VOLTAGE_VCC3V3,
+	VOLTAGE_VCC1V8,
+	VOLTAGE_VCCAUX_PMC,
+	VOLTAGE_MGTYAVTT,
+	VOLTAGE_VADJ_FMC,
+	VOLTAGE_MGTYAVCC,
+	VOLTAGE_UTIL_1V13,
+	VOLTAGE_UTIL_2V5,
+	VOLTAGE_VCC1V2_DDR4,
+	VOLTAGE_VCC1V1_LP4,
 	VOLTAGE_MAX,
 } Voltage_Index;
 
 Voltages_t Voltages = {
 	.Numbers = VOLTAGE_MAX,
 	.Voltage[VOLTAGE_VCCINT] = {
-		.Name = "vccint",		// Name of the device referenced by application
+		.Name = "VCCINT",		// Name of the device referenced by application
+		.Part_Name = "IR35215",		// Name of the part that is used
 		.Default_Volt = 7800,		// Factory default voltage in millivolt
+		.I2C_Bus = "/dev/i2c-3",	// I2C bus of the device
+		.I2C_Address = 0x46,		// I2C address of the device
 		.Page_Select = 0,		// Device page selection
-		.I2C_Route.Bus_Id = I2C_BUS_0,	// Main I2C bus connected to the device
-		.I2C_Route.Mux_Levels = 1,	// Number of muxes in route to the device
-		.I2C_Route.Mux_Route = {{0x74, 0x02}}, // <I2C address, channel select> pair for each mux
-		.I2C_Address = 0x41,		// I2C address of the device
 	},
 	.Voltage[VOLTAGE_VCCINT_SOC] = {
-		.Name = "vccint_soc",
+		.Name = "VCCINT_SOC",
+		.Part_Name = "IR35215",
 		.Default_Volt = 7800,
-		.Page_Select = 6,
-		.I2C_Route.Bus_Id = I2C_BUS_0,
-		.I2C_Route.Mux_Levels = 1,
-		.I2C_Route.Mux_Route = {{0x74, 0x02}},
-		.I2C_Address = 0x41,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x46,
+		.Page_Select = 1,
+	},
+	.Voltage[VOLTAGE_VCCINT_PSLP] = {
+		.Name = "VCCINT_PSLP",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 7800,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x47,
+		.Page_Select = 0,
+	},
+	.Voltage[VOLTAGE_VCCINT_PSFP] = {
+		.Name = "VCCINT_PSFP",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 7800,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x47,
+		.Page_Select = 1,
+	},
+	.Voltage[VOLTAGE_VCCAUX] = {
+		.Name = "VCCAUX",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 15000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x47,
+		.Page_Select = 2,
+	},
+	.Voltage[VOLTAGE_VCC_RAM] = {
+		.Name = "VCC_RAM",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 7800,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x47,
+		.Page_Select = 3,
+	},
+	.Voltage[VOLTAGE_VCC_PMC] = {
+		.Name = "VCC_PMC",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 7800,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x47,
+		.Page_Select = 4,
+	},
+	.Voltage[VOLTAGE_VCCO_MIO] = {
+		.Name = "VCCO_MIO",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 18000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4C,
+		.Page_Select = 0,
+	},
+	.Voltage[VOLTAGE_VCC3V3] = {
+		.Name = "VCC3V3",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 33000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4C,
+		.Page_Select = 1,
+	},
+	.Voltage[VOLTAGE_VCC1V8] = {
+		.Name = "VCC1V8",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 18000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4C,
+		.Page_Select = 2,
+	},
+	.Voltage[VOLTAGE_VCCAUX_PMC] = {
+		.Name = "VCCAUX_PMC",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 15000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4C,
+		.Page_Select = 4,
+	},
+	.Voltage[VOLTAGE_MGTYAVTT] = {
+		.Name = "MGTYAVTT",
+		.Part_Name = "IR38164",
+		.Default_Volt = 12000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x50,
+		.Page_Select = -1,
+	},
+	.Voltage[VOLTAGE_VADJ_FMC] = {
+		.Name = "VADJ_FMC",
+		.Part_Name = "IR38164",
+		.Default_Volt = 15000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4E,
+		.Page_Select = -1,
+	},
+	.Voltage[VOLTAGE_MGTYAVCC] = {
+		.Name = "MGTYAVCC",
+		.Part_Name = "IR38164",
+		.Default_Volt = 8800,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4F,
+		.Page_Select = -1,
+	},
+	.Voltage[VOLTAGE_UTIL_1V13] = {
+		.Name = "UTIL_1V13",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 11300,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4D,
+		.Page_Select = 0,
+	},
+	.Voltage[VOLTAGE_UTIL_2V5] = {
+		.Name = "UTIL_2V5",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 25000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4D,
+		.Page_Select = 1,
+	},
+	.Voltage[VOLTAGE_VCC1V2_DDR4] = {
+		.Name = "VCC1V2_DDR4",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 12000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4D,
+		.Page_Select = 2,
+	},
+	.Voltage[VOLTAGE_VCC1V1_LP4] = {
+		.Name = "VCC1V1_LP4",
+		.Part_Name = "IRPS5401",
+		.Default_Volt = 11000,
+		.I2C_Bus = "/dev/i2c-3",
+		.I2C_Address = 0x4D,
+		.Page_Select = 3,
 	},
 };
 

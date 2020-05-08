@@ -1,10 +1,14 @@
 #ifndef SC_APP_H_
 #define SC_APP_H_
 
+#include <sys/ioctl.h>
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
+
 #define STRLEN_MAX	32
-#define	ITEMS_MAX	20
-#define	SYSCMD_MAX	128
-#define	MUX_MAX		4
+#define ITEMS_MAX	20
+#define SYSCMD_MAX	128
+#define MUX_MAX		4
 
 /*
  * I2C Buses
@@ -82,11 +86,12 @@ typedef struct Ina226s {
  */
 typedef struct {
 	char	Name[STRLEN_MAX];
+	char	Part_Name[STRLEN_MAX];
 	unsigned int	Default_Volt;
 	unsigned int	Upper_Volt;
 	unsigned int	Lower_Volt;
 	int		Page_Select;
-	I2C_Route_t	I2C_Route;
+	char	I2C_Bus[STRLEN_MAX];
 	int	I2C_Address;
 } Voltage_t;
 
@@ -121,6 +126,42 @@ typedef struct BITs {
 	int	Numbers;
 	BIT_t	BIT[ITEMS_MAX];
 } BITs_t;
+
+
+#define I2C_READ(FD, Address, Len, Out, In) \
+{ \
+	struct i2c_msg Msgs[2]; \
+	struct i2c_rdwr_ioctl_data Msgset[1]; \
+	Msgs[0].addr = (Address); \
+	Msgs[0].flags = 0; \
+	Msgs[0].len = 1; \
+	Msgs[0].buf = (Out); \
+	Msgs[1].addr = (Address); \
+	Msgs[1].flags = (I2C_M_RD | I2C_M_NOSTART); \
+	Msgs[1].len = (Len); \
+	Msgs[1].buf = (In); \
+	Msgset[0].msgs = Msgs; \
+	Msgset[0].nmsgs = 2; \
+	if (ioctl((FD), I2C_RDWR, &Msgset) < 0) { \
+		printf("ERROR: unable to read from I2C device 0x%x\n", (Address)); \
+		return -1; \
+	} \
+}
+
+#define I2C_WRITE(FD, Address, Len, Out) \
+{ \
+	if (ioctl((FD), I2C_SLAVE_FORCE, (Address)) < 0) { \
+		printf("ERROR: unable to access I2C device 0x%x\n", (Address)); \
+		return -1; \
+	} \
+	if (write((FD), (Out), (Len)) != (Len)) { \
+		printf("ERROR: unable to write to I2C device 0x%x\n", (Address)); \
+		return -1; \
+	} \
+}
+
+#define PMBUS_VOUT_MODE		0x20
+#define PMBUS_READ_VOUT		0x8B
 
 #endif	/* SC_APP_H_ */
 

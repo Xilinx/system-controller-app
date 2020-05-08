@@ -4,15 +4,17 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 #include "sc_app.h"
 
 /*
  * Version History
  *
  * 1.0 - Added version support.
+ * 1.1 - Support for reading VOUT from voltage regulators.
  */
 #define MAJOR	1
-#define MINOR	0
+#define MINOR	1
 
 #define LOCKFILE	"/tmp/.sc_app_lock"
 #define LINUX_VERSION	"5.4.0"
@@ -32,6 +34,7 @@ int Destroy_Lockfile(void);
 int Version_Ops(void);
 int BootMode_Ops(void);
 int Clock_Ops(void);
+int Voltage_Ops(void);
 int Power_Ops(void);
 int Workaround_Ops(void);
 int BIT_Ops(void);
@@ -51,6 +54,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	getclock - get the frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
 	restoreclock - restore <target> to default value\n\
+	listvoltage - lists the supported voltage targets\n\
+	getvoltage - get the voltage of <target>\n\
 	listpower - lists the supported power targets\n\
 	getpower - get the voltage, current, and power of <target>\n\
 	listworkaround - lists the applicable workaround targets\n\
@@ -69,6 +74,8 @@ typedef enum {
 	GETCLOCK,
 	SETCLOCK,
 	RESTORECLOCK,
+	LISTVOLTAGE,
+	GETVOLTAGE,
 	LISTPOWER,
 	GETPOWER,
 	LISTWORKAROUND,
@@ -94,6 +101,8 @@ static Command_t Commands[] = {
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = RESTORECLOCK, .CmdStr = "restoreclock", .CmdOps = Clock_Ops, },
+	{ .CmdId = LISTVOLTAGE, .CmdStr = "listvoltage", .CmdOps = Voltage_Ops, },
+	{ .CmdId = GETVOLTAGE, .CmdStr = "getvoltage", .CmdOps = Voltage_Ops, },
 	{ .CmdId = LISTPOWER, .CmdStr = "listpower", .CmdOps = Power_Ops, },
 	{ .CmdId = GETPOWER, .CmdStr = "getpower", .CmdOps = Power_Ops, },
 	{ .CmdId = LISTWORKAROUND, .CmdStr = "listworkaround", .CmdOps = Workaround_Ops, },
@@ -414,6 +423,103 @@ Clock_Ops(void)
 		break;
 	}
 
+	return 0;
+}
+
+/*
+ * Voltage Operations
+ */
+int Voltage_Ops(void)
+{
+	int Target_Index = -1;
+	char In_Buffer[SYSCMD_MAX];
+	char Out_Buffer[SYSCMD_MAX];
+	int fd;
+	signed int Exponent;
+	short Mantissa;
+	float Voltage;
+	int I2C_Address;
+	int Get_Vout_Mode = 1;
+
+	if (Command.CmdId == LISTVOLTAGE) {
+		for (int i = 0; i < Voltages.Numbers; i++) {
+			printf("%s\n", Voltages.Voltage[i].Name);
+		}
+		return 0;
+	}
+
+	/* Validate the voltage target */
+	if (T_Flag == 0) {
+		printf("ERROR: no voltage target\n");
+		return -1;
+	}
+
+	for (int i = 0; i < Voltages.Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)Voltages.Voltage[i].Name) == 0) {
+			Target_Index = i;
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: invalid voltage target\n");
+		return -1;
+	}
+
+	fd = open(Voltages.Voltage[Target_Index].I2C_Bus, O_RDWR);
+	if (fd < 0) {
+		printf("ERROR: unable to open the voltage regulator\n");
+		return -1;
+	}
+
+	I2C_Address = Voltages.Voltage[Target_Index].I2C_Address;
+
+	/* Select the page, if the voltage regulator supports it */
+	if (-1 != Voltages.Voltage[Target_Index].Page_Select) {
+		Out_Buffer[0] = 0x0;
+		Out_Buffer[1] = Voltages.Voltage[Target_Index].Page_Select;
+		I2C_WRITE(fd, I2C_Address, 2, Out_Buffer);
+	}
+
+	switch (Command.CmdId) {
+	case GETVOLTAGE:
+		/*
+		 * Reading VOUT_MODE indicates what is READ_VOUT format and
+		 * its exponent.  The default format is Linear16:
+		 *
+		 * Voltage =  Mantissa * 2 ^ -(Exponent)
+		 */ 
+
+		/* IR38164 does not support VOUT_MODE PMBus command */
+		if (0 == strcmp(Voltages.Voltage[Target_Index].Part_Name,
+		    "IR38164")) {
+			Get_Vout_Mode = 0;
+		}
+
+		if (1 == Get_Vout_Mode) {
+			Out_Buffer[0] = PMBUS_VOUT_MODE;
+			(void *) memset(In_Buffer, 0, STRLEN_MAX);
+			I2C_READ(fd, I2C_Address, 1, Out_Buffer, In_Buffer);
+			Exponent = In_Buffer[0] - (sizeof(int) * 8);
+		} else {
+			/* For IR38164, use exponent value -8 */
+			Exponent = -8;
+		}
+
+		Out_Buffer[0] = PMBUS_READ_VOUT;
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		I2C_READ(fd, I2C_Address, 2, Out_Buffer, In_Buffer);
+		Mantissa = ((unsigned char)In_Buffer[1] << 8) |
+		    (unsigned char)In_Buffer[0];
+		Voltage = Mantissa * pow(2, Exponent);
+		printf("Voltage(V):\t%.2f\n", Voltage);
+		break;
+	default:
+		printf("ERROR: invalid voltage command\n");
+		break;
+	}
+
+	(void) close(fd);
 	return 0;
 }
 

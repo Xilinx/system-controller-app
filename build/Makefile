@@ -10,7 +10,7 @@ DEPS	= $(COMMON).h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(COMMON): $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS) -lm $(LDFLAGS)
 
 clean:
 	rm -f $(COMMON) *.o

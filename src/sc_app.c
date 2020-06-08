@@ -12,9 +12,10 @@
  *
  * 1.0 - Added version support.
  * 1.1 - Support for reading VOUT from voltage regulators.
+ * 1.2 - Support for reading DIMM's SPD EEPROM and temperature sensor.
  */
 #define MAJOR	1
-#define MINOR	1
+#define MINOR	2
 
 #define LOCKFILE	"/tmp/.sc_app_lock"
 #define LINUX_VERSION	"5.4.0"
@@ -27,6 +28,7 @@ extern Ina226s_t Ina226s;
 extern Voltages_t Voltages;
 extern Workarounds_t Workarounds;
 extern BITs_t BITs;
+extern struct ddr_dimm1 Dimm1;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -38,6 +40,7 @@ int Voltage_Ops(void);
 int Power_Ops(void);
 int Workaround_Ops(void);
 int BIT_Ops(void);
+int DDR_Ops(void);
 extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
@@ -62,6 +65,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	workaround - apply <target> workaround (may requires <value>)\n\
 	listBIT - lists the supported Board Interface Test targets\n\
 	BIT - run BIT target\n\
+	ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'\n\
 ";
 
 typedef enum {
@@ -82,6 +86,7 @@ typedef enum {
 	WORKAROUND,
 	LISTBIT,
 	BIT,
+	DDR,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -109,6 +114,7 @@ static Command_t Commands[] = {
 	{ .CmdId = WORKAROUND, .CmdStr = "workaround", .CmdOps = Workaround_Ops, },
 	{ .CmdId = LISTBIT, .CmdStr = "listBIT", .CmdOps = BIT_Ops, },
 	{ .CmdId = BIT, .CmdStr = "BIT", .CmdOps = BIT_Ops, },
+	{ .CmdId = DDR, .CmdStr = "ddr", .CmdOps = DDR_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -714,4 +720,154 @@ int BIT_Ops(void)
 	Return = (*BITs.BIT[Target_Index].Plat_BIT_Op)();
 
 	return Return;
+}
+
+/*
+ * DDR serial presence detect (SPD) EEPROM Operations.
+ *
+ * SPD is a standardized way to access information about a memory module.
+ * It's an EEPROM on a DIMM where the lower 128 bytes contain certain
+ * parameters required by the JEDEC standards, including type, size, etc.
+ * The SPD EEPROM is accessed using SMBus; address range: 0x50–0x57 or
+ * 0x30–0x37. The TSE2004av extension uses addresses 0x18–0x1F to access
+ * an optional on-chip temperature sensor.
+ */
+
+struct spd_ddr4 {
+	__u8 spd_bytes;		// 0
+	__u8 spd_rev;		// 1
+	__u8 spd_mem_type;  // 2
+	__u8 spd_mod_type;  // 3 needs mask 0xf
+	__u8 spd_mem_size;  // 4 needs mask 0xf
+	__u8 spd_to14[9];   // byte 5-9
+	__u8 spd_tsensor;   // msbit: Thermal sensor
+};
+
+union spd_ddr {
+	__u64 a64[2];
+	__u8  b[16];
+	struct spd_ddr4 ddr4;
+	// struct spd_ddr3 ddr3;
+};
+
+int DDRi2c_read(int fd, __u8 *Buf, struct i2c_info *Iic)
+{
+	if (ioctl(fd, I2C_SLAVE_FORCE, Iic->Bus_addr) < 0) {
+		perror(Dimm1.I2C_Bus);
+		return -1;
+	}
+	I2C_READ(fd, Iic->Bus_addr, Iic->Read_len, &Iic->Reg_addr, Buf);
+	return 0;
+}
+
+#ifdef DEBUG
+void showbuf(const char *b, unsigned int sz)
+{
+	for (int j = 0; j < sz; j++)
+		printf("%c%02x", (0xf & j) ? ' ' : '\n', b[j]);
+	putchar('\n');
+}
+#endif
+
+/*
+ * DDRSPD is the EEPROM on a DIMM card. First 16 bytes indicate type.
+ * First 16 bytes indicate type.
+ * Nibbles 4 and 5 (numbered from 0) indicates ddr4ram: "0C" in ASCII,
+ * Nibble 9 indicates size: 0, .5G, 1G, 2G, 4G, 8G, or 16G
+ * Nibble 28 temp sensor: 8 = present, 0 = not present
+ */
+int DIMM_spd(int fd)
+{
+	union spd_ddr Spd_buf = {.a64 = {0, 0}};
+	struct spd_ddr4 *p = &Spd_buf.ddr4;
+	__u8 Sz256;
+	int Ret;
+
+	Ret = DDRi2c_read(fd, Spd_buf.b, &Dimm1.Spd);
+	if (Ret < 0) {
+		perror(Dimm1.I2C_Bus);
+		return Ret;
+	}
+
+	Sz256 = 0xf & p->spd_mem_size;
+	printf("DIMM Slot 1:\n%24s %s\n", "Is the ram DDR4 SDRAM?",
+		(p->spd_mem_type == 0xc) ? "Yes" : "No");
+	if (Sz256 > 1)
+		printf("%24s %u Gb\n", "Size:", 1 << (Sz256 - 2));
+	else
+		printf("%24s %s\n", "Size:", Sz256 ? "512 Mb" : "0");
+	printf("%24s %s\n", "Temp sensor?",
+		(0x80 & p->spd_tsensor) ? "Yes" : "No");
+#ifdef DEBUG
+	showbuf(Spd_buf.b, sizeof(Spd_buf.b));
+	printf("spd_bytes, revision = %u, %u\n", p->spd_bytes, p->spd_rev);
+	printf("spd_mem_type = %u\n", p->spd_mem_type);
+	printf("spd_mod_type = %u\n", 0xf & p->spd_mod_type);
+	printf("spd_mem_size = %u or %u MB\n", Sz256, Sz256 ? (256 << Sz256) : 0);
+	printf("spd_tsensor  = %c\n", (0x80 & p->spd_tsensor) ? 'Y' : 'N');
+#endif
+	return Ret;
+}
+
+/*
+ * See Temperature format description in SE98A data sheet
+ *   tttt_tttt_XXXS_TTTT  ->  STTT_Tttt_tttt_t000
+ * swap bytes, set the signed bit with shifts
+ * adjust for the .125 C resolution in printf
+ */
+int DIMM_temperature(int fd)
+{
+	__u16 Tbuf = 0;
+	int Ret = 0;
+
+	Ret = DDRi2c_read(fd, (void *)&Tbuf, &Dimm1.Therm);
+	if (Ret == 0) {
+		__s16 t = (Tbuf << 8 | Tbuf >> 8) << 3;
+		printf("DDR4 TEMP 1 Temperature: %.2f C\n", .125 * t / 16);
+	}
+	return Ret;
+}
+
+int target_match(const char *str)
+{
+	return strcmp(Target_Arg, str) == 0;
+}
+
+int valid_ddr_target(void)
+{
+	int Ret = !T_Flag || target_match("spd") || target_match("temp");
+
+	if (!Ret)
+		fprintf(stderr, "%sERROR: no %s target for ddr command\n",
+			Usage, Target_Arg);
+	return Ret;
+}
+
+/*
+ * DDRSPD is the EEPROM on a DIMM card. There might be a temperature sensor.
+ * Assume there is only one dimm on our boards
+ */
+int DDR_Ops(void)
+{
+	int fd, Ret = 0;
+
+	if (!valid_ddr_target())
+		return -1;
+
+	fd = open(Dimm1.I2C_Bus, O_RDWR);
+	if (fd < 0) {
+		perror(Dimm1.I2C_Bus);
+		return -1;
+	}
+
+	// Skip if SPD only, else show Temperature
+	if (Target_Arg[0] != 's')
+		Ret = DIMM_temperature(fd);
+
+	// Skip if Temperature only, else show SPD
+	if (Target_Arg[0] != 't')
+		Ret = DIMM_spd(fd);
+
+	close(fd);
+	return Ret;
 }

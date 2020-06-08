@@ -127,6 +127,20 @@ typedef struct BITs {
 	BIT_t	BIT[ITEMS_MAX];
 } BITs_t;
 
+/*
+ * DDR serial presence detect (SPD)
+ */
+struct i2c_info {
+	__u16 Bus_addr;
+	__u8  Reg_addr;
+	__u16 Read_len;
+};
+
+struct ddr_dimm1 {
+	char I2C_Bus[STRLEN_MAX];
+	struct i2c_info Spd;
+	struct i2c_info Therm;
+};
 
 #define I2C_READ(FD, Address, Len, Out, In) \
 { \

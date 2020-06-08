@@ -716,3 +716,19 @@ Plat_EEPROM_Ops(void)
 	    ReadBuffer[0x87], ReadBuffer[0x88], ReadBuffer[0x89],
 	    ReadBuffer[0x8A], ReadBuffer[0x8B]);
 }
+
+/*
+ * According to UG1366 "VCK190 Evaluation Board User Guide"
+ * DDR4_DIMM1 is connected to Channel 3 of the i2c mux at address 0x74
+ * on the I2C1 bus. The system controller running 5.4.0-xilinx-v2020.1
+ * linux maps it to i2c-14 (i2cdetect -l):
+ *      i2c-14  i2c     i2c-2-mux (chan_id 3)
+ *
+ *  addr=0x50, reg_addr=0 len=16:   DIMM's SPD EEPROM
+ *  addr=0x18, reg_addr=5 len=2:    DIMM's temp sensor
+ */
+struct ddr_dimm1 Dimm1 = {
+	.I2C_Bus = "/dev/i2c-14",
+	.Spd   = { .Bus_addr = 0x50, .Reg_addr = 0, .Read_len = 16 },
+	.Therm = { .Bus_addr = 0x18, .Reg_addr = 5, .Read_len = 2 }
+};

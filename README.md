@@ -22,5 +22,5 @@
 		workaround - apply <target> workaround (may requires <value>)
 		listBIT - lists the supported Board Interface Test targets
 		BIT - run BIT target
-
+		ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'
 

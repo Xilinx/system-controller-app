@@ -790,14 +790,15 @@ int DIMM_spd(int fd)
 	}
 
 	Sz256 = 0xf & p->spd_mem_size;
-	printf("DIMM Slot 1:\n%24s %s\n", "Is the ram DDR4 SDRAM?",
-		(p->spd_mem_type == 0xc) ? "Yes" : "No");
-	if (Sz256 > 1)
-		printf("%24s %u Gb\n", "Size:", 1 << (Sz256 - 2));
-	else
-		printf("%24s %s\n", "Size:", Sz256 ? "512 Mb" : "0");
-	printf("%24s %s\n", "Temp sensor?",
-		(0x80 & p->spd_tsensor) ? "Yes" : "No");
+	printf("DDR4 SDRAM?\t%s\n",
+		((p->spd_mem_type == 0xc) ? "Yes" : "No"));
+	if (Sz256 > 1) {
+		printf("Size(Gb):\t%u\n", (1 << (Sz256 - 2)));
+	} else {
+		printf("Size(Mb):\t%s\n", (Sz256 ? "512" : "0"));
+	}
+	printf("Temp. Sensor?\t%s\n",
+		((0x80 & p->spd_tsensor) ? "Yes" : "No"));
 #ifdef DEBUG
 	showbuf(Spd_buf.b, sizeof(Spd_buf.b));
 	printf("spd_bytes, revision = %u, %u\n", p->spd_bytes, p->spd_rev);
@@ -823,7 +824,7 @@ int DIMM_temperature(int fd)
 	Ret = DDRi2c_read(fd, (void *)&Tbuf, &Dimm1.Therm);
 	if (Ret == 0) {
 		__s16 t = (Tbuf << 8 | Tbuf >> 8) << 3;
-		printf("DDR4 TEMP 1 Temperature: %.2f C\n", .125 * t / 16);
+		printf("Temperature(C):\t%.2f\n", (.125 * t / 16));
 	}
 	return Ret;
 }

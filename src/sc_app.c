@@ -717,7 +717,7 @@ int BIT_Ops(void)
 		return -1;
 	}
 
-	Return = (*BITs.BIT[Target_Index].Plat_BIT_Op)();
+	Return = (*BITs.BIT[Target_Index].Plat_BIT_Op)(&BITs.BIT[Target_Index]);
 
 	return Return;
 }

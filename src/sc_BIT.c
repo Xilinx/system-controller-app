@@ -4,22 +4,36 @@
 #include <stdlib.h>
 #include "sc_app.h"
 
+#define XSDB_ENV	"export XILINX_VITIS=/usr/local/xilinx_vitis; \
+			 export TCLLIBPATH=/usr/local/xilinx_vitis; \
+			 export TCL_LIBRARY=/usr/local/lib/tcl8.5; \
+			 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib"
+#define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
+#define BIT_PATH	"/usr/share/system-controller-app/BIT/"
+
 extern Clocks_t Clocks;
-int Check_Clocks(void);
+int Clocks_Check(void *);
+int XSDB_Command(void *);
 
 /*
  * BITs
  */
 typedef enum {
-	BIT_CHECK_CLOCKS,
+	BIT_CLOCKS_CHECK,
+	BIT_IDCODE_CHECK,
 	BIT_MAX,
 } BIT_Index;
 
 BITs_t BITs = {
 	.Numbers = BIT_MAX,
-	.BIT[BIT_CHECK_CLOCKS] = {
+	.BIT[BIT_CLOCKS_CHECK] = {
 		.Name = "Check Clocks",		// Name of BIT to run
-		.Plat_BIT_Op = Check_Clocks,	// BIT routine to invoke
+		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
+	},
+	.BIT[BIT_IDCODE_CHECK] = {
+		.Name = "XCVC1902 IDCODE Check",
+		.TCL_File = "idcode/xcvc1902_idcode_check.tcl",
+		.Plat_BIT_Op = XSDB_Command,
 	},
 };
 
@@ -28,18 +42,19 @@ BITs_t BITs = {
  * the same as default value.
  */
 int
-Check_Clocks()
+Clocks_Check(void *Arg)
 {
-	int fd;
+	BIT_t *BIT_p = Arg;
+	int FD;
 	char ReadBuffer[STRLEN_MAX];
 	int Freq, Lower, Upper, Delta;
 
 	for (int i = 0; i < Clocks.Numbers; i++) {
-		fd = open(Clocks.Clock[i].Sysfs_Path, O_RDONLY);
+		FD = open(Clocks.Clock[i].Sysfs_Path, O_RDONLY);
 		ReadBuffer[0] = '\0';
-		if (read(fd, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {
+		if (read(FD, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {
 			printf("ERROR: failed to open the clock\n");
-			printf("Check Clocks: FAIL\n");
+			printf("%s: FAIL\n", BIT_p->Name);
 			return -1;
 		}
 		/* Allow up to 100 Hz delta */
@@ -48,15 +63,31 @@ Check_Clocks()
 		Lower = Clocks.Clock[i].Default_Freq - Delta;
 		Upper = Clocks.Clock[i].Default_Freq + Delta;
 		if (Freq < Lower || Freq > Upper) {
-			printf("Check Clocks: BIT failed for clock \'%s\'\n",
+			printf("%s: BIT failed for clock \'%s\'\n", BIT_p->Name,
 			    Clocks.Clock[i].Name);
-			printf("Check Clocks: FAIL\n");
-			return -1;
+			printf("%s: FAIL\n", BIT_p->Name);
+			return 0;
 		}
-		(void) close(fd);
+		(void) close(FD);
 	}
 
-	printf("Check Clocks: PASS\n");
+	printf("%s: PASS\n", BIT_p->Name);
+	return 0;
+}
+
+/*
+ * This routine is used to invoke XSDB with a tcl script that contains
+ * the test.
+ */
+int
+XSDB_Command(void *Arg)
+{
+	BIT_t *BIT_p = Arg;
+	char System_Cmd[SYSCMD_MAX];
+
+	sprintf(System_Cmd, "%s; %s%s%s; %s %s%s", XSDB_ENV, "echo -n \'", 
+	    BIT_p->Name, ": \'", XSDB_CMD, BIT_PATH, BIT_p->TCL_File);
+	system(System_Cmd); 
 
 	return 0;
 }

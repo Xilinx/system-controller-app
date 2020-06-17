@@ -7,7 +7,7 @@
 
 #define STRLEN_MAX	32
 #define ITEMS_MAX	20
-#define SYSCMD_MAX	128
+#define SYSCMD_MAX	1024
 #define MUX_MAX		4
 
 /*
@@ -119,7 +119,8 @@ typedef struct Workarounds {
  */
 typedef struct {
 	char	Name[STRLEN_MAX];
-	int	(*Plat_BIT_Op)(void);
+	char	TCL_File[SYSCMD_MAX];
+	int	(*Plat_BIT_Op)(void *);
 } BIT_t;
 
 typedef struct BITs {

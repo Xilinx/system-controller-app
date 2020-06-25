@@ -13,9 +13,10 @@
  * 1.0 - Added version support.
  * 1.1 - Support for reading VOUT from voltage regulators.
  * 1.2 - Support for reading DIMM's SPD EEPROM and temperature sensor.
+ * 1.3 - Support for reading gpio lines.
  */
 #define MAJOR	1
-#define MINOR	2
+#define MINOR	3
 
 #define LOCKFILE	"/tmp/.sc_app_lock"
 #define LINUX_VERSION	"5.4.0"
@@ -29,6 +30,7 @@ extern Voltages_t Voltages;
 extern Workarounds_t Workarounds;
 extern BITs_t BITs;
 extern struct ddr_dimm1 Dimm1;
+extern struct Gpio_line_name Gpio_target[];
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -41,6 +43,9 @@ int Power_Ops(void);
 int Workaround_Ops(void);
 int BIT_Ops(void);
 int DDR_Ops(void);
+int GPIO_Ops(void);
+extern int Plat_Gpio_target_size(void);
+extern int Plat_Gpio_match(int, char *);
 extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
@@ -66,6 +71,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	listBIT - lists the supported Board Interface Test targets\n\
 	BIT - run BIT target\n\
 	ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'\n\
+	listgpio - lists the supported gpio lines\n\
+	getgpio - get the state of <target> gpio\n\
 ";
 
 typedef enum {
@@ -87,6 +94,8 @@ typedef enum {
 	LISTBIT,
 	BIT,
 	DDR,
+	LISTGPIO,
+	GETGPIO,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -115,6 +124,8 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTBIT, .CmdStr = "listBIT", .CmdOps = BIT_Ops, },
 	{ .CmdId = BIT, .CmdStr = "BIT", .CmdOps = BIT_Ops, },
 	{ .CmdId = DDR, .CmdStr = "ddr", .CmdOps = DDR_Ops, },
+	{ .CmdId = LISTGPIO, .CmdStr = "listgpio", .CmdOps = GPIO_Ops, },
+	{ .CmdId = GETGPIO, .CmdStr = "getgpio", .CmdOps = GPIO_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -871,4 +882,64 @@ int DDR_Ops(void)
 
 	close(fd);
 	return Ret;
+}
+
+static void Gpio_get1(const struct Gpio_line_name *p)
+{
+	char Cmd[STRLEN_MAX];
+
+	sprintf(Cmd, "gpioget gpiochip0 %d", p->Line);
+	printf("%s (line %2d): ", p->Name, p->Line);
+	fflush(NULL);
+	system(Cmd);
+}
+
+static const char Cmd_awk[] = "/usr/bin/gpioinfo |awk -e \'/unnamed/ {next};"
+	"/gpiochip.*lines:/ {e=z=\"\"; chip=$1; c=1 + $3 };"
+	"/line / { gsub(/[:\"]/,e); a[$2]=$3;"
+	" if ($NF ==\"[used]\") used[$2]=$4; else z=z \" \" $2; };"
+	"END { \"/usr/bin/gpioget gpiochip0 \" z |getline r;"
+	" ct =split(z, az); split(r, ar); for (i=1; i<=ct; i++){"
+	" g=az[i]; printf \"%-28s(line %2u): %u\\n\", a[g], g, ar[i];};"
+	" for (u in used) printf \"%-28s(line %2u): busy, used by %s\\n\","
+	" a[u], u, used[u];}\'";
+
+static void Gpio_get(void)
+{
+	int i, Total = Plat_Gpio_target_size();
+	long Tval = strtol(Target_Arg, NULL, 0);
+
+	if (!strcmp("all", Target_Arg)) {
+		system(Cmd_awk);
+		return;
+	}
+	for (i = 0; i < Total; i++) {
+		if (Tval == Gpio_target[i].Line || Plat_Gpio_match(i, Target_Arg)) {
+			Gpio_get1(&Gpio_target[i]);
+			return;
+		}
+	}
+	fprintf(stderr, "%sERROR: no %s target for %s command\n",
+		Usage, Target_Arg, Command.CmdStr);
+}
+
+void Gpio_list(void)
+{
+	int i, Total = Plat_Gpio_target_size();
+
+	for (i = 0; i < Total; i++)
+		puts(Gpio_target[i].Name);
+}
+
+/*
+ * GPIO_Ops lists the supported gpio lines
+ * "-c getgpio -t n" - get the state of gpio line "n"
+ */
+int GPIO_Ops(void)
+{
+	if (Command.CmdId == LISTGPIO)
+		Gpio_list();
+	else
+		Gpio_get();
+	return 0;
 }

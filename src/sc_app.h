@@ -143,6 +143,14 @@ struct ddr_dimm1 {
 	struct i2c_info Therm;
 };
 
+/*
+ * GPIO line-number, sc_app-display-name pairs
+ */
+struct Gpio_line_name {
+	const char *Name;
+	int Line;
+};
+
 #define I2C_READ(FD, Address, Len, Out, In) \
 { \
 	struct i2c_msg Msgs[2]; \

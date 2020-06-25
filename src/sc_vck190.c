@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #include "sc_app.h"
@@ -732,3 +733,49 @@ struct ddr_dimm1 Dimm1 = {
 	.Spd   = { .Bus_addr = 0x50, .Reg_addr = 0, .Read_len = 16 },
 	.Therm = { .Bus_addr = 0x18, .Reg_addr = 5, .Read_len = 2 }
 };
+
+/*
+ * We are using spaces in .Name to be consistent with 'getclock' code.
+ * Using spaces or tabs as a part of an option argument is problematic,
+ * because they have special meaning for every Linux shell.
+ * A better way is to split the name in to bank and gpio_label, print
+ * both and accept both forms "xxx - gpio_label" and gpio_label.
+ * Use Plat_Gpio_match() to accept both forms knowing that
+ * that the gpio_label starts at .Name[6]
+ */
+#define GPIO_LN(Num, name) { .Line = Num, .Name = name }
+const struct Gpio_line_name Gpio_target[] = {
+	GPIO_LN(12, "500 - SYSCTLR_PB"),
+	GPIO_LN(11, "500 - PMC_MIO37_501_ZU4_TRIGGER"),
+	GPIO_LN(10, "500 - DC_SYS_CTRL3"),
+	GPIO_LN(9, "500 - DC_SYS_CTRL2"),
+	GPIO_LN(8, "500 - DC_SYS_CTRL1"),
+	GPIO_LN(7, "500 - DC_SYS_CTRL0"),
+	GPIO_LN(51, "501 - SYSCTLR_SD1_CLK"),
+	GPIO_LN(50, "501 - SYSCTLR_SD1_CMD"),
+	GPIO_LN(49, "501 - SYSCTLR_SD1_DATA3"),
+	GPIO_LN(48, "501 - SYSCTLR_SD1_DATA2"),
+	GPIO_LN(47, "501 - SYSCTLR_SD1_DATA1"),
+	GPIO_LN(46, "501 - SYSCTLR_SD1_DATA0"),
+	GPIO_LN(45, "501 - SYSCTLR_SD1_CD_B"),
+	GPIO_LN(42, "501 - SYSCTLR_ETH_RESET_B_R"),
+	GPIO_LN(39, "501 - SYSCTLR_UART0_TXD_OUT"),
+	GPIO_LN(38, "501 - SYSCTLR_UART0_RXD_IN"),
+	GPIO_LN(37, "501 - LP_I2C1_SDA"),
+	GPIO_LN(36, "501 - LP_I2C1_SCL"),
+	GPIO_LN(35, "501 - LP_I2C0_PMC_SDA"),
+	GPIO_LN(34, "501 - LP_I2C0_PMC_SCL"),
+	GPIO_LN(77, "502 - SYSCTLR_ETH_MDIO"),
+	GPIO_LN(76, "502 - SYSCTLR_ETH_MDC")
+};
+
+int Plat_Gpio_match(int Idx, char *Target)
+{
+	return !strncmp(Gpio_target[Idx].Name, Target, STRLEN_MAX) ||
+		!strncmp(&Gpio_target[Idx].Name[6], Target, STRLEN_MAX);
+}
+
+int Plat_Gpio_target_size(void)
+{
+	return sizeof(Gpio_target) / sizeof(Gpio_target[0]);
+}

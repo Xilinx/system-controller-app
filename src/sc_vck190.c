@@ -624,25 +624,38 @@ Plat_Version_Ops(int *Major, int *Minor)
 int
 Plat_Reset_Ops(void)
 {
+	FILE *FP;
 	int State;
-	char System_Cmd[SYSCMD_MAX];
+	char Buffer[SYSCMD_MAX];
 
-	// Turn VCCINT_RAM off
-	State = 0;
-	if (Workaround_Vccaux(&State) != 0) {
-		printf("ERROR: failed to turn VCCINT_RAM off\n");
-		return -1;
+	if (access(SILICONFILE, F_OK) == 0) {
+		FP = fopen(SILICONFILE, "r");
+		if (FP == NULL) {
+			printf("ERROR: failed to read silicon file\n");
+			return -1;
+		}
+
+		(void) fgets(Buffer, SYSCMD_MAX, FP);
+		fclose(FP);
+		if (strcmp(Buffer, "ES1\n") == 0) {
+			// Turn VCCINT_RAM off
+			State = 0;
+			if (Workaround_Vccaux(&State) != 0) {
+				printf("ERROR: failed to turn VCCINT_RAM off\n");
+				return -1;
+			}
+		}
 	}
 
 	// Assert POR
-	sprintf(System_Cmd, "gpioset gpiochip0 82=0");
-	system(System_Cmd);
+	sprintf(Buffer, "gpioset gpiochip0 82=0");
+	system(Buffer);
 
 	sleep(1);
 
 	// De-assert POR
-	sprintf(System_Cmd, "gpioset gpiochip0 82=1");
-	system(System_Cmd);
+	sprintf(Buffer, "gpioset gpiochip0 82=1");
+	system(Buffer);
 
 	return 0;
 }

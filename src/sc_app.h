@@ -10,6 +10,9 @@
 #define SYSCMD_MAX	1024
 #define MUX_MAX		4
 
+#define APPDIR          "/home/root/.sc_app"
+#define SILICONFILE     APPDIR"/silicon"
+
 /*
  * I2C Buses
  */

@@ -746,7 +746,6 @@ struct ddr_dimm1 Dimm1 = {
 #define GPIO_LN(Num, name) { .Line = Num, .Name = name }
 const struct Gpio_line_name Gpio_target[] = {
 	GPIO_LN(12, "500 - SYSCTLR_PB"),
-	GPIO_LN(11, "500 - PMC_MIO37_501_ZU4_TRIGGER"),
 	GPIO_LN(10, "500 - DC_SYS_CTRL3"),
 	GPIO_LN(9, "500 - DC_SYS_CTRL2"),
 	GPIO_LN(8, "500 - DC_SYS_CTRL1"),

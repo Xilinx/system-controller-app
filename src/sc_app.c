@@ -889,7 +889,7 @@ static void Gpio_get1(const struct Gpio_line_name *p)
 	char Cmd[STRLEN_MAX];
 
 	sprintf(Cmd, "gpioget gpiochip0 %d", p->Line);
-	printf("%s (line %2d): ", p->Name, p->Line);
+	printf("%s (line %2d):\t", p->Name, p->Line);
 	fflush(NULL);
 	system(Cmd);
 }
@@ -927,8 +927,9 @@ void Gpio_list(void)
 {
 	int i, Total = Plat_Gpio_target_size();
 
-	for (i = 0; i < Total; i++)
+	for (i = 0; i < Total; i++) {
 		puts(Gpio_target[i].Name);
+	}
 }
 
 /*
@@ -937,9 +938,10 @@ void Gpio_list(void)
  */
 int GPIO_Ops(void)
 {
-	if (Command.CmdId == LISTGPIO)
+	if (Command.CmdId == LISTGPIO) {
 		Gpio_list();
-	else
+	} else {
 		Gpio_get();
+	}
 	return 0;
 }

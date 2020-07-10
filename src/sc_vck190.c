@@ -8,6 +8,9 @@
 #include <linux/i2c-dev.h>
 #include "sc_app.h"
 
+#define BOARDNAME	"vck190"
+
+int Plat_Board_Name(char *Name);
 int Plat_Reset_Ops(void);
 int Workaround_Vccaux(void *Arg);
 
@@ -594,6 +597,18 @@ Workaround_Vccaux(void *Arg)
 		return -1;
 	}
 
+	return 0;
+}
+
+int
+Plat_Board_Name(char *Board_Name)
+{
+	if (Board_Name == NULL) {
+		printf("ERROR: need a pre-allocated string array\n");
+		return -1;
+	}
+
+	(void) strcpy(Board_Name, BOARDNAME);
 	return 0;
 }
 

@@ -546,8 +546,14 @@ int Voltage_Ops(void)
 int Power_Ops(void)
 {
 	int Target_Index = -1;
-	char Buffer[SYSCMD_MAX];
-	int fd, Value;
+	Ina226_t *Ina226;
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+	float Shunt_Voltage;
+	float Voltage;
+	float Current;
+	float Power;
 
 	if (Command.CmdId == LISTPOWER) {
 		for (int i = 0; i < Ina226s.Numbers; i++) {
@@ -565,6 +571,7 @@ int Power_Ops(void)
 	for (int i = 0; i < Ina226s.Numbers; i++) {
 		if (strcmp(Target_Arg, (char *)Ina226s.Ina226[i].Name) == 0) {
 			Target_Index = i;
+			Ina226 = &Ina226s.Ina226[Target_Index];
 			break;
 		}
 	}
@@ -576,57 +583,41 @@ int Power_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETPOWER:
-		/* Voltage */
-		sprintf(Buffer, "%s/in2_input", Ina226s.Ina226[Target_Index].Sysfs_Path);
-		fd = open(Buffer, O_RDONLY);
-		if (fd == -1) {
-			printf("ERROR: failed to get power\n");
+		FD = open(Ina226->I2C_Bus, O_RDWR);
+		if (FD < 0) {
+			printf("ERROR: unable to open INA226 sensor\n");
 			return -1;
 		}
 
-		if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
-			printf("ERROR: failed to get power\n");
-			return -1;
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x1;	// Shunt Voltage Register(01h)
+		I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
+		Shunt_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
+		/* Ignore negative reading */
+		if (Shunt_Voltage >= 0x8000) {
+			Shunt_Voltage = 0;
 		}
+		Shunt_Voltage *= 2.5;	// 2.5 μV per bit
+		Current = (Shunt_Voltage / (float)Ina226->Shunt_Resistor);
+		Current *= Ina226->Phase_Multiplier;
 
-		(void) close(fd);
-		Value = atoi(Buffer);
-		printf("Voltage(mV):\t%d\n", Value);
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x2;	// Bus Voltage Register(02h)
+		I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
+		Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
+		Voltage *= 1.25;	// 1.25 mV per bit
+		Voltage /= 1000;
 
-		/* Current */
-		sprintf(Buffer, "%s/curr1_input", Ina226s.Ina226[Target_Index].Sysfs_Path);
-		fd = open(Buffer, O_RDONLY);
-		if (fd == -1) {
-			printf("ERROR: failed to get power\n");
-			return -1;
-		}
+		Power = Current * Voltage;
+		printf("Voltage(V):\t%.4f\n", Voltage);
+		printf("Current(A):\t%.4f\n", Current);
+		printf("Power(W):\t%.4f\n", Power);
 
-		if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
-			printf("ERROR: failed to get power\n");
-			return -1;
-		}
-
-		(void) close(fd);
-		Value = atoi(Buffer);
-		printf("Current(mA):\t%d\n", Value);
-
-		/* Power */
-		sprintf(Buffer, "%s/power1_input", Ina226s.Ina226[Target_Index].Sysfs_Path);
-		fd = open(Buffer, O_RDONLY);
-		if (fd == -1) {
-			printf("ERROR: failed to get power\n");
-			return -1;
-		}
-
-		if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
-			printf("ERROR: failed to get power\n");
-			return -1;
-		}
-
-		(void) close(fd);
-		Value = atoi(Buffer);
-		printf("Power(mW):\t%d\n", (Value / 1000));
+		close(FD);
 		break;
+
 	default:
 		printf("ERROR: invalid power command\n");
 		break;

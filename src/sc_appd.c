@@ -44,7 +44,7 @@ int (*Workaround_Op)(void *);
 extern int Plat_Board_Name(char *);
 extern int Plat_Reset_Ops(void);
 
-#define RECORD_SILICON(Version) \
+#define SILICON_ES1 \
 { \
 	if (access(SILICONFILE, F_OK) == -1) { \
 		FILE *FP; \
@@ -52,12 +52,30 @@ extern int Plat_Reset_Ops(void);
 		if (FP == NULL) { \
 			printf("ERROR: failed to write silicon file\n"); \
 		} else { \
-			(void) fputs((Version), FP); \
+			(void) fputs("ES1\n", FP); \
 		} \
 		fclose(FP); \
 	} \
 }
 
+#define IS_SILICON_ES1(Yes) \
+{ \
+	(Yes) = 0; \
+	if (access(SILICONFILE, F_OK) == 0) { \
+		FILE *FP; \
+		char Buffer[STRLEN_MAX]; \
+		FP = fopen(SILICONFILE, "r"); \
+		if (FP == NULL) { \
+			printf("ERROR: failed to read silicon file\n"); \
+		} else { \
+			(void) fgets(Buffer, sizeof (Buffer), FP); \
+			fclose(FP); \
+			if (strcmp("ES1\n", Buffer) == 0) { \
+				(Yes) = 1; \
+			} \
+		} \
+	} \
+}
 
 /*
  * The real timer signal handler.
@@ -85,7 +103,7 @@ Timer_Handler(int Signal, siginfo_t *Signal_Info, void *Arg)
 			printf("ERROR: failed to set the timer\n");
 		}
 
-		RECORD_SILICON("ES1\n");
+		SILICON_ES1;
 		(void)(*Workaround_Op)(&GPIO_State);
 		return;
 	}
@@ -148,6 +166,7 @@ int
 VCK190_GPIO(void)
 {
 	FILE *FP;
+	int ES1;
 	char Buffer[SYSCMD_MAX];
 	char Config_Token[STRLEN_MAX];
 	struct sigaction Sig_Action;
@@ -256,6 +275,23 @@ VCK190_GPIO(void)
 		return -1;
 	}
 
+	/*
+	 * If we are late for the party and Versal has already asserted
+	 * GPIO line high and it is waiting for the workaround, apply it.
+	 */
+	IS_SILICON_ES1(ES1);
+	if (ES1 == 1) {
+		GPIO_State = gpiod_line_get_value(GPIO_Line);
+		if (GPIO_State == -1) {
+			printf("ERROR: failed to get current state of gpio line\n");
+			return -1;
+		}
+
+		if (GPIO_State == 1) {
+			(void)(*Workaround_Op)(&GPIO_State);
+		}
+	}
+
 	while (1) {
 		/* GPIO line 11 is connected to PMC MIO37 */
 		GPIO_State = Monitor_GPIO(GPIO_Line);
@@ -307,7 +343,7 @@ VCK190_GPIO(void)
 			break;
 
 		case Workaround:
-			RECORD_SILICON("ES1\n");
+			SILICON_ES1;
 			(void)(*Workaround_Op)(&GPIO_State);
 			break;
 
@@ -348,7 +384,7 @@ VCK190_Version(void)
 	 * margin to be safe.
 	 */
 	if (Voltage < (0.78f - 0.04f)) {
-		RECORD_SILICON("ES1\n");
+		SILICON_ES1;
 	}
 
 	return 0;

@@ -22,6 +22,8 @@
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"v2020.2"
 
+
+
 extern I2C_Buses_t I2C_Buses;
 extern BootModes_t BootModes;
 extern Clocks_t Clocks;

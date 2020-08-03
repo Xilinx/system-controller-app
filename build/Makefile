@@ -3,6 +3,7 @@ BIT	:= BIT
 APP	= sc_app
 APPD	= sc_appd
 CFLAGS	= -I../src
+LDFLAGS ?= -L../src
 SRCDIR	= ../src
 APP_OBJS	= $(APP).o sc_$(PLAT).o sc_$(BIT).o
 APPD_OBJS	= $(APPD).o sc_$(PLAT).o
@@ -14,10 +15,10 @@ all: $(APP) $(APPD)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(APP): $(APP_OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) -lm $(LDFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm
 
 $(APPD): $(APPD_OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) -lrt $(LDFLAGS) -lgpiod
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lrt -lgpiod
 
 clean:
 	rm -f $(APP) $(APPD) *.o

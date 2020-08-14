@@ -86,6 +86,20 @@ typedef struct Ina226s {
 } Ina226s_t;
 
 /*
+ * Power Domains
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	int	Rails[ITEMS_MAX];
+	int	Numbers;
+} Power_Domain_t;
+
+typedef struct Power_Domains {
+	int	Numbers;
+	Power_Domain_t	Power_Domain[ITEMS_MAX];
+} Power_Domains_t;
+
+/*
  * Voltages
  */
 typedef struct {

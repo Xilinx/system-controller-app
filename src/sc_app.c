@@ -14,9 +14,10 @@
  * 1.1 - Support for reading VOUT from voltage regulators.
  * 1.2 - Support for reading DIMM's SPD EEPROM and temperature sensor.
  * 1.3 - Support for reading gpio lines.
+ * 1.4 - Support for getting total power of different power domains.
  */
 #define MAJOR	1
-#define MINOR	3
+#define MINOR	4
 
 #define LOCKFILE	"/tmp/.sc_app_lock"
 #define LINUX_VERSION	"5.4.0"
@@ -28,6 +29,7 @@ extern I2C_Buses_t I2C_Buses;
 extern BootModes_t BootModes;
 extern Clocks_t Clocks;
 extern Ina226s_t Ina226s;
+extern Power_Domains_t Power_Domains;
 extern Voltages_t Voltages;
 extern Workarounds_t Workarounds;
 extern BITs_t BITs;
@@ -42,6 +44,7 @@ int BootMode_Ops(void);
 int Clock_Ops(void);
 int Voltage_Ops(void);
 int Power_Ops(void);
+int Power_Domain_Ops(void);
 int Workaround_Ops(void);
 int BIT_Ops(void);
 int DDR_Ops(void);
@@ -68,6 +71,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	getvoltage - get the voltage of <target>\n\
 	listpower - lists the supported power targets\n\
 	getpower - get the voltage, current, and power of <target>\n\
+	listpowerdomain - lists the supported power domain targets\n\
+	powerdomain - get the power used by <target> power domain\n\
 	listworkaround - lists the applicable workaround targets\n\
 	workaround - apply <target> workaround (may requires <value>)\n\
 	listBIT - lists the supported Board Interface Test targets\n\
@@ -91,6 +96,8 @@ typedef enum {
 	GETVOLTAGE,
 	LISTPOWER,
 	GETPOWER,
+	LISTPOWERDOMAIN,
+	POWERDOMAIN,
 	LISTWORKAROUND,
 	WORKAROUND,
 	LISTBIT,
@@ -121,6 +128,8 @@ static Command_t Commands[] = {
 	{ .CmdId = GETVOLTAGE, .CmdStr = "getvoltage", .CmdOps = Voltage_Ops, },
 	{ .CmdId = LISTPOWER, .CmdStr = "listpower", .CmdOps = Power_Ops, },
 	{ .CmdId = GETPOWER, .CmdStr = "getpower", .CmdOps = Power_Ops, },
+	{ .CmdId = LISTPOWERDOMAIN, .CmdStr = "listpowerdomain", .CmdOps = Power_Domain_Ops, },
+	{ .CmdId = POWERDOMAIN, .CmdStr = "powerdomain", .CmdOps = Power_Domain_Ops, },
 	{ .CmdId = LISTWORKAROUND, .CmdStr = "listworkaround", .CmdOps = Workaround_Ops, },
 	{ .CmdId = WORKAROUND, .CmdStr = "workaround", .CmdOps = Workaround_Ops, },
 	{ .CmdId = LISTBIT, .CmdStr = "listBIT", .CmdOps = BIT_Ops, },
@@ -542,6 +551,45 @@ int Voltage_Ops(void)
 	return 0;
 }
 
+int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
+{
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+	float Shunt_Voltage;
+
+	FD = open(Ina226->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open INA226 sensor\n");
+		return -1;
+	}
+
+	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x1;	// Shunt Voltage Register(01h)
+	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
+	Shunt_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
+	/* Ignore negative reading */
+	if (Shunt_Voltage >= 0x8000) {
+		Shunt_Voltage = 0;
+	}
+	Shunt_Voltage *= 2.5;	// 2.5 μV per bit
+	*Current = (Shunt_Voltage / (float)Ina226->Shunt_Resistor);
+	*Current *= Ina226->Phase_Multiplier;
+
+	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x2;	// Bus Voltage Register(02h)
+	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
+	*Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
+	*Voltage *= 1.25;	// 1.25 mV per bit
+	*Voltage /= 1000;
+
+	*Power = *Current * (*Voltage);
+	(void) close(FD);
+	return 0;
+}
+
 /*
  * Power Operations
  */
@@ -549,10 +597,6 @@ int Power_Ops(void)
 {
 	int Target_Index = -1;
 	Ina226_t *Ina226;
-	int FD;
-	char In_Buffer[STRLEN_MAX];
-	char Out_Buffer[STRLEN_MAX];
-	float Shunt_Voltage;
 	float Voltage;
 	float Current;
 	float Power;
@@ -585,43 +629,80 @@ int Power_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETPOWER:
-		FD = open(Ina226->I2C_Bus, O_RDWR);
-		if (FD < 0) {
-			printf("ERROR: unable to open INA226 sensor\n");
+		if (Read_Sensor(Ina226, &Voltage, &Current, &Power) == -1) {
+			printf("ERROR: failed to get power\n");
 			return -1;
 		}
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x1;	// Shunt Voltage Register(01h)
-		I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
-		Shunt_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
-		/* Ignore negative reading */
-		if (Shunt_Voltage >= 0x8000) {
-			Shunt_Voltage = 0;
-		}
-		Shunt_Voltage *= 2.5;	// 2.5 μV per bit
-		Current = (Shunt_Voltage / (float)Ina226->Shunt_Resistor);
-		Current *= Ina226->Phase_Multiplier;
-
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x2;	// Bus Voltage Register(02h)
-		I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
-		Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
-		Voltage *= 1.25;	// 1.25 mV per bit
-		Voltage /= 1000;
-
-		Power = Current * Voltage;
 		printf("Voltage(V):\t%.4f\n", Voltage);
 		printf("Current(A):\t%.4f\n", Current);
 		printf("Power(W):\t%.4f\n", Power);
-
-		close(FD);
 		break;
 
 	default:
 		printf("ERROR: invalid power command\n");
+		break;
+	}
+
+	return 0;
+}
+
+/*
+ * Power Domain Operations
+ */
+int Power_Domain_Ops(void)
+{
+	int Target_Index = -1;
+	Power_Domain_t *Power_Domain;
+	Ina226_t *Ina226;
+	float Voltage;
+	float Current;
+	float Power;
+	float Total_Power = 0;
+
+	if (Command.CmdId == LISTPOWERDOMAIN) {
+		for (int i = 0; i < Power_Domains.Numbers; i++) {
+			printf("%s\n", Power_Domains.Power_Domain[i].Name);
+		}
+		return 0;
+	}
+
+	/* Validate the power domain target */
+	if (T_Flag == 0) {
+		printf("ERROR: no power domain target\n");
+		return -1;
+	}
+
+	for (int i = 0; i < Power_Domains.Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)Power_Domains.Power_Domain[i].Name) == 0) {
+			Target_Index = i;
+			Power_Domain = &Power_Domains.Power_Domain[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: invalid power domain target\n");
+		return -1;
+	}
+
+	switch (Command.CmdId) {
+	case POWERDOMAIN:
+		for (int i = 0; i < Power_Domain->Numbers; i++) {
+			Ina226 = &Ina226s.Ina226[Power_Domain->Rails[i]];
+			if (Read_Sensor(Ina226, &Voltage, &Current, &Power) == -1) {
+				printf("ERROR: failed to get total power\n");
+				return -1;
+			}
+
+			Total_Power += Power;
+		}
+
+		printf("Power(W):\t%.4f\n", Total_Power);
+		break;
+
+	default:
+		printf("ERROR: invalid power domain command\n");
 		break;
 	}
 

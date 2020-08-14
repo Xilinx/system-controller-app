@@ -18,6 +18,8 @@
 		getvoltage - get the voltage of <target>
 		listpower - lists the supported power targets
 		getpower - get the voltage, current, and power of <target>
+		listpowerdomain - lists the supported power domain targets
+		powerdomain - get the power used by <target> power domain
 		listworkaround - lists the applicable workaround targets
 		workaround - apply <target> workaround (may requires <value>)
 		listBIT - lists the supported Board Interface Test targets

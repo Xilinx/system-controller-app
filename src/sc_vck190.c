@@ -354,6 +354,91 @@ Ina226s_t Ina226s = {
 };
 
 /*
+ * Power Domains
+ */
+typedef enum {
+	PD_FPD,
+	PD_LPD,
+	PD_PLD,
+	PD_PMC,
+	PD_GTY,
+	PD_FMC,
+	PD_SYSTEM,
+	PD_CHIP,
+	PD_MAX,
+} Power_Domain_Index;
+
+Power_Domains_t Power_Domains = {
+	.Numbers = PD_MAX,
+	.Power_Domain[PD_FPD] = {
+		.Name = "FPD",
+		.Rails = { INA226_VCCINT_PSFP },
+		.Numbers = 1,
+	},
+	.Power_Domain[PD_LPD] = {
+		.Name = "LPD",
+		.Rails = { INA226_VCCINT_PSLP },
+		.Numbers = 1,
+	},
+	.Power_Domain[PD_PLD] = {
+		.Name = "PLD",
+		.Rails = { INA226_VCCINT,
+			   INA226_VCC1V8,
+			   INA226_VCC3V3,
+			   INA226_VCC1V2_DDR4,
+			   INA226_VCC1V1_LP4 },
+		.Numbers = 5,
+	},
+	.Power_Domain[PD_PMC] = {
+		.Name = "PMC",
+		.Rails = { INA226_VCC_PMC,
+			   INA226_VCC_MIO,
+			   INA226_VCCAUX_PMC },
+		.Numbers = 3,
+	},
+	.Power_Domain[PD_GTY] = {
+		.Name = "GTY",
+		.Rails = { INA226_MGTYAVCC,
+			   INA226_MGTYAVTT,
+			   INA226_MGTYVCCAUX },
+		.Numbers = 3,
+	},
+	.Power_Domain[PD_FMC] = {
+		.Name = "FMC",
+		.Rails = { INA226_VADJ_FMC },
+		.Numbers = 1,
+	},
+	.Power_Domain[PD_SYSTEM] = {
+		.Name = "system",
+		.Rails = { INA226_VCC_SOC,
+			   INA226_VCCINT_RAM,
+			   INA226_VCCAUX },
+		.Numbers = 3,
+	},
+	.Power_Domain[PD_CHIP] = {
+		.Name = "chip",
+		.Rails = { INA226_VCCINT,
+			   INA226_VCC_SOC,
+			   INA226_VCC_PMC,
+			   INA226_VCCINT_RAM,
+			   INA226_VCCINT_PSLP,
+			   INA226_VCCINT_PSFP,
+			   INA226_VCCAUX,
+			   INA226_VCCAUX_PMC,
+			   INA226_VCC_MIO,
+			   INA226_VCC1V8,
+			   INA226_VCC3V3,
+			   INA226_VCC1V2_DDR4,
+			   INA226_VCC1V1_LP4,
+			   INA226_VADJ_FMC,
+			   INA226_MGTYAVCC,
+			   INA226_MGTYAVTT,
+			   INA226_MGTYVCCAUX },
+		.Numbers = INA226_MAX,
+	},
+};
+
+/*
  * Voltages - power rails
  */
 typedef enum {

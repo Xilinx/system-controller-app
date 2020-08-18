@@ -386,8 +386,10 @@ Power_Domains_t Power_Domains = {
 			   INA226_VCC1V8,
 			   INA226_VCC3V3,
 			   INA226_VCC1V2_DDR4,
-			   INA226_VCC1V1_LP4 },
-		.Numbers = 5,
+			   INA226_VCC1V1_LP4,
+			   INA226_VCCINT_RAM,
+			   INA226_VCCAUX },
+		.Numbers = 7,
 	},
 	.Power_Domain[PD_PMC] = {
 		.Name = "PMC",
@@ -410,10 +412,8 @@ Power_Domains_t Power_Domains = {
 	},
 	.Power_Domain[PD_SYSTEM] = {
 		.Name = "system",
-		.Rails = { INA226_VCC_SOC,
-			   INA226_VCCINT_RAM,
-			   INA226_VCCAUX },
-		.Numbers = 3,
+		.Rails = { INA226_VCC_SOC },
+		.Numbers = 1,
 	},
 	.Power_Domain[PD_CHIP] = {
 		.Name = "chip",

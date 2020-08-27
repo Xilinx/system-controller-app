@@ -15,9 +15,10 @@
  * 1.2 - Support for reading DIMM's SPD EEPROM and temperature sensor.
  * 1.3 - Support for reading gpio lines.
  * 1.4 - Support for getting total power of different power domains.
+ * 1.5 - Support for IO expander.
  */
 #define MAJOR	1
-#define MINOR	4
+#define MINOR	5
 
 #define LOCKFILE	"/tmp/.sc_app_lock"
 #define LINUX_VERSION	"5.4.0"
@@ -35,6 +36,7 @@ extern Workarounds_t Workarounds;
 extern BITs_t BITs;
 extern struct ddr_dimm1 Dimm1;
 extern struct Gpio_line_name Gpio_target[];
+extern IO_Exp_t IO_Exp;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -49,6 +51,7 @@ int Workaround_Ops(void);
 int BIT_Ops(void);
 int DDR_Ops(void);
 int GPIO_Ops(void);
+int IO_Exp_Ops(void);
 extern int Plat_Gpio_target_size(void);
 extern int Plat_Gpio_match(int, char *);
 extern int Plat_Version_Ops(int *Major, int *Minor);
@@ -80,6 +83,9 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'\n\
 	listgpio - lists the supported gpio lines\n\
 	getgpio - get the state of <target> gpio\n\
+	getioexp - get IO expander <target> of either 'all', 'input', or 'output'\n\
+	setioexp - set IO expander <target> of either 'direction' or 'output' to 'value'\n\
+	restoreioexp - restore IO expander to default values\n\
 ";
 
 typedef enum {
@@ -105,6 +111,9 @@ typedef enum {
 	DDR,
 	LISTGPIO,
 	GETGPIO,
+	GETIOEXP,
+	SETIOEXP,
+	RESTOREIOEXP,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -137,6 +146,9 @@ static Command_t Commands[] = {
 	{ .CmdId = DDR, .CmdStr = "ddr", .CmdOps = DDR_Ops, },
 	{ .CmdId = LISTGPIO, .CmdStr = "listgpio", .CmdOps = GPIO_Ops, },
 	{ .CmdId = GETGPIO, .CmdStr = "getgpio", .CmdOps = GPIO_Ops, },
+	{ .CmdId = GETIOEXP, .CmdStr = "getioexp", .CmdOps = IO_Exp_Ops, },
+	{ .CmdId = SETIOEXP, .CmdStr = "setioexp", .CmdOps = IO_Exp_Ops, },
+	{ .CmdId = RESTOREIOEXP, .CmdStr = "restoreioexp", .CmdOps = IO_Exp_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -1017,5 +1029,200 @@ int GPIO_Ops(void)
 	} else {
 		Gpio_get();
 	}
+	return 0;
+}
+
+/*
+ * Routine to access IO expander chip.
+ *
+ * Input -
+ *	IO_Exp:	Pointer to IO expander structure.
+ *	Op:	0 for read operation, 1 for write operation.
+ *	Offset:	0x2 output register offset, 0x6 direction register offset.
+ *	*Out:	Pointer to output value to be written to device.
+ * Output -
+ *	*In:	Pointer to input value read from the device.
+ */
+int Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
+    unsigned int *In)
+{
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+
+	FD = open(IO_Exp->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open IO expander\n");
+		return -1;
+	}
+
+	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	if (Op == 0) {
+		Out_Buffer[0] = Offset;
+		I2C_READ(FD, IO_Exp->I2C_Address, 2, Out_Buffer, In_Buffer);
+		*In = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	} else if (Op == 1) {
+		Out_Buffer[0] = Offset;
+		Out_Buffer[1] = ((*Out >> 8) & 0xFF);
+		Out_Buffer[2] = (*Out & 0xFF);
+		I2C_WRITE(FD, IO_Exp->I2C_Address, 3, Out_Buffer);
+
+	} else {
+		printf("ERROR: invalid access operation\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+	return 0;
+}
+
+/*
+ * IO Expander Operations
+ */
+int IO_Exp_Ops(void)
+{
+	unsigned long int Value;
+
+	if (strcmp(IO_Exp.Name, "TCA6416A") != 0) {
+		printf("ERROR: unsupported IO expander chip\n");
+		return -1;
+	}
+
+	switch (Command.CmdId) {
+	case GETIOEXP:
+		/* A target argument is required */
+		if (T_Flag == 0) {
+			printf("ERROR: no IO expander target\n");
+			return -1;
+		}
+
+		if (strcmp(Target_Arg, "all") == 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x0, NULL,
+			    (unsigned int *)&Value) != 0) {
+				printf("ERROR: failed to read input\n");
+				return -1;
+			}
+
+			printf("Input GPIO:\t0x%x\n", Value);
+
+			if (Access_IO_Exp(&IO_Exp, 0, 0x2, NULL,
+			    (unsigned int *)&Value) != 0) {
+				printf("ERROR: failed to read output\n");
+				return -1;
+			}
+
+			printf("Output GPIO:\t0x%x\n", Value);
+
+			if (Access_IO_Exp(&IO_Exp, 0, 0x6, NULL,
+			    (unsigned int *)&Value) != 0) {
+				printf("ERROR: failed to read direction\n");
+				return -1;
+			}
+
+			printf("Direction:\t0x%x\n", Value);
+
+		} else if (strcmp(Target_Arg, "input") == 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x0, NULL,
+			    (unsigned int *)&Value) != 0) {
+				printf("ERROR: failed to read input\n");
+				return -1;
+			}
+
+			for (int i = 0; i < IO_Exp.Numbers; i++) {
+				if (IO_Exp.Directions[i] == 1) {
+					printf("%s:\t%d\n", IO_Exp.Labels[i],
+					    ((Value >> (IO_Exp.Numbers - i - 1)) & 1));
+				}
+			}
+
+		} else if (strcmp(Target_Arg, "output") == 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x2, NULL,
+			    (unsigned int *)&Value) != 0) {
+				printf("ERROR: failed to read output\n");
+				return -1;
+			}
+
+			for (int i = 0; i < IO_Exp.Numbers; i++) {
+				if (IO_Exp.Directions[i] == 0) {
+					printf("%s:\t%d\n", IO_Exp.Labels[i],
+					    ((Value >> (IO_Exp.Numbers - i - 1)) & 1));
+				}
+			}
+
+		} else {
+			printf("ERROR: invalid getioexp target\n");
+			return -1;
+		}
+
+		break;
+
+	case SETIOEXP:
+		/* A target argument is required */
+		if (T_Flag == 0) {
+			printf("ERROR: no IO expander target\n");
+			return -1;
+		}
+
+		/* Validate the value argument */
+		if (V_Flag == 0) {
+			printf("ERROR: no IO expander value\n");
+			return -1;
+		}
+
+		Value = strtol(Value_Arg, NULL, 16);
+		if (strcmp(Target_Arg, "direction") == 0) {
+			if (Access_IO_Exp(&IO_Exp, 1, 0x6, (unsigned int *)&Value,
+			    NULL) != 0) {
+				printf("ERROR: failed to set direction\n");
+				return -1;
+			}
+
+		} else if (strcmp(Target_Arg, "output") == 0) {
+			if (Access_IO_Exp(&IO_Exp, 1, 0x2, (unsigned int *)&Value,
+			    NULL) != 0) {
+				printf("ERROR: failed to set output\n");
+				return -1;
+			}
+
+		} else {
+			printf("ERROR: invalid setioexp target\n");
+			return -1;
+		}
+
+		break;
+
+	case RESTOREIOEXP:
+		Value = 0;
+		for (int i = 0; i < IO_Exp.Numbers; i++) {
+			Value <<= 1;
+			if ((IO_Exp.Directions[i] == 1) ||
+			   (IO_Exp.Directions[i] == -1)) {
+				Value |= 1;
+			}
+		}
+
+		if (Access_IO_Exp(&IO_Exp, 1, 0x6, (unsigned int *)&Value,
+		    NULL) != 0) {
+			printf("ERROR: failed to set direction\n");
+			return -1;
+		}
+
+		Value = ~Value;
+		if (Access_IO_Exp(&IO_Exp, 1, 0x2, (unsigned int *)&Value,
+		    NULL) != 0) {
+			printf("ERROR: failed to set output\n");
+			return -1;
+		}
+
+		break;
+
+	default:
+		printf("ERROR: invalid IO expander command\n");
+		return -1;
+	}
+
 	return 0;
 }

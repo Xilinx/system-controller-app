@@ -5,7 +5,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
-#define STRLEN_MAX	32
+#define STRLEN_MAX	64
 #define ITEMS_MAX	20
 #define SYSCMD_MAX	1024
 #define MUX_MAX		4
@@ -117,6 +117,18 @@ typedef struct Voltages {
 	int	Numbers;
 	Voltage_t	Voltage[ITEMS_MAX];
 } Voltages_t;
+
+/*
+ * IO Expander
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	int	Numbers;
+	char	Labels[ITEMS_MAX][STRLEN_MAX];
+	unsigned int	Directions[ITEMS_MAX];
+	char	I2C_Bus[STRLEN_MAX];
+	int	I2C_Address;
+} IO_Exp_t;
 
 /*
  * Workarounds

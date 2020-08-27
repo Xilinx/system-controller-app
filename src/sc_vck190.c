@@ -612,6 +612,34 @@ Voltages_t Voltages = {
 };
 
 /*
+ * IO Expander
+ */
+IO_Exp_t IO_Exp = {
+	.Name = "TCA6416A",
+	.Numbers = 16,
+	.Labels = { "Port 0(7) - MAX6643 FULLSPD",
+		    "Port 0(6) - N.C.",
+		    "Port 0(5) - N.C.",
+		    "Port 0(4) - PMBUS2 INA226 ALERT",
+		    "Port 0(3) - N.C.",
+		    "Port 0(2) - N.C.",
+		    "Port 0(1) - MAX6643 Fan Fail (AL)",
+		    "Port 0(0) - MAX6643 Fan Over Temp (AL)",
+		    "Port 1(7) - PMBUS1 INA226 Alert (AL)",
+		    "Port 1(6) - PMBUS Alert (AL)",
+		    "Port 1(5) - 8A34001_EXP_RST_B (AL)",
+		    "Port 1(4) - VCCINT VRHOT B (AL)",
+		    "Port 1(3) - FMCP2 FMCP PRSNT M2C B (AL)",
+		    "Port 1(2) - FMCP1 FMCP PRSNT M2C B (AL)",
+		    "Port 1(1) - FMCP2 FMC PRSNT M2C B (AL)",
+		    "Port 1(0) - FMCP1 FMC PRSNT M2C B (AL)" },
+	.Directions = { 1, -1, -1, 1, -1, -1, 1, 1,
+			1, 1, 0, 1, 1, 1, 1, 1 },
+	.I2C_Bus = "/dev/i2c-1",
+	.I2C_Address = 0x20,
+};
+
+/*
  * Workarounds
  */
 typedef enum {

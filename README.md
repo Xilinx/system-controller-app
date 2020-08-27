@@ -27,3 +27,6 @@
 		ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'
 		listgpio - lists the supported gpio lines
 		getgpio - get the state of <target> gpio
+		getioexp - get IO expander <target> of either 'all', 'input', or 'output'
+		setioexp - set IO expander <target> of either 'direction' or 'output' to 'value'
+		restoreioexp - restore IO expander to default values

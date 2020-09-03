@@ -640,6 +640,15 @@ IO_Exp_t IO_Exp = {
 };
 
 /*
+ * Daughter Card
+ */
+Daughter_Card_t Daughter_Card = {
+	.Name = "EBM",
+	.I2C_Bus = "/dev/i2c-11",
+	.I2C_Address = 0x52,
+};
+
+/*
  * Workarounds
  */
 typedef enum {

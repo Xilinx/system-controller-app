@@ -131,6 +131,15 @@ typedef struct {
 } IO_Exp_t;
 
 /*
+ * Daughter Card
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	char	I2C_Bus[STRLEN_MAX];
+	int	I2C_Address;
+} Daughter_Card_t;
+
+/*
  * Workarounds
  */
 typedef struct {

@@ -12,8 +12,10 @@
 #define BIT_PATH	"/usr/share/system-controller-app/BIT/"
 
 extern Clocks_t Clocks;
+extern Daughter_Card_t Daughter_Card;
 int Clocks_Check(void *);
 int XSDB_Command(void *);
+int EBM_EEPROM_Check(void *);
 
 /*
  * BITs
@@ -21,6 +23,7 @@ int XSDB_Command(void *);
 typedef enum {
 	BIT_CLOCKS_CHECK,
 	BIT_IDCODE_CHECK,
+	BIT_EBM_EEPROM_CHECK,
 	BIT_MAX,
 } BIT_Index;
 
@@ -34,6 +37,10 @@ BITs_t BITs = {
 		.Name = "XCVC1902 IDCODE Check",
 		.TCL_File = "idcode/xcvc1902_idcode_check.tcl",
 		.Plat_BIT_Op = XSDB_Command,
+	},
+	.BIT[BIT_EBM_EEPROM_CHECK] = {
+		.Name = "EBM EEPROM Check",
+		.Plat_BIT_Op = EBM_EEPROM_Check,
 	},
 };
 
@@ -90,5 +97,33 @@ XSDB_Command(void *Arg)
 	    BIT_p->Name, ": \'", XSDB_CMD, BIT_PATH, BIT_p->TCL_File);
 	system(System_Cmd); 
 
+	return 0;
+}
+
+/*
+ * This routine checks whether EEPROM of EBM daughter card is accessible.
+ */
+int
+EBM_EEPROM_Check(void *Arg)
+{
+	BIT_t *BIT_p = Arg;
+	int FD;
+
+	FD = open(Daughter_Card.I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open I2C bus\n");
+		printf("%s: FAIL\n", BIT_p->Name);
+		return -1;
+	}
+
+	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card.I2C_Address) < 0) {
+		printf("ERROR: unable to access EEPROM device\n");
+		printf("%s: FAIL\n", BIT_p->Name);
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+	printf("%s: PASS\n", BIT_p->Name);
 	return 0;
 }

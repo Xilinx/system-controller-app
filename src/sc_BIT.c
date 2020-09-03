@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include "sc_app.h"
 
 #define XSDB_ENV	"export XILINX_VITIS=/usr/local/xilinx_vitis; \
@@ -13,9 +14,12 @@
 
 extern Clocks_t Clocks;
 extern Daughter_Card_t Daughter_Card;
+extern struct ddr_dimm1 Dimm1;
+
 int Clocks_Check(void *);
 int XSDB_Command(void *);
 int EBM_EEPROM_Check(void *);
+int DIMM_EEPROM_Check(void *);
 
 /*
  * BITs
@@ -24,6 +28,7 @@ typedef enum {
 	BIT_CLOCKS_CHECK,
 	BIT_IDCODE_CHECK,
 	BIT_EBM_EEPROM_CHECK,
+	BIT_DIMM_EEPROM_CHECK,
 	BIT_MAX,
 } BIT_Index;
 
@@ -41,6 +46,10 @@ BITs_t BITs = {
 	.BIT[BIT_EBM_EEPROM_CHECK] = {
 		.Name = "EBM EEPROM Check",
 		.Plat_BIT_Op = EBM_EEPROM_Check,
+	},
+	.BIT[BIT_DIMM_EEPROM_CHECK] = {
+		.Name = "DIMM EEPROM Check",
+		.Plat_BIT_Op = DIMM_EEPROM_Check,
 	},
 };
 
@@ -118,6 +127,48 @@ EBM_EEPROM_Check(void *Arg)
 
 	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card.I2C_Address) < 0) {
 		printf("ERROR: unable to access EEPROM device\n");
+		printf("%s: FAIL\n", BIT_p->Name);
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+	printf("%s: PASS\n", BIT_p->Name);
+	return 0;
+}
+
+/*
+ * This routine reads DRAM type from DIMM EEPROM to validate that
+ * it is accessible.
+ */
+int
+DIMM_EEPROM_Check(void *Arg)
+{
+	BIT_t *BIT_p = Arg;
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+
+	FD = open(Dimm1.I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open I2C bus\n");
+		printf("%s: FAIL\n", BIT_p->Name);
+		return -1;
+	}
+
+	if (ioctl(FD, I2C_SLAVE_FORCE, Dimm1.Spd.Bus_addr) < 0) {
+		printf("ERROR: unable to access EEPROM device\n");
+		printf("%s: FAIL\n", BIT_p->Name);
+		(void) close(FD);
+		return -1;
+	}
+
+	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x2;	// Byte 2: DRAM Device Type
+	I2C_READ(FD, Dimm1.Spd.Bus_addr, 1, Out_Buffer, In_Buffer);
+	if (In_Buffer[0] != 0xc) {
+		printf("ERROR: DIMM is not DDR4\n");
 		printf("%s: FAIL\n", BIT_p->Name);
 		(void) close(FD);
 		return -1;

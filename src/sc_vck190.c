@@ -674,6 +674,7 @@ Workaround_Vccaux(void *Arg)
 	// Select IRPS5401
 	if (ioctl(fd, I2C_SLAVE_FORCE, 0x47) < 0) {
 		printf("ERROR: unable to access IRPS5401 address\n");
+		(void) close(fd);
 		return -1;
 	}
 
@@ -682,6 +683,7 @@ Workaround_Vccaux(void *Arg)
 	WriteBuffer[1] = 0x03;
 	if (write(fd, WriteBuffer, 2) != 2) {
 		printf("ERROR: unable to select page for IRPS5401\n");
+		(void) close(fd);
 		return -1;
 	}
 
@@ -690,9 +692,11 @@ Workaround_Vccaux(void *Arg)
 	WriteBuffer[1] = (1 == *State) ? 0x80 : 0x00;
 	if (write(fd, WriteBuffer, 2) != 2) {
 		printf("ERROR: unable to change VOUT for IRPS5401\n");
+		(void) close(fd);
 		return -1;
 	}
 
+	(void) close(fd);
 	return 0;
 }
 
@@ -732,7 +736,7 @@ Plat_Reset_Ops(void)
 		}
 
 		(void) fgets(Buffer, SYSCMD_MAX, FP);
-		fclose(FP);
+		(void) fclose(FP);
 		if (strcmp(Buffer, "ES1\n") == 0) {
 			// Turn VCCINT_RAM off
 			State = 0;
@@ -782,6 +786,7 @@ Plat_EEPROM_Ops(void)
 	// Select M24128 EEPROM
 	if (ioctl(fd, I2C_SLAVE_FORCE, 0x54) < 0) {
 		printf("ERROR: unable to access M24128 EEPROM address\n");
+		(void) close(fd);
 		return -1;
 	}
 
@@ -789,13 +794,17 @@ Plat_EEPROM_Ops(void)
 	WriteBuffer[1] = 0x0;
 	if (write(fd, WriteBuffer, 2) != 2) {
 		printf("ERROR: unable to set address for M24128 EEPROM\n");
+		(void) close(fd);
 		return -1;
 	}
 
 	if (read(fd, ReadBuffer, 0xFF) != 0xFF) {
 		printf("ERROR: unable to read from M24128 EEPROM\n");
+		(void) close(fd);
 		return -1;
 	}
+
+	(void) close(fd);
 
 	// Language Code
 	printf("Language: %d\n", ReadBuffer[0xA]);
@@ -840,6 +849,8 @@ Plat_EEPROM_Ops(void)
 	printf("MAC Address 1: %x:%x:%x:%x:%x:%x\n", ReadBuffer[0x86],
 	    ReadBuffer[0x87], ReadBuffer[0x88], ReadBuffer[0x89],
 	    ReadBuffer[0x8A], ReadBuffer[0x8B]);
+
+	return 0;
 }
 
 /*

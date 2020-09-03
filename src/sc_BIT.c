@@ -55,8 +55,10 @@ Clocks_Check(void *Arg)
 		if (read(FD, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {
 			printf("ERROR: failed to open the clock\n");
 			printf("%s: FAIL\n", BIT_p->Name);
+			(void) close(FD);
 			return -1;
 		}
+		(void) close(FD);
 		/* Allow up to 100 Hz delta */
 		Delta = 100;
 		Freq = atoi(ReadBuffer);
@@ -68,7 +70,6 @@ Clocks_Check(void *Arg)
 			printf("%s: FAIL\n", BIT_p->Name);
 			return 0;
 		}
-		(void) close(FD);
 	}
 
 	printf("%s: PASS\n", BIT_p->Name);

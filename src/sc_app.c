@@ -261,7 +261,7 @@ Create_Lockfile(void)
 
 	time(&curtime);
 	fprintf(fp, "%s", ctime(&curtime)); 
-	fclose(fp);
+	(void) fclose(fp);
 	return 0;
 }
 
@@ -309,6 +309,7 @@ Version_Ops(void)
 
 	if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
 		printf("ERROR: failed to read OS release\n");
+		(void) close(fd);
 		return -1;
 	}
 
@@ -966,7 +967,7 @@ int DDR_Ops(void)
 	if (Target_Arg[0] != 't')
 		Ret = DIMM_spd(fd);
 
-	close(fd);
+	(void) close(fd);
 	return Ret;
 }
 

@@ -197,6 +197,7 @@ struct Gpio_line_name {
 	Msgset[0].nmsgs = 2; \
 	if (ioctl((FD), I2C_RDWR, &Msgset) < 0) { \
 		printf("ERROR: unable to read from I2C device 0x%x\n", (Address)); \
+		(void) close((FD)); \
 		return -1; \
 	} \
 }
@@ -205,10 +206,12 @@ struct Gpio_line_name {
 { \
 	if (ioctl((FD), I2C_SLAVE_FORCE, (Address)) < 0) { \
 		printf("ERROR: unable to access I2C device 0x%x\n", (Address)); \
+		(void) close((FD)); \
 		return -1; \
 	} \
 	if (write((FD), (Out), (Len)) != (Len)) { \
 		printf("ERROR: unable to write to I2C device 0x%x\n", (Address)); \
+		(void) close((FD)); \
 		return -1; \
 	} \
 }

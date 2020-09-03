@@ -467,20 +467,68 @@ Clock_Ops(void)
 	return 0;
 }
 
+int Read_Voltage(Voltage_t *Regulator, float *Voltage)
+{
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+	signed int Exponent;
+	short Mantissa;
+	int Get_Vout_Mode = 1;
+
+	FD = open(Regulator->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open the voltage regulator\n");
+		return -1;
+	}
+
+	/* Select the page, if the voltage regulator supports it */
+	if (-1 != Regulator->Page_Select) {
+		Out_Buffer[0] = 0x0;
+		Out_Buffer[1] = Regulator->Page_Select;
+		I2C_WRITE(FD, Regulator->I2C_Address, 2, Out_Buffer);
+	}
+
+	/*
+	 * Reading VOUT_MODE indicates what is READ_VOUT format and
+	 * its exponent.  The default format is Linear16:
+	 *
+	 * Voltage =  Mantissa * 2 ^ -(Exponent)
+	 */
+
+	/* IR38164 does not support VOUT_MODE PMBus command */
+	if (0 == strcmp(Regulator->Part_Name, "IR38164")) {
+		Get_Vout_Mode = 0;
+	}
+
+	if (1 == Get_Vout_Mode) {
+		Out_Buffer[0] = PMBUS_VOUT_MODE;
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		I2C_READ(FD, Regulator->I2C_Address, 1, Out_Buffer, In_Buffer);
+		Exponent = In_Buffer[0] - (sizeof(int) * 8);
+	} else {
+		/* For IR38164, use exponent value -8 */
+		Exponent = -8;
+	}
+
+	Out_Buffer[0] = PMBUS_READ_VOUT;
+	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer);
+	Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
+	*Voltage = Mantissa * pow(2, Exponent);
+
+	(void) close(FD);
+	return 0;
+}
+
 /*
  * Voltage Operations
  */
 int Voltage_Ops(void)
 {
 	int Target_Index = -1;
-	char In_Buffer[SYSCMD_MAX];
-	char Out_Buffer[SYSCMD_MAX];
-	int fd;
-	signed int Exponent;
-	short Mantissa;
+	Voltage_t *Regulator;
 	float Voltage;
-	int I2C_Address;
-	int Get_Vout_Mode = 1;
 
 	if (Command.CmdId == LISTVOLTAGE) {
 		for (int i = 0; i < Voltages.Numbers; i++) {
@@ -498,6 +546,7 @@ int Voltage_Ops(void)
 	for (int i = 0; i < Voltages.Numbers; i++) {
 		if (strcmp(Target_Arg, (char *)Voltages.Voltage[i].Name) == 0) {
 			Target_Index = i;
+			Regulator = &Voltages.Voltage[Target_Index];
 			break;
 		}
 	}
@@ -507,52 +556,13 @@ int Voltage_Ops(void)
 		return -1;
 	}
 
-	fd = open(Voltages.Voltage[Target_Index].I2C_Bus, O_RDWR);
-	if (fd < 0) {
-		printf("ERROR: unable to open the voltage regulator\n");
-		return -1;
-	}
-
-	I2C_Address = Voltages.Voltage[Target_Index].I2C_Address;
-
-	/* Select the page, if the voltage regulator supports it */
-	if (-1 != Voltages.Voltage[Target_Index].Page_Select) {
-		Out_Buffer[0] = 0x0;
-		Out_Buffer[1] = Voltages.Voltage[Target_Index].Page_Select;
-		I2C_WRITE(fd, I2C_Address, 2, Out_Buffer);
-	}
-
 	switch (Command.CmdId) {
 	case GETVOLTAGE:
-		/*
-		 * Reading VOUT_MODE indicates what is READ_VOUT format and
-		 * its exponent.  The default format is Linear16:
-		 *
-		 * Voltage =  Mantissa * 2 ^ -(Exponent)
-		 */ 
-
-		/* IR38164 does not support VOUT_MODE PMBus command */
-		if (0 == strcmp(Voltages.Voltage[Target_Index].Part_Name,
-		    "IR38164")) {
-			Get_Vout_Mode = 0;
+		if (Read_Voltage(Regulator, &Voltage) != 0) {
+			printf("ERROR: failed to read voltage from regulator\n");
+			return -1;
 		}
 
-		if (1 == Get_Vout_Mode) {
-			Out_Buffer[0] = PMBUS_VOUT_MODE;
-			(void *) memset(In_Buffer, 0, STRLEN_MAX);
-			I2C_READ(fd, I2C_Address, 1, Out_Buffer, In_Buffer);
-			Exponent = In_Buffer[0] - (sizeof(int) * 8);
-		} else {
-			/* For IR38164, use exponent value -8 */
-			Exponent = -8;
-		}
-
-		Out_Buffer[0] = PMBUS_READ_VOUT;
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
-		I2C_READ(fd, I2C_Address, 2, Out_Buffer, In_Buffer);
-		Mantissa = ((unsigned char)In_Buffer[1] << 8) |
-		    (unsigned char)In_Buffer[0];
-		Voltage = Mantissa * pow(2, Exponent);
 		printf("Voltage(V):\t%.2f\n", Voltage);
 		break;
 	default:
@@ -560,7 +570,6 @@ int Voltage_Ops(void)
 		break;
 	}
 
-	(void) close(fd);
 	return 0;
 }
 

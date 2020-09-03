@@ -105,10 +105,10 @@ typedef struct Power_Domains {
 typedef struct {
 	char	Name[STRLEN_MAX];
 	char	Part_Name[STRLEN_MAX];
-	unsigned int	Default_Volt;
-	unsigned int	Upper_Volt;
-	unsigned int	Lower_Volt;
-	int		Page_Select;
+	float	Maximum_Volt;
+	float	Typical_Volt;
+	float	Minimum_Volt;
+	int	Page_Select;
 	char	I2C_Bus[STRLEN_MAX];
 	int	I2C_Address;
 } Voltage_t;

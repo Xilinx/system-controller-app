@@ -15,11 +15,15 @@
 extern Clocks_t Clocks;
 extern Daughter_Card_t Daughter_Card;
 extern struct ddr_dimm1 Dimm1;
+extern Voltages_t Voltages;
 
 int Clocks_Check(void *);
 int XSDB_Command(void *);
 int EBM_EEPROM_Check(void *);
 int DIMM_EEPROM_Check(void *);
+int Voltages_Check(void *);
+
+extern int Read_Voltage(Voltage_t *, float *);
 
 /*
  * BITs
@@ -29,6 +33,7 @@ typedef enum {
 	BIT_IDCODE_CHECK,
 	BIT_EBM_EEPROM_CHECK,
 	BIT_DIMM_EEPROM_CHECK,
+	BIT_VOLTAGES_CHECK,
 	BIT_MAX,
 } BIT_Index;
 
@@ -50,6 +55,10 @@ BITs_t BITs = {
 	.BIT[BIT_DIMM_EEPROM_CHECK] = {
 		.Name = "DIMM EEPROM Check",
 		.Plat_BIT_Op = DIMM_EEPROM_Check,
+	},
+	.BIT[BIT_VOLTAGES_CHECK] = {
+		.Name = "Check Voltages",
+		.Plat_BIT_Op = Voltages_Check,
 	},
 };
 
@@ -175,6 +184,39 @@ DIMM_EEPROM_Check(void *Arg)
 	}
 
 	(void) close(FD);
+	printf("%s: PASS\n", BIT_p->Name);
+	return 0;
+}
+
+/*
+ * This routine gets the voltage from a regulator and compares it against
+ * expected minimum and maximum values.
+ */
+int
+Voltages_Check(void *Arg)
+{
+	BIT_t *BIT_p = Arg;
+	Voltage_t *Regulator;
+	float Voltage;
+
+	for (int i = 0; i < Voltages.Numbers; i++) {
+		Regulator = &Voltages.Voltage[i];
+		if (Read_Voltage(Regulator, &Voltage) != 0) {
+			printf("ERROR: failed to get voltage for %s\n",
+			    Regulator->Name);
+			printf("%s: FAIL\n", BIT_p->Name);
+			return -1;
+		}
+
+		if ((Voltage < Regulator->Minimum_Volt) ||
+		    (Voltage > Regulator->Maximum_Volt)) {
+			printf("ERROR: voltage for %s is out-of-range\n",
+			   Regulator->Name);
+			printf("%s: FAIL\n", BIT_p->Name);
+			return -1;
+		}
+	}
+
 	printf("%s: PASS\n", BIT_p->Name);
 	return 0;
 }

@@ -16,9 +16,10 @@
  * 1.3 - Support for reading gpio lines.
  * 1.4 - Support for getting total power of different power domains.
  * 1.5 - Support for IO expander.
+ * 1.6 - Support for SFP connectors.
  */
 #define MAJOR	1
-#define MINOR	5
+#define MINOR	6
 
 #define LOCKFILE	"/tmp/.sc_app_lock"
 #define LINUX_VERSION	"5.4.0"
@@ -37,6 +38,7 @@ extern BITs_t BITs;
 extern struct ddr_dimm1 Dimm1;
 extern struct Gpio_line_name Gpio_target[];
 extern IO_Exp_t IO_Exp;
+extern SFPs_t SFPs;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -52,6 +54,7 @@ int BIT_Ops(void);
 int DDR_Ops(void);
 int GPIO_Ops(void);
 int IO_Exp_Ops(void);
+int SFP_Ops(void);
 extern int Plat_Gpio_target_size(void);
 extern int Plat_Gpio_match(int, char *);
 extern int Plat_Version_Ops(int *Major, int *Minor);
@@ -84,8 +87,12 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	listgpio - lists the supported gpio lines\n\
 	getgpio - get the state of <target> gpio\n\
 	getioexp - get IO expander <target> of either 'all', 'input', or 'output'\n\
-	setioexp - set IO expander <target> of either 'direction' or 'output' to 'value'\n\
+	setioexp - set IO expander <target> of either 'direction' or 'output' to <value>\n\
 	restoreioexp - restore IO expander to default values\n\
+	listSFP - lists the supported SFP connectors\n\
+	getSFP - get the connector information of <target> SFP\n\
+	getpwmSFP - get the power mode value of <target> SFP\n\
+	setpwmSFP - set the power mode value of <target> SFP to <value>\n\
 ";
 
 typedef enum {
@@ -114,6 +121,10 @@ typedef enum {
 	GETIOEXP,
 	SETIOEXP,
 	RESTOREIOEXP,
+	LISTSFP,
+	GETSFP,
+	GETPWMSFP,
+	SETPWMSFP,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -149,6 +160,10 @@ static Command_t Commands[] = {
 	{ .CmdId = GETIOEXP, .CmdStr = "getioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = SETIOEXP, .CmdStr = "setioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = RESTOREIOEXP, .CmdStr = "restoreioexp", .CmdOps = IO_Exp_Ops, },
+	{ .CmdId = LISTSFP, .CmdStr = "listSFP", .CmdOps = SFP_Ops, },
+	{ .CmdId = GETSFP, .CmdStr = "getSFP", .CmdOps = SFP_Ops, },
+	{ .CmdId = GETPWMSFP, .CmdStr = "getpwmSFP", .CmdOps = SFP_Ops, },
+	{ .CmdId = SETPWMSFP, .CmdStr = "setpwmSFP", .CmdOps = SFP_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -1234,5 +1249,131 @@ int IO_Exp_Ops(void)
 		return -1;
 	}
 
+	return 0;
+}
+
+/*
+ * SFP Operations
+ */
+int SFP_Ops(void)
+{
+	int Target_Index = -1;
+	unsigned long int Value;
+	SFP_t *SFP;
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+
+	if (Command.CmdId == LISTSFP) {
+		for (int i = 0; i < SFPs.Numbers; i++) {
+			printf("%s\n", SFPs.SFP[i].Name);
+		}
+		return 0;
+	}
+
+	/* Validate the SFP target */
+	if (T_Flag == 0) {
+		printf("ERROR: no voltage target\n");
+		return -1;
+	}
+
+	for (int i = 0; i < SFPs.Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)SFPs.SFP[i].Name) == 0) {
+			Target_Index = i;
+			SFP = &SFPs.SFP[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: invalid SFP target\n");
+		return -1;
+	}
+
+	FD = open(SFP->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open IO expander\n");
+		return -1;
+	}
+
+	switch (Command.CmdId) {
+	case GETSFP:
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x14;	// 0x14-0x23: SFP Vendor Name
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		printf("Manufacturer:\t%s\n", In_Buffer);
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x44;	// 0x44-0x53: Serial Number
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		printf("Serial Number:\t%s\n", In_Buffer);
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x60;	// 0x60-0x61: Temperature Monitor
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		Value = (In_Buffer[0] << 8) | In_Buffer[1];
+		Value = (Value & 0x7FFF) - (Value & 0x8000);
+		/* Each bit of low byte is equivalent to 1/256 celsius */
+		printf("Internal Temperature(C):\t%.3f\n", ((float)Value / 256));
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x62;	// 0x62-0x63: Voltage Sense
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		Value = (In_Buffer[0] << 8) | In_Buffer[1];
+		/* Each bit is 100 uV */
+		printf("Supply Voltage(V):\t%.2f\n", ((float)Value * 0.0001));
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x70;	// 0x70-0x71: Alarm
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		printf("Alarm:\t%x\n", (In_Buffer[0] << 8) | In_Buffer[1]);
+		break;
+
+	case GETPWMSFP:
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x80;	// 0x80-0x81: PWM1 & PWM2 Controller
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		printf("Power Mode(0-2W):\t%x\n", (In_Buffer[0] << 8) | In_Buffer[1]);
+		break;
+
+	case SETPWMSFP:
+		/* Validate the value */
+		if (V_Flag == 0) {
+			printf("ERROR: no PWM value\n");
+			(void) close(FD);
+			return -1;
+		}
+
+		Value = strtol(Value_Arg, NULL, 16);
+		if (Value > 0xFF) {
+			printf("ERROR: invalid PWM value\n");
+			(void) close(FD);
+			return -1;
+		}
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x80;	// 0x80: PWM1 Controller
+		Out_Buffer[1] = (Value & 0xFF);
+		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer);
+		/* Add a delay, since back-to-back write fails for this device. */
+		sleep(1);
+		Out_Buffer[0] = 0x81;	// 0x81: PWM2 Controller
+		Out_Buffer[1] = (Value & 0xFF);
+		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer);
+		break;
+
+	default:
+		printf("ERROR: invalid SFP command\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
 	return 0;
 }

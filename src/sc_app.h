@@ -140,6 +140,20 @@ typedef struct {
 } Daughter_Card_t;
 
 /*
+ * SFP Connectors
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	char	I2C_Bus[STRLEN_MAX];
+	int	I2C_Address;
+} SFP_t;
+
+typedef struct SFPs {
+	int	Numbers;
+	SFP_t	SFP[ITEMS_MAX];
+} SFPs_t;
+
+/*
  * Workarounds
  */
 typedef struct {

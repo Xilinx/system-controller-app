@@ -688,6 +688,29 @@ Daughter_Card_t Daughter_Card = {
 };
 
 /*
+ * SFP Connectors
+ */
+typedef enum {
+	SFP_0,
+	SFP_1,
+	SFP_MAX,
+} SFP_Index;
+
+SFPs_t SFPs = {
+	.Numbers = SFP_MAX,
+	.SFP[SFP_0] = {
+		.Name = "zSFP-0",
+		.I2C_Bus = "/dev/i2c-19",
+		.I2C_Address = 0x50,
+	},
+	.SFP[SFP_1] = {
+		.Name = "zSFP-1",
+		.I2C_Bus = "/dev/i2c-20",
+		.I2C_Address = 0x50,
+	},
+};
+
+/*
  * Workarounds
  */
 typedef enum {

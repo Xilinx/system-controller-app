@@ -28,5 +28,9 @@
 		listgpio - lists the supported gpio lines
 		getgpio - get the state of <target> gpio
 		getioexp - get IO expander <target> of either 'all', 'input', or 'output'
-		setioexp - set IO expander <target> of either 'direction' or 'output' to 'value'
+		setioexp - set IO expander <target> of either 'direction' or 'output' to <value>
 		restoreioexp - restore IO expander to default values
+		listSFP - lists the supported SFP connectors
+		getSFP - get the connector information of <target> SFP
+		getpwmSFP - get the power mode value of <target> SFP
+		setpwmSFP - set the power mode value of <target> SFP to <value>

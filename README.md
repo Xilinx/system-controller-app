@@ -13,6 +13,7 @@
 		listclock - lists the supported clock targets
 		getclock - get the frequency of <target>
 		setclock - set <target> to <value> frequency
+		setbootclock - set <target> to <value> frequency at boot time
 		restoreclock - restore <target> to default value
 		listvoltage - lists the supported voltage targets
 		getvoltage - get the voltage of <target>

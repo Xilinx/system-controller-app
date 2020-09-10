@@ -21,7 +21,6 @@
 #define MAJOR	1
 #define MINOR	6
 
-#define LOCKFILE	"/tmp/.sc_app_lock"
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"v2020.2"
 
@@ -72,6 +71,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	listclock - lists the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
+	setbootclock - set <target> to <value> frequency at boot time\n\
 	restoreclock - restore <target> to default value\n\
 	listvoltage - lists the supported voltage targets\n\
 	getvoltage - get the voltage of <target>\n\
@@ -104,6 +104,7 @@ typedef enum {
 	LISTCLOCK,
 	GETCLOCK,
 	SETCLOCK,
+	SETBOOTCLOCK,
 	RESTORECLOCK,
 	LISTVOLTAGE,
 	GETVOLTAGE,
@@ -143,6 +144,7 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },
+	{ .CmdId = SETBOOTCLOCK, .CmdStr = "setbootclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = RESTORECLOCK, .CmdStr = "restoreclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = LISTVOLTAGE, .CmdStr = "listvoltage", .CmdOps = Voltage_Ops, },
 	{ .CmdId = GETVOLTAGE, .CmdStr = "getvoltage", .CmdOps = Voltage_Ops, },
@@ -414,6 +416,7 @@ int
 Clock_Ops(void)
 {
 	int Target_Index = -1;
+	Clock_t *Clock;
 	char System_Cmd[SYSCMD_MAX];
 	int Upper, Lower;
 	unsigned long int Value;
@@ -434,6 +437,7 @@ Clock_Ops(void)
 	for (int i = 0; i < Clocks.Numbers; i++) {
 		if (strcmp(Target_Arg, (char *)Clocks.Clock[i].Name) == 0) {
 			Target_Index = i;
+			Clock = &Clocks.Clock[Target_Index];
 			break;
 		}
 	}
@@ -446,10 +450,11 @@ Clock_Ops(void)
 	switch (Command.CmdId) {
 	case GETCLOCK:
 		sprintf(System_Cmd, "echo -n \'Frequency(Hz):\t\'; cat %s",
-		    Clocks.Clock[Target_Index].Sysfs_Path);
+		    Clock->Sysfs_Path);
 		system(System_Cmd);
 		break;
 	case SETCLOCK:
+	case SETBOOTCLOCK:
 		/* Validate the frequency */
 		if (V_Flag == 0) {
 			printf("ERROR: no clock frequency\n");
@@ -457,21 +462,37 @@ Clock_Ops(void)
 		}
 
 		Value = atol(Value_Arg);
-		Upper = Clocks.Clock[Target_Index].Upper_Freq;
-		Lower = Clocks.Clock[Target_Index].Lower_Freq;
+		Upper = Clock->Upper_Freq;
+		Lower = Clock->Lower_Freq;
 		if (Value > Upper || Value < Lower) {
 			printf("ERROR: valid frequency range is %d-%d\n",
 			    Lower, Upper);
 			return -1;
 		}
-		sprintf(System_Cmd, "echo %d > %s", (int)Value,
-		    Clocks.Clock[Target_Index].Sysfs_Path);
+
+		sprintf(System_Cmd, "echo %d > %s", (int)Value, Clock->Sysfs_Path);
 		system(System_Cmd);
+
+		if (Command.CmdId == SETBOOTCLOCK) {
+			/* Remove the old value, if any */
+			sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
+			    Clock->Name, CLOCKFILE);
+			system(System_Cmd);
+
+			sprintf(System_Cmd, "echo \'%s:\t%d\' >> %s",
+			    Clock->Name, (int)Value, CLOCKFILE);
+			system(System_Cmd);
+		}
+
 		break;
 	case RESTORECLOCK:
-		Value = Clocks.Clock[Target_Index].Default_Freq;
-		sprintf(System_Cmd, "echo %d > %s", (int)Value,
-		    Clocks.Clock[Target_Index].Sysfs_Path);
+		Value = Clock->Default_Freq;
+		sprintf(System_Cmd, "echo %d > %s", (int)Value, Clock->Sysfs_Path);
+		system(System_Cmd);
+
+		/* Remove any custom boot frequency */
+		sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
+		    Clock->Name, CLOCKFILE);
 		system(System_Cmd);
 		break;
 	default:

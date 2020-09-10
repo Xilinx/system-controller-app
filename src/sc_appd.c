@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <fcntl.h>
 #include <time.h>
 #include <gpiod.h>
 #include <sys/stat.h>
@@ -39,6 +40,7 @@ GPIO_Behavior_t GPIO_Behavior = Unknown;
 time_t GPIO_First_Time = 0;
 int GPIO_State;
 
+extern Clocks_t Clocks;
 extern Workarounds_t Workarounds;
 int (*Workaround_Op)(void *);
 extern int Plat_Board_Name(char *);
@@ -390,6 +392,62 @@ VCK190_Version(void)
 	return 0;
 }
 
+/*
+ * This routine sets any custom clock frequency defined by the user.
+ */
+int
+Set_Clocks(void)
+{
+	FILE *FP;
+	int FD;
+	Clock_t *Clock;
+	char Buffer[SYSCMD_MAX];
+	char Value[STRLEN_MAX];
+
+	/* If there is no clock file, there is nothing to do */
+	if (access(CLOCKFILE, F_OK) != 0) {
+		return 0;
+	}
+
+	FP = fopen(CLOCKFILE, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to read clock file\n");
+		return -1;
+	}
+
+	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		(void) strtok(Buffer, ":");
+		(void) strcpy(Value, strtok(NULL, "\n"));
+		for (int i = 0; i < Clocks.Numbers; i++) {
+			if (strcmp(Buffer, (char *)Clocks.Clock[i].Name) == 0) {
+				Clock = &Clocks.Clock[i];
+				break;
+			}
+		}
+
+		FD = open(Clock->Sysfs_Path, O_WRONLY);
+		if (FD < 0) {
+			printf("ERROR: failed to open clock device\n");
+			(void) fclose(FP);
+			return -1;
+		}
+
+		/* Remove any white spaces in Value string */
+		sprintf(Value, "%d\n", atoi(Value));
+		if (write(FD, Value, strlen(Value)) != strlen(Value)) {
+			printf("ERROR: failed to set clock frequency\n");
+			(void) close(FD);
+			(void) fclose(FP);
+			return -1;
+		}
+
+		(void) close(FD);
+	}
+
+	(void) fclose(FP);
+	return 0;
+}
+
 int
 main()
 {
@@ -401,6 +459,12 @@ main()
 			printf("ERROR: failed to create \'.sc_app\' directory\n");
 			return -1;
 		}
+	}
+
+	/* Set custom clock frequency */
+	if (Set_Clocks() != 0) {
+		printf("ERROR: failed to set clock frequency\n");
+		return -1;
 	}
 
 	if (Plat_Board_Name(Board) == -1) {

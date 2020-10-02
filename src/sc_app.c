@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <sys/utsname.h>
 #include "sc_app.h"
 
 /*
@@ -22,7 +23,7 @@
 #define MINOR	6
 
 #define LINUX_VERSION	"5.4.0"
-#define BSP_VERSION	"v2020.2"
+#define BSP_VERSION	"2020_2"
 
 
 
@@ -302,13 +303,12 @@ Destroy_Lockfile(void)
 int
 Version_Ops(void)
 {
-	int fd;
 	int Major, Minor;
-	char Buffer[STRLEN_MAX];
-	char Linux_Version[STRLEN_MAX];
+	struct utsname UTS;
 	char BSP_Version[STRLEN_MAX];
 	int Linux_Compatible = 1;
 	int BSP_Compatible = 1;
+	char *CP;
 
 	(void) (*Plat_Version_Ops)(&Major, &Minor);
 	if (Major == -1 && Minor == -1) {
@@ -318,29 +318,21 @@ Version_Ops(void)
 
 	printf("Version:\t%d.%d\n", Major, Minor);
 
-	fd = open("/proc/sys/kernel/osrelease", O_RDONLY);
-	if (fd == -1) {
-		printf("ERROR: failed to open file to get OS release.\n");
+	if (uname(&UTS) != 0) {
+		printf("ERROR: failed to get OS information\n");
 		return -1;
 	}
 
-	if (read(fd, Buffer, sizeof(Buffer)-1) == -1) {
-		printf("ERROR: failed to read OS release\n");
-		(void) close(fd);
+	CP = strrchr(UTS.nodename, '-');
+	if (CP == NULL) {
+		printf("ERROR: failed to obtain BSP release\n");
 		return -1;
 	}
 
-	(void) close(fd);
-
-	// OS release
-	(void) strcpy(Linux_Version, strtok(Buffer, "-"));
-	// Ignore 'xilinx'!
-	(void) strtok(NULL, "-");
-	// BSP version
-	(void) strcpy(BSP_Version, strtok(NULL, "\n"));
+	(void) strcpy(BSP_Version, ++CP);
 
 	if (Major == 1) {
-		if (strcmp(Linux_Version, LINUX_VERSION) != 0) {
+		if (strcmp(UTS.release, LINUX_VERSION) != 0) {
 			Linux_Compatible = 0;
 		}
 
@@ -349,7 +341,7 @@ Version_Ops(void)
 		}
 	}
 
-	printf("Linux:\t\t%s (%sCompatible)\n", Linux_Version,
+	printf("Linux:\t\t%s (%sCompatible)\n", UTS.release,
 	    (Linux_Compatible) ? "" : "Not ");
 	printf("BSP:\t\t%s (%sCompatible)\n", BSP_Version,
 	    (BSP_Compatible) ? "" : "Not ");

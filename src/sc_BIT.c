@@ -5,13 +5,6 @@
 #include <string.h>
 #include "sc_app.h"
 
-#define XSDB_ENV	"export XILINX_VITIS=/usr/local/xilinx_vitis; \
-			 export TCLLIBPATH=/usr/local/xilinx_vitis; \
-			 export TCL_LIBRARY=/usr/local/lib/tcl8.5; \
-			 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib"
-#define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
-#define BIT_PATH	"/usr/share/system-controller-app/BIT/"
-
 extern Clocks_t Clocks;
 extern Daughter_Card_t Daughter_Card;
 extern struct ddr_dimm1 Dimm1;

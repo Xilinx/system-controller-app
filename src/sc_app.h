@@ -156,6 +156,20 @@ typedef struct SFPs {
 } SFPs_t;
 
 /*
+ * QSFP Connectors
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	char	I2C_Bus[STRLEN_MAX];
+	int	I2C_Address;
+} QSFP_t;
+
+typedef struct QSFPs {
+	int	Numbers;
+	QSFP_t	QSFP[ITEMS_MAX];
+} QSFPs_t;
+
+/*
  * Workarounds
  */
 typedef struct {
@@ -243,6 +257,15 @@ struct Gpio_line_name {
 
 #define PMBUS_VOUT_MODE		0x20
 #define PMBUS_READ_VOUT		0x8B
+
+/*
+ * Definitions for invoking xsdb.
+ */
+#define XSDB_ENV	"export XILINX_VITIS=/usr/local/xilinx_vitis; \
+			 export TCLLIBPATH=/usr/local/xilinx_vitis; \
+			 export TCL_LIBRARY=/usr/local/lib/tcl8.5"
+#define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
+#define BIT_PATH	"/usr/share/system-controller-app/BIT/"
 
 #endif	/* SC_APP_H_ */
 

@@ -18,9 +18,10 @@
  * 1.4 - Support for getting total power of different power domains.
  * 1.5 - Support for IO expander.
  * 1.6 - Support for SFP connectors.
+ * 1.7 - Support for QSFP connectors.
  */
 #define MAJOR	1
-#define MINOR	6
+#define MINOR	7
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -39,6 +40,7 @@ extern struct ddr_dimm1 Dimm1;
 extern struct Gpio_line_name Gpio_target[];
 extern IO_Exp_t IO_Exp;
 extern SFPs_t SFPs;
+extern QSFPs_t QSFPs;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -55,11 +57,13 @@ int DDR_Ops(void);
 int GPIO_Ops(void);
 int IO_Exp_Ops(void);
 int SFP_Ops(void);
+int QSFP_Ops(void);
 extern int Plat_Gpio_target_size(void);
 extern int Plat_Gpio_match(int, char *);
 extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
+extern int Plat_QSFP_Init(void);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -94,6 +98,12 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	getSFP - get the connector information of <target> SFP\n\
 	getpwmSFP - get the power mode value of <target> SFP\n\
 	setpwmSFP - set the power mode value of <target> SFP to <value>\n\
+	listQSFP - lists the supported QSFP connectors\n\
+	getQSFP - get the connector information of <target> QSFP\n\
+	getpwmQSFP - get the power mode value of <target> QSFP\n\
+	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
+	getpwmoQSFP - get the power mode override value of <target> QSFP\n\
+	setpwmoQSFP - set the power mode override value of <target> QSFP to <value>\n\
 ";
 
 typedef enum {
@@ -127,6 +137,12 @@ typedef enum {
 	GETSFP,
 	GETPWMSFP,
 	SETPWMSFP,
+	LISTQSFP,
+	GETQSFP,
+	GETPWMQSFP,
+	SETPWMQSFP,
+	GETPWMOQSFP,
+	SETPWMOQSFP,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -167,6 +183,12 @@ static Command_t Commands[] = {
 	{ .CmdId = GETSFP, .CmdStr = "getSFP", .CmdOps = SFP_Ops, },
 	{ .CmdId = GETPWMSFP, .CmdStr = "getpwmSFP", .CmdOps = SFP_Ops, },
 	{ .CmdId = SETPWMSFP, .CmdStr = "setpwmSFP", .CmdOps = SFP_Ops, },
+	{ .CmdId = LISTQSFP, .CmdStr = "listQSFP", .CmdOps = QSFP_Ops, },
+	{ .CmdId = GETQSFP, .CmdStr = "getQSFP", .CmdOps = QSFP_Ops, },
+	{ .CmdId = GETPWMQSFP, .CmdStr = "getpwmQSFP", .CmdOps = QSFP_Ops, },
+	{ .CmdId = SETPWMQSFP, .CmdStr = "setpwmQSFP", .CmdOps = QSFP_Ops, },
+	{ .CmdId = GETPWMOQSFP, .CmdStr = "getpwmoQSFP", .CmdOps = QSFP_Ops, },
+	{ .CmdId = SETPWMOQSFP, .CmdStr = "setpwmoQSFP", .CmdOps = QSFP_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -1286,7 +1308,7 @@ int SFP_Ops(void)
 
 	/* Validate the SFP target */
 	if (T_Flag == 0) {
-		printf("ERROR: no voltage target\n");
+		printf("ERROR: no SFP target\n");
 		return -1;
 	}
 
@@ -1305,7 +1327,7 @@ int SFP_Ops(void)
 
 	FD = open(SFP->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open IO expander\n");
+		printf("ERROR: unable to open SFP connector\n");
 		return -1;
 	}
 
@@ -1383,6 +1405,181 @@ int SFP_Ops(void)
 
 	default:
 		printf("ERROR: invalid SFP command\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+	return 0;
+}
+
+/*
+ * QSFP Operations
+ */
+int QSFP_Ops(void)
+{
+	int Target_Index = -1;
+	unsigned long int Value;
+	QSFP_t *QSFP;
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+
+	if (Command.CmdId == LISTQSFP) {
+		for (int i = 0; i < QSFPs.Numbers; i++) {
+			printf("%s\n", QSFPs.QSFP[i].Name);
+		}
+		return 0;
+	}
+
+	/* Validate the QSFP target */
+	if (T_Flag == 0) {
+		printf("ERROR: no QSFP target\n");
+		return -1;
+	}
+
+	for (int i = 0; i < QSFPs.Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)QSFPs.QSFP[i].Name) == 0) {
+			Target_Index = i;
+			QSFP = &QSFPs.QSFP[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: invalid QSFP target\n");
+		return -1;
+	}
+
+	(void) Plat_QSFP_Init();
+
+	FD = open(QSFP->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open QSFP connector\n");
+		return -1;
+	}
+
+	switch (Command.CmdId) {
+	case GETQSFP:
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x94;	// 0x94-0xA3: QSFP Vendor Name
+		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		printf("Manufacturer:\t%s\n", In_Buffer);
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
+		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		printf("Part Number:\t%s\n", In_Buffer);
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
+		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		printf("Serial Number:\t%s\n", In_Buffer);
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature Monitor
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		Value = (In_Buffer[0] << 8) | In_Buffer[1];
+		Value = (Value & 0x7FFF) - (Value & 0x8000);
+		/* Each bit of low byte is equivalent to 1/256 celsius */
+		printf("Internal Temperature(C):\t%.3f\n", ((float)Value / 256));
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		Value = (In_Buffer[0] << 8) | In_Buffer[1];
+		/* Each bit is 100 uV */
+		printf("Supply Voltage(V):\t%.2f\n", ((float)Value * 0.0001));
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x3;	// 0x3-0x4: Alarms
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		printf("Alarms (Bytes 3-4):\t%x\n", (In_Buffer[0] << 8) |
+		    In_Buffer[1]);
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x6;	// 0x6-0x7: Alarms
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		printf("Alarms (Bytes 6-7):\t%x\n", (In_Buffer[0] << 8) |
+		    In_Buffer[1]);
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x9;	// 0x9-0xC: Alarms
+		I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer);
+		printf("Alarms (Bytes 9-12):\t%x\n", ((In_Buffer[0] << 24) |
+		    (In_Buffer[1] << 16) | (In_Buffer[2] << 8) | In_Buffer[3]));
+		break;
+
+	case GETPWMQSFP:
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
+		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer);
+		printf("Register 98, bit7 +2.5w, bit6 +1.5w, bits5-0 up to 1.0w:\t%x\n",
+		    In_Buffer[0]);
+		break;
+
+	case SETPWMQSFP:
+		/* Validate the value */
+		if (V_Flag == 0) {
+			printf("ERROR: no PWM value\n");
+			(void) close(FD);
+			return -1;
+		}
+
+		Value = strtol(Value_Arg, NULL, 16);
+		if (Value > 0xFF) {
+			printf("ERROR: invalid PWM value\n");
+			(void) close(FD);
+			return -1;
+		}
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
+		Out_Buffer[1] = (Value & 0xFF);
+		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer);
+		break;
+
+	case GETPWMOQSFP:
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
+		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer);
+		printf("Register 93, 0 = use LPMode pin, 1 = hi pwr, 3 = low pwr:\t%x\n",
+		    In_Buffer[0]);
+		break;
+
+	case SETPWMOQSFP:
+		/* Validate the value */
+		if (V_Flag == 0) {
+			printf("ERROR: no PWM Override value\n");
+			(void) close(FD);
+			return -1;
+		}
+
+		Value = strtol(Value_Arg, NULL, 16);
+		if (Value != 0x0 && Value != 0x1 && Value != 0x3) {
+			printf("ERROR: valid PWM Override value: 0x0, 0x1, or 0x3\n");
+			(void) close(FD);
+			return -1;
+		}
+
+		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
+		Out_Buffer[1] = (Value & 0x3);
+		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer);
+		break;
+
+	default:
+		printf("ERROR: invalid QSFP command\n");
 		(void) close(FD);
 		return -1;
 	}

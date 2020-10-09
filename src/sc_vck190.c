@@ -711,6 +711,23 @@ SFPs_t SFPs = {
 };
 
 /*
+ * QSFP Connectors
+ */
+typedef enum {
+	QSFP_0,
+	QSFP_MAX,
+} QSFP_Index;
+
+QSFPs_t QSFPs = {
+	.Numbers = QSFP_MAX,
+	.QSFP[QSFP_0] = {
+		.Name = "zQSFP1",
+		.I2C_Bus = "/dev/i2c-21",
+		.I2C_Address = 0x50,
+	},
+};
+
+/*
  * Workarounds
  */
 typedef enum {
@@ -983,4 +1000,23 @@ int Plat_Gpio_match(int Idx, char *Target)
 int Plat_Gpio_target_size(void)
 {
 	return sizeof(Gpio_target) / sizeof(Gpio_target[0]);
+}
+
+/*
+ * The QSFP must be selected and not held in Reset (High) in order to be
+ * accessed.  These lines are driven by Vesal.  The QSFP1_RESETL_LS high
+ * has a pull up, but QSFP1_MODSKLL_LS has no pull down.  If Versal is not
+ * programmed to drive QSFP1_MODSKLL_LS low, the QSFP will not respond.
+ */
+int
+Plat_QSFP_Init(void)
+{
+	char System_Cmd[SYSCMD_MAX];
+
+	(void) Plat_Reset_Ops();
+	sprintf(System_Cmd, "%s; %s %s%s", XSDB_ENV, XSDB_CMD, BIT_PATH,
+	    "qsfp_set_modsel/qsfp_download.tcl");
+	system(System_Cmd);
+
+	return 0;
 }

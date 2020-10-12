@@ -898,8 +898,8 @@ Plat_EEPROM_Ops(void)
 	printf("Language: %d\n", ReadBuffer[0xA]);
 
 	// Manufacturing Date
-	BuildDate.tm_min = (ReadBuffer[0xB] << 16 | ReadBuffer[0xC] << 8 |
-	    ReadBuffer[0xD]);
+	BuildDate.tm_min = (ReadBuffer[0xD] << 16 | ReadBuffer[0xC] << 8 |
+	    ReadBuffer[0xB]);
 	Time = mktime(&BuildDate);
 	if (Time == -1) {
 		printf("ERROR: invalid manufacturing date\n");

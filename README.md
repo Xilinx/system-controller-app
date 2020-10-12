@@ -41,3 +41,5 @@
 		setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
 		getpwmoQSFP - get the power mode override value of <target> QSFP\n\
 		setpwmoQSFP - set the power mode override value of <target> QSFP to <value>\n\
+		getEBM - get the content of EEPROM from EBM card from either <target>:\n\
+			 'all', 'common', 'board', or 'multirecord'\n\

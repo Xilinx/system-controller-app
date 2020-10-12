@@ -19,9 +19,10 @@
  * 1.5 - Support for IO expander.
  * 1.6 - Support for SFP connectors.
  * 1.7 - Support for QSFP connectors.
+ * 1.8 - Support for reading EBM's EEPROM .
  */
 #define MAJOR	1
-#define MINOR	7
+#define MINOR	8
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -41,6 +42,7 @@ extern struct Gpio_line_name Gpio_target[];
 extern IO_Exp_t IO_Exp;
 extern SFPs_t SFPs;
 extern QSFPs_t QSFPs;
+extern Daughter_Card_t Daughter_Card;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -58,6 +60,7 @@ int GPIO_Ops(void);
 int IO_Exp_Ops(void);
 int SFP_Ops(void);
 int QSFP_Ops(void);
+int EBM_Ops(void);
 extern int Plat_Gpio_target_size(void);
 extern int Plat_Gpio_match(int, char *);
 extern int Plat_Version_Ops(int *Major, int *Minor);
@@ -104,6 +107,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
 	getpwmoQSFP - get the power mode override value of <target> QSFP\n\
 	setpwmoQSFP - set the power mode override value of <target> QSFP to <value>\n\
+	getEBM - get the content of EEPROM from EBM card from either <target>:\n\
+		 'all', 'common', 'board', or 'multirecord'\n\
 ";
 
 typedef enum {
@@ -143,6 +148,7 @@ typedef enum {
 	SETPWMQSFP,
 	GETPWMOQSFP,
 	SETPWMOQSFP,
+	GETEBM,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -189,6 +195,7 @@ static Command_t Commands[] = {
 	{ .CmdId = SETPWMQSFP, .CmdStr = "setpwmQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = GETPWMOQSFP, .CmdStr = "getpwmoQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = SETPWMOQSFP, .CmdStr = "setpwmoQSFP", .CmdOps = QSFP_Ops, },
+	{ .CmdId = GETEBM, .CmdStr = "getEBM", .CmdOps = EBM_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -1580,6 +1587,134 @@ int QSFP_Ops(void)
 
 	default:
 		printf("ERROR: invalid QSFP command\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+	return 0;
+}
+
+typedef enum {
+	EBM_ALL,
+	EBM_COMMON,
+	EBM_BOARD,
+	EBM_MULTIRECORD,
+} EBM_Targets;
+
+/*
+ * EBM Operations
+ */
+int EBM_Ops(void)
+{
+	EBM_Targets Target;
+	int FD;
+	char In_Buffer[SYSCMD_MAX];
+	char Out_Buffer[SYSCMD_MAX];
+	char Buffer[STRLEN_MAX];
+	static struct tm EBM_BuildDate;
+	time_t Time;
+
+	/* Validate the EBM target */
+	if (T_Flag == 0) {
+		printf("ERROR: no EBM target\n");
+		return -1;
+	}
+
+	if (strcmp(Target_Arg, "all") == 0) {
+		Target = EBM_ALL;
+	} else if (strcmp(Target_Arg, "common") == 0) {
+		Target = EBM_COMMON;
+	} else if (strcmp(Target_Arg, "board") == 0) {
+		Target = EBM_BOARD;
+	} else if (strcmp(Target_Arg, "multirecord") == 0) {
+		Target = EBM_MULTIRECORD;
+	} else {
+		printf("ERROR: invalid EBM target\n");
+		return -1;
+	}
+
+	FD = open(Daughter_Card.I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open EBM card\n");
+		return -1;
+	}
+
+	(void *) memset(Out_Buffer, 0, SYSCMD_MAX);
+	(void *) memset(In_Buffer, 0, SYSCMD_MAX);
+	Out_Buffer[0] = 0x0;
+	I2C_READ(FD, Daughter_Card.I2C_Address, 256, Out_Buffer, In_Buffer);
+
+	switch (Target) {
+	case EBM_ALL:
+		for (int i = 0; i < 256; i++) {
+			printf("%2x ", In_Buffer[i]);
+			if (((i+1) % 25) == 0) {
+				printf("\n");
+			}
+		}
+		printf("\n");
+		break;
+
+	case EBM_COMMON:
+		printf("0x00 - Version:\t%x\n", In_Buffer[0x0]);
+		printf("0x01 - Internal User Area:\t%x\n", In_Buffer[0x1]);
+		printf("0x02 - Chassis Info Area:\t%x\n", In_Buffer[0x2]);
+		printf("0x03 - Board Area:\t%x\n", In_Buffer[0x3]);
+		printf("0x04 - Product Info Area:\t%x\n", In_Buffer[0x4]);
+		printf("0x05 - Multi Record Area:\t%x\n", In_Buffer[0x5]);
+		printf("0x06 - Pad, Check Sum:\t%x %x\n", In_Buffer[0x6],
+		    In_Buffer[0x7]);
+		break;
+
+	case EBM_BOARD:
+		printf("0x08 - Version:\t%x\n", In_Buffer[0x8]);
+		printf("0x09 - Length:\t%x\n", In_Buffer[0x9]);
+		printf("0x0A - Language Code:\t%x\n", In_Buffer[0xA]);
+
+		/* Base build date for manufacturing is 1/1/1996 */
+		EBM_BuildDate.tm_year = 96;
+		EBM_BuildDate.tm_mday = 1;
+		EBM_BuildDate.tm_min = (In_Buffer[0xD] << 16 | In_Buffer[0xC] << 8 |
+		    In_Buffer[0xB]);
+		Time = mktime(&EBM_BuildDate);
+		if (Time == -1) {
+			printf("ERROR: invalid manufacturing date\n");
+			(void) close(FD);
+			return -1;
+		}
+
+		printf("0x0B - Manufacturing Date:\t%s", ctime(&Time));
+		snprintf(Buffer, 6+1, "%s", &In_Buffer[0xF]);
+		printf("0x0F - Manufacturer:\t%s\n", Buffer);
+		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x16]);
+		printf("0x16 - Product Name:\t%s\n", Buffer);
+		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x27]);
+		printf("0x27 - Serial Number:\t%s\n", Buffer);
+		snprintf(Buffer, 9+1, "%s", &In_Buffer[0x38]);
+		printf("0x38 - Part Number:\t%s\n", Buffer);
+		snprintf(Buffer, 1+1, "%s", &In_Buffer[0x42]);
+		printf("0x42 - FRU ID:\t%s\n", Buffer);
+		snprintf(Buffer, 8+1, "%s", &In_Buffer[0x44]);
+		printf("0x44 - Revision:\t%s\n", Buffer);
+		printf("0x4C - EoF, Pad, Check Sum:\t%x %x%x %x\n", In_Buffer[0x4C],
+		    In_Buffer[0x4D], In_Buffer[0x4E], In_Buffer[0x4F]);
+		break;
+
+	case EBM_MULTIRECORD:
+		printf("0x50 - Record Type:\t%x\n", In_Buffer[0x50]);
+		printf("0x51 - Record Format:\t%x\n", In_Buffer[0x51]);
+		printf("0x52 - Length:\t%x\n", In_Buffer[0x52]);
+		printf("0x53 - Record Check Sum:\t%x\n", In_Buffer[0x53]);
+		printf("0x54 - Header Check sum:\t%x\n", In_Buffer[0x54]);
+		printf("0x55 - Xilinx IANA ID:\t%x%x%x\n", In_Buffer[0x55],
+		    In_Buffer[0x56],In_Buffer[0x57]);
+		snprintf(Buffer, 8+1, "%s", &In_Buffer[0x58]);
+		printf("0x58 - Field Name Identifier:\t%s\n", Buffer);
+		break;
+
+	default:
+		printf("ERROR: invalid EBM target\n");
 		(void) close(FD);
 		return -1;
 	}

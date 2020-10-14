@@ -17,6 +17,7 @@ int DIMM_EEPROM_Check(void *);
 int Voltages_Check(void *);
 
 extern int Read_Voltage(Voltage_t *, float *);
+extern int Plat_Reset_Ops(void);
 
 /*
  * BITs
@@ -37,8 +38,8 @@ BITs_t BITs = {
 		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
 	},
 	.BIT[BIT_IDCODE_CHECK] = {
-		.Name = "XCVC1902 IDCODE Check",
-		.TCL_File = "idcode/xcvc1902_idcode_check.tcl",
+		.Name = "IDCODE Check",
+		.TCL_File = "idcode/idcode_check.tcl",
 		.Plat_BIT_Op = XSDB_Command,
 	},
 	.BIT[BIT_EBM_EEPROM_CHECK] = {
@@ -104,6 +105,7 @@ XSDB_Command(void *Arg)
 	BIT_t *BIT_p = Arg;
 	char System_Cmd[SYSCMD_MAX];
 
+	(void) Plat_Reset_Ops();
 	sprintf(System_Cmd, "%s; %s%s%s; %s %s%s", XSDB_ENV, "echo -n \'", 
 	    BIT_p->Name, ": \'", XSDB_CMD, BIT_PATH, BIT_p->TCL_File);
 	system(System_Cmd); 

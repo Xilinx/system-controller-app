@@ -8,8 +8,11 @@ set idcode [lindex [split $idcode_reg ":"] 1]
 set idcode [string map {" " ""} $idcode]
 set idcode [string map {"\n" ""} $idcode]
 
-# Check with IDCODE of xcvc1902 device
-if { $idcode == "04CA8093"} {
+if {$idcode == "14CA8093"} {
+   # VCK190: Versal xcvc1902
+   puts "PASS"
+} elseif {$idcode == "14CAA093"} {
+   # VMK180: Versal xcvm1802
    puts "PASS"
 } else {
    puts "FAIL" 

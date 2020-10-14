@@ -10,6 +10,7 @@
 		setbootmode - set boot mode to <target>
 		reset - apply power-on-reset
 		eeprom - lists the content of EEPROM
+		temperature - get the board temperature
 		listclock - lists the supported clock targets
 		getclock - get the frequency of <target>
 		setclock - set <target> to <value> frequency

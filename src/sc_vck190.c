@@ -12,6 +12,7 @@
 
 int Plat_Board_Name(char *Name);
 int Plat_Reset_Ops(void);
+int Plat_Temperature_Ops(void);
 int Workaround_Vccaux(void *Arg);
 
 /*
@@ -844,6 +845,42 @@ Plat_Reset_Ops(void)
 	// De-assert POR
 	sprintf(Buffer, "gpioset gpiochip0 82=1");
 	system(Buffer);
+
+	return 0;
+}
+
+/*
+ * Get the board temperature
+ */
+int
+Plat_Temperature_Ops(void)
+{
+	FILE *FP;
+	char Output[STRLEN_MAX];
+	char Command[] = "/usr/bin/sensors ff0b0000ethernetffffffff00-mdio-0";
+	double Temperature;
+
+	FP = popen(Command, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to execute sensors command\n");
+		return -1;
+	}
+
+	/* Temperature is on the 3rd line */
+	for (int i = 0; i < 3; i++) {
+		(void) fgets(Output, sizeof(Output), FP);
+	}
+
+	pclose(FP);
+	if (strstr(Output, "temp1:") == NULL) {
+		printf("ERROR: failed to get board temperature\n");
+		return -1;
+	}
+
+	(void) strtok(Output, ":");
+	(void) strcpy(Output, strtok(NULL, "C"));
+	Temperature = atof(Output);
+	printf("Temperature(C):\t%.1f\n", Temperature);
 
 	return 0;
 }

@@ -19,10 +19,11 @@
  * 1.5 - Support for IO expander.
  * 1.6 - Support for SFP connectors.
  * 1.7 - Support for QSFP connectors.
- * 1.8 - Support for reading EBM's EEPROM .
+ * 1.8 - Support for reading EBM's EEPROM.
+ * 1.9 - Support for getting board temperature.
  */
 #define MAJOR	1
-#define MINOR	8
+#define MINOR	9
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -66,6 +67,7 @@ extern int Plat_Gpio_match(int, char *);
 extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
+extern int Plat_Temperature_Ops(void);
 extern int Plat_QSFP_Init(void);
 
 static char Usage[] = "\n\
@@ -76,6 +78,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	setbootmode - set boot mode to <target>\n\
 	reset - apply power-on-reset\n\
 	eeprom - lists the content of EEPROM\n\
+	temperature - get the board temperature\n\
 	listclock - lists the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
@@ -117,6 +120,7 @@ typedef enum {
 	SETBOOTMODE,
 	RESET,
 	EEPROM,
+	TEMPERATURE,
 	LISTCLOCK,
 	GETCLOCK,
 	SETCLOCK,
@@ -164,6 +168,7 @@ static Command_t Commands[] = {
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Plat_Reset_Ops, },
 	{ .CmdId = EEPROM, .CmdStr = "eeprom", .CmdOps = Plat_EEPROM_Ops, },
+	{ .CmdId = TEMPERATURE, .CmdStr = "temperature", .CmdOps = Plat_Temperature_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },

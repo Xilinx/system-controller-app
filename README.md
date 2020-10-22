@@ -36,11 +36,11 @@
 		getSFP - get the connector information of <target> SFP
 		getpwmSFP - get the power mode value of <target> SFP
 		setpwmSFP - set the power mode value of <target> SFP to <value>
-		listQSFP - lists the supported QSFP connectors\n\
-		getQSFP - get the connector information of <target> QSFP\n\
-		getpwmQSFP - get the power mode value of <target> QSFP\n\
-		setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
-		getpwmoQSFP - get the power mode override value of <target> QSFP\n\
-		setpwmoQSFP - set the power mode override value of <target> QSFP to <value>\n\
-		getEBM - get the content of EEPROM from EBM card from either <target>:\n\
-			 'all', 'common', 'board', or 'multirecord'\n\
+		listQSFP - lists the supported QSFP connectors
+		getQSFP - get the connector information of <target> QSFP
+		getpwmQSFP - get the power mode value of <target> QSFP
+		setpwmQSFP - set the power mode value of <target> QSFP to <value>
+		getpwmoQSFP - get the power mode override value of <target> QSFP
+		setpwmoQSFP - set the power mode override value of <target> QSFP to <value>
+		getEBM - get the content of EEPROM from EBM card from either <target>:
+			 'all', 'common', 'board', or 'multirecord'

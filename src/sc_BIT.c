@@ -102,14 +102,28 @@ Clocks_Check(void *Arg)
 int
 XSDB_Command(void *Arg)
 {
+	FILE *FP;
 	BIT_t *BIT_p = Arg;
+	char Output[STRLEN_MAX];
 	char System_Cmd[SYSCMD_MAX];
 
 	(void) Plat_Reset_Ops();
-	sprintf(System_Cmd, "%s; %s%s%s; %s %s%s", XSDB_ENV, "echo -n \'", 
-	    BIT_p->Name, ": \'", XSDB_CMD, BIT_PATH, BIT_p->TCL_File);
-	system(System_Cmd); 
+	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
+	    BIT_p->TCL_File);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to invoke xsdb\n");
+		return -1;
+	}
 
+	(void) fgets(Output, sizeof(Output), FP);
+	pclose(FP);
+	if (strstr(Output, "no targets found") != NULL) {
+		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
+		return -1;
+	}
+
+	printf("%s: %s", BIT_p->Name, Output);
 	return 0;
 }
 

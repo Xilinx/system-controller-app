@@ -1048,6 +1048,8 @@ int Plat_Gpio_target_size(void)
 int
 Plat_QSFP_Init(void)
 {
+	FILE *FP;
+	char Output[STRLEN_MAX];
 	char System_Cmd[SYSCMD_MAX];
 
 	/* Set the boot mode to JTAG */
@@ -1059,9 +1061,20 @@ Plat_QSFP_Init(void)
 	}
 
 	(void) Plat_Reset_Ops();
-	sprintf(System_Cmd, "%s; %s %s%s", XSDB_ENV, XSDB_CMD, BIT_PATH,
+	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
 	    "qsfp_set_modsel/qsfp_download.tcl");
-	system(System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to invoke xsdb\n");
+		return -1;
+	}
+
+	(void) fgets(Output, sizeof(Output), FP);
+	pclose(FP);
+	if (strstr(Output, "no targets found") != NULL) {
+		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
+		return -1;
+	}
 
 	return 0;
 }

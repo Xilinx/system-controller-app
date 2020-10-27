@@ -1463,7 +1463,9 @@ int QSFP_Ops(void)
 		return -1;
 	}
 
-	(void) Plat_QSFP_Init();
+	if (Plat_QSFP_Init() != 0) {
+		return -1;
+	}
 
 	FD = open(QSFP->I2C_Bus, O_RDWR);
 	if (FD < 0) {

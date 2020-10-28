@@ -12,6 +12,7 @@
 
 int Plat_Board_Name(char *Name);
 int Plat_Reset_Ops(void);
+int Plat_JTAG_Ops(int);
 int Plat_Temperature_Ops(void);
 int Workaround_Vccaux(void *Arg);
 
@@ -849,6 +850,30 @@ Plat_Reset_Ops(void)
 	return 0;
 }
 
+int
+Plat_JTAG_Ops(int Select)
+{
+	switch (Select) {
+	case 1:
+		/* Overwrite the default JTAG switch */
+		system("gpioset gpiochip0 85=0 86=0");
+		break;
+	case 0:
+		/*
+		 * Reading the gpio lines causes ZU4 to tri-state the select
+		 * lines and that allows the switch to set back the default
+		 * values.
+		 */
+		system("gpioget gpiochip0 85 86 > /dev/NULL");
+		break;
+	default:
+		printf("ERROR: invalid JTAG select option\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
  * Get the board temperature
  */
@@ -1061,6 +1086,7 @@ Plat_QSFP_Init(void)
 	}
 
 	(void) Plat_Reset_Ops();
+	(void) Plat_JTAG_Ops(1);
 	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
 	    "qsfp_set_modsel/qsfp_download.tcl");
 	FP = popen(System_Cmd, "r");
@@ -1070,7 +1096,8 @@ Plat_QSFP_Init(void)
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
-	pclose(FP);
+	(void) pclose(FP);
+	(void) Plat_JTAG_Ops(0);
 	if (strstr(Output, "no targets found") != NULL) {
 		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
 		return -1;

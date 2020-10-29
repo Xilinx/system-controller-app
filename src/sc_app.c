@@ -5,6 +5,8 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <errno.h>
+#include <signal.h>
 #include <sys/utsname.h>
 #include "sc_app.h"
 
@@ -297,23 +299,43 @@ Parse_Options(int argc, char **argv)
 int
 Create_Lockfile(void)
 {
-	FILE *fp = NULL;
-	time_t curtime;
+	FILE *FP = NULL;
+	pid_t PID;
+	char Output[STRLEN_MAX];
 
-	if (access(LOCKFILE, F_OK) == 0) {
+	/* If there is no lockfile, create one */
+	if (access(LOCKFILE, F_OK) != 0) {
+		goto LockFile;
+	}
+
+	/* Verify the validity of pid recorded in lockfile */
+	FP = fopen(LOCKFILE, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to open lockfile\n");
+		return -1;
+	}
+
+	(void) fgets(Output, sizeof(Output), FP);
+	(void) fclose(FP);
+	PID = atoi(Output);
+	if (kill(PID, 0) == -1 && errno == ESRCH) {
+		/* pid in lockfile is stale, replace it with current pid */
+		goto LockFile;
+	} else {
+		/* Another instance of sc_app is running */
 		printf("ERROR: lockfile \"%s\" exists\n", LOCKFILE);
 		return -1;
 	}
 
-	fp = fopen(LOCKFILE, "w");
-	if (fp == NULL) {
+LockFile:
+	FP = fopen(LOCKFILE, "w");
+	if (FP == NULL) {
 		printf("ERROR: failed to create lockfile\n");
 		return -1;
 	}
 
-	time(&curtime);
-	fprintf(fp, "%s", ctime(&curtime)); 
-	(void) fclose(fp);
+	fprintf(FP, "%d\n", getpid());
+	(void) fclose(FP);
 	return 0;
 }
 
@@ -323,11 +345,7 @@ Create_Lockfile(void)
 int
 Destroy_Lockfile(void)
 {
-	if (remove(LOCKFILE) == -1) {
-		printf("ERROR: failed to remove lockfile\n");
-		return -1;
-	}
-
+	(void) remove(LOCKFILE);
 	return 0;
 }
 

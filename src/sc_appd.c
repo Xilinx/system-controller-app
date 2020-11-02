@@ -46,37 +46,27 @@ int (*Workaround_Op)(void *);
 extern int Plat_Board_Name(char *);
 extern int Plat_Reset_Ops(void);
 
-#define SILICON_ES1 \
-{ \
-	if (access(SILICONFILE, F_OK) == -1) { \
-		FILE *FP; \
-		FP = fopen(SILICONFILE, "w"); \
-		if (FP == NULL) { \
-			printf("ERROR: failed to write silicon file\n"); \
-		} else { \
-			(void) fputs("ES1\n", FP); \
-		} \
-		fclose(FP); \
-	} \
-}
+static int
+Is_Silicon_ES1(void)
+{
+	FILE *FP;
+	char Buffer[STRLEN_MAX];
 
-#define IS_SILICON_ES1(Yes) \
-{ \
-	(Yes) = 0; \
-	if (access(SILICONFILE, F_OK) == 0) { \
-		FILE *FP; \
-		char Buffer[STRLEN_MAX]; \
-		FP = fopen(SILICONFILE, "r"); \
-		if (FP == NULL) { \
-			printf("ERROR: failed to read silicon file\n"); \
-		} else { \
-			(void) fgets(Buffer, sizeof (Buffer), FP); \
-			fclose(FP); \
-			if (strcmp("ES1\n", Buffer) == 0) { \
-				(Yes) = 1; \
-			} \
-		} \
-	} \
+	if (access(SILICONFILE, F_OK) == 0) {
+		FP = fopen(SILICONFILE, "r");
+		if (FP == NULL) {
+			printf("ERROR: failed to read silicon file\n");
+			return -1;
+		}
+
+		(void) fgets(Buffer, sizeof (Buffer), FP);
+		(void) fclose(FP);
+		if (strcmp("ES1\n", Buffer) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 /*
@@ -105,8 +95,10 @@ Timer_Handler(int Signal, siginfo_t *Signal_Info, void *Arg)
 			printf("ERROR: failed to set the timer\n");
 		}
 
-		SILICON_ES1;
-		(void)(*Workaround_Op)(&GPIO_State);
+		if (Is_Silicon_ES1() == 1) {
+			(void)(*Workaround_Op)(&GPIO_State);
+		}
+
 		return;
 	}
 
@@ -168,7 +160,6 @@ int
 VCK190_GPIO(void)
 {
 	FILE *FP;
-	int ES1;
 	char Buffer[SYSCMD_MAX];
 	char Config_Token[STRLEN_MAX];
 	struct sigaction Sig_Action;
@@ -281,8 +272,7 @@ VCK190_GPIO(void)
 	 * If we are late for the party and Versal has already asserted
 	 * GPIO line high and it is waiting for the workaround, apply it.
 	 */
-	IS_SILICON_ES1(ES1);
-	if (ES1 == 1) {
+	if (Is_Silicon_ES1() == 1) {
 		GPIO_State = gpiod_line_get_value(GPIO_Line);
 		if (GPIO_State == -1) {
 			printf("ERROR: failed to get current state of gpio line\n");
@@ -345,8 +335,9 @@ VCK190_GPIO(void)
 			break;
 
 		case Workaround:
-			SILICON_ES1;
-			(void)(*Workaround_Op)(&GPIO_State);
+			if (Is_Silicon_ES1() == 1) {
+				(void)(*Workaround_Op)(&GPIO_State);
+			}
 			break;
 
 		default:
@@ -366,6 +357,9 @@ VCK190_Version(void)
 	char Output[STRLEN_MAX];
 	char Command[] = "/usr/bin/sc_app -c getvoltage -t VCC_RAM";
 
+	/* Remove previous 'silicon' file, if any */
+	(void) remove(SILICONFILE);
+
 	FP = popen(Command, "r");
 	if (FP == NULL) {
 		printf("ERROR: failed to execute sc_app command\n");
@@ -373,7 +367,7 @@ VCK190_Version(void)
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
-	pclose(FP);
+	(void) pclose(FP);
 	(void) strtok(Output, ":");
 	(void) strcpy(Output, strtok(NULL, "\n"));
 	Voltage = atof(Output);
@@ -386,7 +380,14 @@ VCK190_Version(void)
 	 * margin to be safe.
 	 */
 	if (Voltage < (0.78f - 0.04f)) {
-		SILICON_ES1;
+		FP = fopen(SILICONFILE, "w");
+		if (FP == NULL) {
+			printf("ERROR: failed to write silicon file\n");
+			return -1;
+		}
+
+		(void) fputs("ES1\n", FP);
+		(void) fclose(FP);
 	}
 
 	return 0;

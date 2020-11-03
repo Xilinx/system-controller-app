@@ -1077,14 +1077,6 @@ Plat_QSFP_Init(void)
 	char Output[STRLEN_MAX];
 	char System_Cmd[SYSCMD_MAX];
 
-	/* Set the boot mode to JTAG */
-	for (int i = 0; i < 4; i++) {
-		sprintf(System_Cmd, "gpioset %s=%d",
-		    (char *)&BootModes.Mode_Lines[i],
-		    ((BootModes.BootMode[JTAG].Value >> i) & 0x1));
-		system(System_Cmd);
-	}
-
 	(void) Plat_Reset_Ops();
 	(void) Plat_JTAG_Ops(1);
 	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,

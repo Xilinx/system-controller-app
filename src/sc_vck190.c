@@ -11,6 +11,7 @@
 #define BOARDNAME	"vck190"
 
 int Plat_Board_Name(char *Name);
+int Plat_BootMode_Ops(int);
 int Plat_Reset_Ops(void);
 int Plat_JTAG_Ops(int);
 int Plat_Temperature_Ops(void);
@@ -812,6 +813,33 @@ Plat_Version_Ops(int *Major, int *Minor)
 }
 
 int
+Plat_BootMode_Ops(int Value)
+{
+	FILE *FP;
+	char Output[STRLEN_MAX];
+	char System_Cmd[SYSCMD_MAX];
+
+	(void) Plat_JTAG_Ops(1);
+	sprintf(System_Cmd, "%s; %s %s%s %x 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
+	    "boot_mode/alt_boot_mode.tcl", Value);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to invoke xsdb\n");
+		return -1;
+	}
+
+	(void) fgets(Output, sizeof(Output), FP);
+	(void) pclose(FP);
+	(void) Plat_JTAG_Ops(0);
+	if (strstr(Output, "no targets found") != NULL) {
+		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
 Plat_Reset_Ops(void)
 {
 	FILE *FP;
@@ -846,6 +874,28 @@ Plat_Reset_Ops(void)
 	// De-assert POR
 	sprintf(Buffer, "gpioset gpiochip0 82=1");
 	system(Buffer);
+
+	/* If a boot mode is defined, set it after POR */
+	if (access(BOOTMODEFILE, F_OK) == 0) {
+		FP = fopen(BOOTMODEFILE, "r");
+		if (FP == NULL) {
+			printf("ERROR: failed to read boot_mode file\n");
+			return -1;
+		}
+
+		(void) fscanf(FP, "%s", Buffer);
+		(void) fclose(FP);
+		for (int i = 0; i < BootModes.Numbers; i++) {
+			if (strcmp(Buffer, (char *)BootModes.BootMode[i].Name) == 0) {
+				if (Plat_BootMode_Ops(BootModes.BootMode[i].Value) != 0) {
+					printf("ERROR: failed to set the boot mode\n");
+					return -1;
+				}
+
+				break;
+			}
+		}
+	}
 
 	return 0;
 }
@@ -1077,7 +1127,6 @@ Plat_QSFP_Init(void)
 	char Output[STRLEN_MAX];
 	char System_Cmd[SYSCMD_MAX];
 
-	(void) Plat_Reset_Ops();
 	(void) Plat_JTAG_Ops(1);
 	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
 	    "qsfp_set_modsel/qsfp_download.tcl");

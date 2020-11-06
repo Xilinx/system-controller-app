@@ -468,6 +468,9 @@ main()
 		return -1;
 	}
 
+	/* No pre-set boot mode is supported */
+	(void) remove(BOOTMODEFILE);
+
 	if (Plat_Board_Name(Board) == -1) {
 		printf("ERROR: failed to get board name\n");
 		return -1;

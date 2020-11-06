@@ -411,7 +411,9 @@ int
 BootMode_Ops(void)
 {
 	int Target_Index = -1;
-	char System_Cmd[SYSCMD_MAX];
+	FILE *FP;
+	BootMode_t *BootMode;
+	char Buffer[STRLEN_MAX];
 
 	if (Command.CmdId == LISTBOOTMODE) {
 		for (int i = 0; i < BootModes.Numbers; i++) {
@@ -430,6 +432,7 @@ BootMode_Ops(void)
 	for (int i = 0; i < BootModes.Numbers; i++) {
 		if (strcmp(Target_Arg, (char *)BootModes.BootMode[i].Name) == 0) {
 			Target_Index = i;
+			BootMode = &BootModes.BootMode[Target_Index];
 			break;
 		}
 	}
@@ -441,13 +444,16 @@ BootMode_Ops(void)
 
 	switch (Command.CmdId) {
 	case SETBOOTMODE:
-		/* Boot Mode */
-		for (int i = 0; i < 4; i++) {
-			sprintf(System_Cmd, "gpioset %s=%d",
-			    (char *)&BootModes.Mode_Lines[i],
-			    ((BootModes.BootMode[Target_Index].Value >> i) & 0x1));
-			system(System_Cmd);
+		/* Record the boot mode */
+		FP = fopen(BOOTMODEFILE, "w");
+		if (FP == NULL) {
+			printf("ERROR: failed to write boot_mode file\n");
+			return -1;
 		}
+
+		(void) sprintf(Buffer, "%s\n", BootMode->Name);
+		(void) fputs(Buffer, FP);
+		(void) fclose(FP);
 		break;
 	default:
 		printf("ERROR: invalid bootmode command\n");
@@ -1458,6 +1464,7 @@ int QSFP_Ops(void)
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
+	int Ret = 0;
 
 	if (Command.CmdId == LISTQSFP) {
 		for (int i = 0; i < QSFPs.Numbers; i++) {
@@ -1492,7 +1499,8 @@ int QSFP_Ops(void)
 	FD = open(QSFP->I2C_Bus, O_RDWR);
 	if (FD < 0) {
 		printf("ERROR: unable to open QSFP connector\n");
-		return -1;
+		Ret = -1;
+		goto Out;
 	}
 
 	switch (Command.CmdId) {
@@ -1567,15 +1575,15 @@ int QSFP_Ops(void)
 		/* Validate the value */
 		if (V_Flag == 0) {
 			printf("ERROR: no PWM value\n");
-			(void) close(FD);
-			return -1;
+			Ret = -1;
+			goto Out;
 		}
 
 		Value = strtol(Value_Arg, NULL, 16);
 		if (Value > 0xFF) {
 			printf("ERROR: invalid PWM value\n");
-			(void) close(FD);
-			return -1;
+			Ret = -1;
+			goto Out;
 		}
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
@@ -1597,15 +1605,15 @@ int QSFP_Ops(void)
 		/* Validate the value */
 		if (V_Flag == 0) {
 			printf("ERROR: no PWM Override value\n");
-			(void) close(FD);
-			return -1;
+			Ret = -1;
+			goto Out;
 		}
 
 		Value = strtol(Value_Arg, NULL, 16);
 		if (Value != 0x0 && Value != 0x1 && Value != 0x3) {
 			printf("ERROR: valid PWM Override value: 0x0, 0x1, or 0x3\n");
-			(void) close(FD);
-			return -1;
+			Ret = -1;
+			goto Out;
 		}
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
@@ -1616,12 +1624,18 @@ int QSFP_Ops(void)
 
 	default:
 		printf("ERROR: invalid QSFP command\n");
-		(void) close(FD);
-		return -1;
+		Ret = -1;
 	}
 
+Out:
+	/*
+	 * The Plat_QSFP_Init() call may change the current boot mode to JTAG
+	 * to download a PDI.  Calling Plat_Reset_Ops() restores the current
+	 * boot mode.
+	 */
+	(void) Plat_Reset_Ops();
 	(void) close(FD);
-	return 0;
+	return Ret;
 }
 
 typedef enum {

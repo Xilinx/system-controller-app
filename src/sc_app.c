@@ -318,8 +318,12 @@ Create_Lockfile(void)
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) fclose(FP);
 	PID = atoi(Output);
-	if (kill(PID, 0) == -1 && errno == ESRCH) {
-		/* pid in lockfile is stale, replace it with current pid */
+	if ((PID < 301) || (kill(PID, 0) == -1 && errno == ESRCH)) {
+		/*
+		 * If pid is below the minimum or pid in the lockfile is stale,
+		 * replace it with current pid.  Minimum pid used for new
+		 * processes is 301.
+		 */
 		goto LockFile;
 	} else {
 		/* Another instance of sc_app is running */

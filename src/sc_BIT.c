@@ -115,17 +115,24 @@ XSDB_Command(void *Arg)
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
 		printf("ERROR: failed to invoke xsdb\n");
-		return -1;
+		goto Out;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
-	(void) Plat_JTAG_Ops(0);
 	if (strstr(Output, "no targets found") != NULL) {
 		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
-		return -1;
+		(void) strcpy(Output, "FAIL\n");
+		goto Out;
 	}
 
+	if (strstr(Output, "ERROR:") != NULL) {
+		printf("%s", Output);
+		(void) strcpy(Output, "FAIL\n");
+	}
+
+Out:
+	(void) Plat_JTAG_Ops(0);
 	printf("%s: %s", BIT_p->Name, Output);
 	return 0;
 }

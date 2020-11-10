@@ -15,7 +15,7 @@ if {$idcode == "14CA8093"} {
    # VMK180: Versal xcvm1802
    puts "PASS"
 } else {
-   puts "FAIL" 
+   puts "ERROR: invalid idcode 0x$idcode"
 }
 
 disconnect

@@ -58,9 +58,9 @@ typedef enum {
 
 typedef struct {
 	char	Name[STRLEN_MAX];
-	unsigned int	Default_Freq;
-	unsigned int	Upper_Freq;
-	unsigned int	Lower_Freq;
+	double	Default_Freq;
+	double	Upper_Freq;
+	double	Lower_Freq;
 	Clock_Type	Type;
 	char	Sysfs_Path[SYSCMD_MAX];
 	I2C_Route_t	I2C_Route;

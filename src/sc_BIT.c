@@ -67,7 +67,7 @@ Clocks_Check(void *Arg)
 	BIT_t *BIT_p = Arg;
 	int FD;
 	char ReadBuffer[STRLEN_MAX];
-	int Freq, Lower, Upper, Delta;
+	double Freq, Lower, Upper, Delta;
 
 	for (int i = 0; i < Clocks.Numbers; i++) {
 		FD = open(Clocks.Clock[i].Sysfs_Path, O_RDONLY);
@@ -79,9 +79,9 @@ Clocks_Check(void *Arg)
 			return -1;
 		}
 		(void) close(FD);
-		/* Allow up to 100 Hz delta */
-		Delta = 100;
-		Freq = atoi(ReadBuffer);
+		/* Allow up to 1000 Hz delta */
+		Delta = 0.001;
+		Freq = strtod(ReadBuffer, NULL) / 1000000.0;	// In MHz
 		Lower = Clocks.Clock[i].Default_Freq - Delta;
 		Upper = Clocks.Clock[i].Default_Freq + Delta;
 		if (Freq < Lower || Freq > Upper) {

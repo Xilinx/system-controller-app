@@ -434,9 +434,10 @@ Set_Clocks(void)
 		}
 
 		/* Remove any white spaces in Value string */
-		sprintf(Value, "%d\n", atoi(Value));
+		(void) sprintf(Value, "%u\n",
+		    (unsigned int)(strtod(Value, NULL) * 1000000));
 		if (write(FD, Value, strlen(Value)) != strlen(Value)) {
-			printf("ERROR: failed to set clock frequency\n");
+			printf("ERROR: failed to set clock frequency %s\n", Value);
 			(void) close(FD);
 			(void) fclose(FP);
 			return -1;

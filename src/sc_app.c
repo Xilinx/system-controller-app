@@ -471,9 +471,11 @@ Clock_Ops(void)
 {
 	int Target_Index = -1;
 	Clock_t *Clock;
+	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
-	int Upper, Lower;
-	unsigned long int Value;
+	char Output[STRLEN_MAX];
+	double Frequency;
+	double Upper, Lower;
 
 	if (Command.CmdId == LISTCLOCK) {
 		for (int i = 0; i < Clocks.Numbers; i++) {
@@ -503,9 +505,19 @@ Clock_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETCLOCK:
-		sprintf(System_Cmd, "echo -n \'Frequency(Hz):\t\'; cat %s",
-		    Clock->Sysfs_Path);
-		system(System_Cmd);
+		(void) sprintf(System_Cmd, "cat %s", Clock->Sysfs_Path);
+		FP = popen(System_Cmd, "r");
+		if (FP == NULL) {
+			printf("ERROR: failed to access sysfs path\n");
+			return -1;
+		}
+
+		(void) fgets(Output, sizeof(Output), FP);
+		(void) pclose(FP);
+		Frequency = strtod(Output, NULL) / 1000000.0;	// In MHz
+		/* Print out 3-digit after decimal point without rounding */
+		printf("Frequency(MHz):\t%.3f\n",
+		   ((signed long)(Frequency * 1000) * 0.001f));
 		break;
 	case SETCLOCK:
 	case SETBOOTCLOCK:
@@ -515,37 +527,39 @@ Clock_Ops(void)
 			return -1;
 		}
 
-		Value = atol(Value_Arg);
+		Frequency = strtod(Value_Arg, NULL);
 		Upper = Clock->Upper_Freq;
 		Lower = Clock->Lower_Freq;
-		if (Value > Upper || Value < Lower) {
-			printf("ERROR: valid frequency range is %d-%d\n",
+		if (Frequency > Upper || Frequency < Lower) {
+			printf("ERROR: valid frequency range is %.3f MHz - %.3f MHz\n",
 			    Lower, Upper);
 			return -1;
 		}
 
-		sprintf(System_Cmd, "echo %d > %s", (int)Value, Clock->Sysfs_Path);
+		(void) sprintf(System_Cmd, "echo %u > %s",
+		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
 		system(System_Cmd);
 
 		if (Command.CmdId == SETBOOTCLOCK) {
 			/* Remove the old value, if any */
-			sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
+			(void) sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
 			    Clock->Name, CLOCKFILE);
 			system(System_Cmd);
 
-			sprintf(System_Cmd, "echo \'%s:\t%d\' >> %s",
-			    Clock->Name, (int)Value, CLOCKFILE);
+			(void) sprintf(System_Cmd, "echo \'%s:\t%.3f\' >> %s",
+			    Clock->Name, Frequency, CLOCKFILE);
 			system(System_Cmd);
 		}
 
 		break;
 	case RESTORECLOCK:
-		Value = Clock->Default_Freq;
-		sprintf(System_Cmd, "echo %d > %s", (int)Value, Clock->Sysfs_Path);
+		Frequency = Clock->Default_Freq;
+		(void) sprintf(System_Cmd, "echo %u > %s",
+		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
 		system(System_Cmd);
 
 		/* Remove any custom boot frequency */
-		sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
+		(void) sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
 		    Clock->Name, CLOCKFILE);
 		system(System_Cmd);
 		break;

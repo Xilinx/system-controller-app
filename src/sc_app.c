@@ -579,6 +579,7 @@ int Read_Voltage(Voltage_t *Regulator, float *Voltage)
 	signed int Exponent;
 	short Mantissa;
 	int Get_Vout_Mode = 1;
+	int Ret = 0;
 
 	FD = open(Regulator->I2C_Bus, O_RDWR);
 	if (FD < 0) {
@@ -590,7 +591,11 @@ int Read_Voltage(Voltage_t *Regulator, float *Voltage)
 	if (-1 != Regulator->Page_Select) {
 		Out_Buffer[0] = 0x0;
 		Out_Buffer[1] = Regulator->Page_Select;
-		I2C_WRITE(FD, Regulator->I2C_Address, 2, Out_Buffer);
+		I2C_WRITE(FD, Regulator->I2C_Address, 2, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
 	}
 
 	/*
@@ -608,7 +613,12 @@ int Read_Voltage(Voltage_t *Regulator, float *Voltage)
 	if (1 == Get_Vout_Mode) {
 		Out_Buffer[0] = PMBUS_VOUT_MODE;
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
-		I2C_READ(FD, Regulator->I2C_Address, 1, Out_Buffer, In_Buffer);
+		I2C_READ(FD, Regulator->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		Exponent = In_Buffer[0] - (sizeof(int) * 8);
 	} else {
 		/* For IR38164, use exponent value -8 */
@@ -617,7 +627,12 @@ int Read_Voltage(Voltage_t *Regulator, float *Voltage)
 
 	Out_Buffer[0] = PMBUS_READ_VOUT;
 	(void *) memset(In_Buffer, 0, STRLEN_MAX);
-	I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer);
+	I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
 	Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
 	*Voltage = Mantissa * pow(2, Exponent);
 
@@ -683,6 +698,7 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
 	float Shunt_Voltage;
+	int Ret = 0;
 
 	FD = open(Ina226->I2C_Bus, O_RDWR);
 	if (FD < 0) {
@@ -693,12 +709,18 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 	(void *) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x1;	// Shunt Voltage Register(01h)
-	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
+	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
 	Shunt_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
 	/* Ignore negative reading */
 	if (Shunt_Voltage >= 0x8000) {
 		Shunt_Voltage = 0;
 	}
+
 	Shunt_Voltage *= 2.5;	// 2.5 μV per bit
 	*Current = (Shunt_Voltage / (float)Ina226->Shunt_Resistor);
 	*Current *= Ina226->Phase_Multiplier;
@@ -706,7 +728,12 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 	(void *) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x2;	// Bus Voltage Register(02h)
-	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer);
+	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
 	*Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
 	*Voltage *= 1.25;	// 1.25 mV per bit
 	*Voltage /= 1000;
@@ -963,12 +990,14 @@ union spd_ddr {
 
 int DDRi2c_read(int fd, __u8 *Buf, struct i2c_info *Iic)
 {
+	int Ret = 0;
+
 	if (ioctl(fd, I2C_SLAVE_FORCE, Iic->Bus_addr) < 0) {
 		perror(Dimm1.I2C_Bus);
 		return -1;
 	}
-	I2C_READ(fd, Iic->Bus_addr, Iic->Read_len, &Iic->Reg_addr, Buf);
-	return 0;
+	I2C_READ(fd, Iic->Bus_addr, Iic->Read_len, &Iic->Reg_addr, Buf, Ret);
+	return Ret;
 }
 
 #ifdef DEBUG
@@ -1163,6 +1192,7 @@ int Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
+	int Ret = 0;
 
 	FD = open(IO_Exp->I2C_Bus, O_RDWR);
 	if (FD < 0) {
@@ -1174,14 +1204,23 @@ int Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
 	(void *) memset(In_Buffer, 0, STRLEN_MAX);
 	if (Op == 0) {
 		Out_Buffer[0] = Offset;
-		I2C_READ(FD, IO_Exp->I2C_Address, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, IO_Exp->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		*In = ((In_Buffer[0] << 8) | In_Buffer[1]);
 
 	} else if (Op == 1) {
 		Out_Buffer[0] = Offset;
 		Out_Buffer[1] = ((*Out >> 8) & 0xFF);
 		Out_Buffer[2] = (*Out & 0xFF);
-		I2C_WRITE(FD, IO_Exp->I2C_Address, 3, Out_Buffer);
+		I2C_WRITE(FD, IO_Exp->I2C_Address, 3, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
 
 	} else {
 		printf("ERROR: invalid access operation\n");
@@ -1352,6 +1391,7 @@ int SFP_Ops(void)
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
+	int Ret = 0;
 
 	if (Command.CmdId == LISTSFP) {
 		for (int i = 0; i < SFPs.Numbers; i++) {
@@ -1390,19 +1430,34 @@ int SFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x14;	// 0x14-0x23: SFP Vendor Name
-		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		printf("Manufacturer:\t%s\n", In_Buffer);
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x44;	// 0x44-0x53: Serial Number
-		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		printf("Serial Number:\t%s\n", In_Buffer);
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x60;	// 0x60-0x61: Temperature Monitor
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		Value = (Value & 0x7FFF) - (Value & 0x8000);
 		/* Each bit of low byte is equivalent to 1/256 celsius */
@@ -1411,7 +1466,12 @@ int SFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x62;	// 0x62-0x63: Voltage Sense
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		/* Each bit is 100 uV */
 		printf("Supply Voltage(V):\t%.2f\n", ((float)Value * 0.0001));
@@ -1419,7 +1479,12 @@ int SFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x70;	// 0x70-0x71: Alarm
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		printf("Alarm:\t%x\n", (In_Buffer[0] << 8) | In_Buffer[1]);
 		break;
 
@@ -1427,7 +1492,12 @@ int SFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x80;	// 0x80-0x81: PWM1 & PWM2 Controller
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		printf("Power Mode(0-2W):\t%x\n", (In_Buffer[0] << 8) | In_Buffer[1]);
 		break;
 
@@ -1449,12 +1519,22 @@ int SFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x80;	// 0x80: PWM1 Controller
 		Out_Buffer[1] = (Value & 0xFF);
-		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer);
+		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		/* Add a delay, since back-to-back write fails for this device. */
 		sleep(1);
 		Out_Buffer[0] = 0x81;	// 0x81: PWM2 Controller
 		Out_Buffer[1] = (Value & 0xFF);
-		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer);
+		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
 		break;
 
 	default:
@@ -1522,25 +1602,41 @@ int QSFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x94;	// 0x94-0xA3: QSFP Vendor Name
-		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Manufacturer:\t%s\n", In_Buffer);
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
-		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Part Number:\t%s\n", In_Buffer);
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
-		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Serial Number:\t%s\n", In_Buffer);
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature Monitor
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		Value = (Value & 0x7FFF) - (Value & 0x8000);
 		/* Each bit of low byte is equivalent to 1/256 celsius */
@@ -1549,7 +1645,11 @@ int QSFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		/* Each bit is 100 uV */
 		printf("Supply Voltage(V):\t%.2f\n", ((float)Value * 0.0001));
@@ -1557,21 +1657,33 @@ int QSFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x3;	// 0x3-0x4: Alarms
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Alarms (Bytes 3-4):\t%x\n", (In_Buffer[0] << 8) |
 		    In_Buffer[1]);
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x6;	// 0x6-0x7: Alarms
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Alarms (Bytes 6-7):\t%x\n", (In_Buffer[0] << 8) |
 		    In_Buffer[1]);
 
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x9;	// 0x9-0xC: Alarms
-		I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Alarms (Bytes 9-12):\t%x\n", ((In_Buffer[0] << 24) |
 		    (In_Buffer[1] << 16) | (In_Buffer[2] << 8) | In_Buffer[3]));
 		break;
@@ -1580,7 +1692,11 @@ int QSFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
-		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Register 98, bit7 +2.5w, bit6 +1.5w, bits5-0 up to 1.0w:\t%x\n",
 		    In_Buffer[0]);
 		break;
@@ -1603,14 +1719,22 @@ int QSFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
 		Out_Buffer[1] = (Value & 0xFF);
-		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer);
+		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		break;
 
 	case GETPWMOQSFP:
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void *) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
-		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer);
+		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		printf("Register 93, 0 = use LPMode pin, 1 = hi pwr, 3 = low pwr:\t%x\n",
 		    In_Buffer[0]);
 		break;
@@ -1633,7 +1757,11 @@ int QSFP_Ops(void)
 		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
 		Out_Buffer[1] = (Value & 0x3);
-		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer);
+		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
 		break;
 
 	default:
@@ -1671,6 +1799,7 @@ int EBM_Ops(void)
 	char Buffer[STRLEN_MAX];
 	static struct tm EBM_BuildDate;
 	time_t Time;
+	int Ret = 0;
 
 	/* Validate the EBM target */
 	if (T_Flag == 0) {
@@ -1700,7 +1829,10 @@ int EBM_Ops(void)
 	(void *) memset(Out_Buffer, 0, SYSCMD_MAX);
 	(void *) memset(In_Buffer, 0, SYSCMD_MAX);
 	Out_Buffer[0] = 0x0;
-	I2C_READ(FD, Daughter_Card.I2C_Address, 256, Out_Buffer, In_Buffer);
+	I2C_READ(FD, Daughter_Card.I2C_Address, 256, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		return Ret;
+	}
 
 	switch (Target) {
 	case EBM_ALL:

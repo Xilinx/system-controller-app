@@ -175,6 +175,7 @@ DIMM_EEPROM_Check(void *Arg)
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
+	int Ret = 0;
 
 	FD = open(Dimm1.I2C_Bus, O_RDWR);
 	if (FD < 0) {
@@ -193,7 +194,13 @@ DIMM_EEPROM_Check(void *Arg)
 	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
 	(void *) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x2;	// Byte 2: DRAM Device Type
-	I2C_READ(FD, Dimm1.Spd.Bus_addr, 1, Out_Buffer, In_Buffer);
+	I2C_READ(FD, Dimm1.Spd.Bus_addr, 1, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		printf("%s: FAIL\n", BIT_p->Name);
+		(void) close(FD);
+		return Ret;
+	}
+
 	if (In_Buffer[0] != 0xc) {
 		printf("ERROR: DIMM is not DDR4\n");
 		printf("%s: FAIL\n", BIT_p->Name);

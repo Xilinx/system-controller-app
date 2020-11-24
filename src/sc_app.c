@@ -505,6 +505,11 @@ Clock_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETCLOCK:
+		/* XXX - The get clock command prints default value for Beta release */
+		printf("Frequency(MHz):\t%.3f\n",
+		   ((signed long)(Clock->Default_Freq * 1000) * 0.001f));
+		break;
+
 		(void) sprintf(System_Cmd, "cat %s", Clock->Sysfs_Path);
 		FP = popen(System_Cmd, "r");
 		if (FP == NULL) {
@@ -521,6 +526,10 @@ Clock_Ops(void)
 		break;
 	case SETCLOCK:
 	case SETBOOTCLOCK:
+		/* XXX - The set clock commands are not supported for Beta release */
+		printf("ERROR: unsupported clock command for this release\n");
+		return -1;
+
 		/* Validate the frequency */
 		if (V_Flag == 0) {
 			printf("ERROR: no clock frequency\n");
@@ -553,6 +562,10 @@ Clock_Ops(void)
 
 		break;
 	case RESTORECLOCK:
+		/* XXX - The clock set commands are not supported for Beta release */
+		printf("ERROR: unsupported clock command for this release\n");
+		return -1;
+
 		Frequency = Clock->Default_Freq;
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
@@ -565,7 +578,7 @@ Clock_Ops(void)
 		break;
 	default:
 		printf("ERROR: invalid clock command\n");
-		break;
+		return -1;
 	}
 
 	return 0;

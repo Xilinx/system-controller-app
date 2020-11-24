@@ -24,7 +24,10 @@ extern int Plat_JTAG_Ops(int);
  * BITs
  */
 typedef enum {
+// XXX - This BIT is not supported for Beta release.
+#if 0
 	BIT_CLOCKS_CHECK,
+#endif
 	BIT_IDCODE_CHECK,
 	BIT_EBM_EEPROM_CHECK,
 	BIT_DIMM_EEPROM_CHECK,
@@ -34,10 +37,13 @@ typedef enum {
 
 BITs_t BITs = {
 	.Numbers = BIT_MAX,
+// XXX - This BIT is not supported for Beta release.
+#if 0
 	.BIT[BIT_CLOCKS_CHECK] = {
 		.Name = "Check Clocks",		// Name of BIT to run
 		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
 	},
+#endif
 	.BIT[BIT_IDCODE_CHECK] = {
 		.Name = "IDCODE Check",
 		.TCL_File = "idcode/idcode_check.tcl",

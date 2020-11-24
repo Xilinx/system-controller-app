@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 #ifndef SC_APP_H_
 #define SC_APP_H_
 

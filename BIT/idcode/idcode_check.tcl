@@ -1,3 +1,9 @@
+#
+# Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
+
 connect -xvc-url TCP:127.0.0.1:2542
 
 targets -set -nocase -filter {name =~ "*Versal*"}

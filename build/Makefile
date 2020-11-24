@@ -1,3 +1,9 @@
+#
+# Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
+
 PLAT	:= vck190
 BIT	:= BIT
 APP	= sc_app

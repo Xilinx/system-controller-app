@@ -1,3 +1,9 @@
+#
+# Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
+
 proc switch_to_jtag {} {
    targets -set -nocase -filter {name =~ "*Versal*"}
 

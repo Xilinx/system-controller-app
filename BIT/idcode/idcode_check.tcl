@@ -15,11 +15,13 @@ set idcode [string map {" " ""} $idcode]
 set idcode [string map {"\n" ""} $idcode]
 
 if {$idcode == "14CA8093"} {
-   # VCK190: Versal xcvc1902
-   puts "PASS"
+   puts "XCVC1902 PROD"
+} elseif {$idcode == "04CA8093"} {
+   puts "XCVC1902 ES1"
 } elseif {$idcode == "14CAA093"} {
-   # VMK180: Versal xcvm1802
-   puts "PASS"
+   puts "XCVM1802 PROD"
+} elseif {$idcode == "04CAA093"} {
+   puts "XCVM1802 ES1"
 } else {
    puts "ERROR: invalid idcode 0x$idcode"
 }

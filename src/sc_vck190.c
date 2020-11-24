@@ -20,6 +20,7 @@ int Plat_Board_Name(char *Name);
 int Plat_BootMode_Ops(int);
 int Plat_Reset_Ops(void);
 int Plat_JTAG_Ops(int);
+int Plat_IDCODE_Ops(char *, int);
 int Plat_Temperature_Ops(void);
 int Workaround_Vccaux(void *Arg);
 
@@ -930,6 +931,45 @@ Plat_JTAG_Ops(int Select)
 	return 0;
 }
 
+int
+Plat_IDCODE_Ops(char *Output, int Length)
+{
+	FILE *FP;
+	char System_Cmd[SYSCMD_MAX];
+	int Ret = 0;
+
+	if (Output == NULL) {
+		printf("ERROR: unallocated output buffer\n");
+		return -1;
+	}
+
+	(void) Plat_JTAG_Ops(1);
+	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
+	    "idcode/idcode_check.tcl");
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		strcpy(Output, "ERROR: failed to invoke xsdb\n");
+		Ret = -1;
+		goto Out;
+	}
+
+	(void) fgets(Output, Length, FP);
+	(void) pclose(FP);
+	if (strstr(Output, "no targets found") != NULL) {
+		strcpy(Output, "ERROR: incorrect setting for JTAG switch (SW3)\n");
+		Ret = -1;
+		goto Out;
+	}
+
+	if (strstr(Output, "ERROR:") != NULL) {
+		Ret = -1;
+	}
+
+Out:
+	(void) Plat_JTAG_Ops(0);
+	return Ret;
+}
+
 /*
  * Get the board temperature
  */
@@ -1015,6 +1055,16 @@ Plat_EEPROM_Ops(void)
 	// Language Code
 	printf("Language: %d\n", ReadBuffer[0xA]);
 
+	// Silicon Revision
+	if (Plat_IDCODE_Ops(Buffer, STRLEN_MAX) != 0) {
+		printf("ERROR: failed to get silicon revision\n");
+		return -1;
+	}
+
+	(void) strtok(Buffer, " ");
+	(void) strcpy(Buffer, strtok(NULL, "\n"));
+	printf("Silicon Revision: %s\n", Buffer);
+
 	// Manufacturing Date
 	BuildDate.tm_min = (ReadBuffer[0xD] << 16 | ReadBuffer[0xC] << 8 |
 	    ReadBuffer[0xB]);
@@ -1044,7 +1094,7 @@ Plat_EEPROM_Ops(void)
 
 	// Board Revision
 	snprintf(Buffer, 8+1, "%s", &ReadBuffer[0x44]);
-	printf("Board Reversion: %s\n", Buffer);
+	printf("Board Revision: %s\n", Buffer);
 
 	// MAC Address 0
 	printf("MAC Address 0: %x:%x:%x:%x:%x:%x\n", ReadBuffer[0x80],

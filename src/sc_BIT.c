@@ -17,7 +17,7 @@ extern struct ddr_dimm1 Dimm1;
 extern Voltages_t Voltages;
 
 int Clocks_Check(void *);
-int XSDB_Command(void *);
+int IDCODE_Check(void *);
 int EBM_EEPROM_Check(void *);
 int DIMM_EEPROM_Check(void *);
 int Voltages_Check(void *);
@@ -25,6 +25,7 @@ int Voltages_Check(void *);
 extern int Read_Voltage(Voltage_t *, float *);
 extern int Plat_Reset_Ops(void);
 extern int Plat_JTAG_Ops(int);
+extern int Plat_IDCODE_Ops(char *, int);
 
 /*
  * BITs
@@ -53,7 +54,7 @@ BITs_t BITs = {
 	.BIT[BIT_IDCODE_CHECK] = {
 		.Name = "IDCODE Check",
 		.TCL_File = "idcode/idcode_check.tcl",
-		.Plat_BIT_Op = XSDB_Command,
+		.Plat_BIT_Op = IDCODE_Check,
 	},
 	.BIT[BIT_EBM_EEPROM_CHECK] = {
 		.Name = "EBM EEPROM Check",
@@ -109,42 +110,21 @@ Clocks_Check(void *Arg)
 }
 
 /*
- * This routine is used to invoke XSDB with a tcl script that contains
- * the test.
+ * This test checks whether the IDCODE is valid.
  */
 int
-XSDB_Command(void *Arg)
+IDCODE_Check(void *Arg)
 {
-	FILE *FP;
 	BIT_t *BIT_p = Arg;
 	char Output[STRLEN_MAX];
-	char System_Cmd[SYSCMD_MAX];
 
-	(void) Plat_JTAG_Ops(1);
-	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    BIT_p->TCL_File);
-	FP = popen(System_Cmd, "r");
-	if (FP == NULL) {
-		printf("ERROR: failed to invoke xsdb\n");
-		goto Out;
-	}
-
-	(void) fgets(Output, sizeof(Output), FP);
-	(void) pclose(FP);
-	if (strstr(Output, "no targets found") != NULL) {
-		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
-		(void) strcpy(Output, "FAIL\n");
-		goto Out;
-	}
-
-	if (strstr(Output, "ERROR:") != NULL) {
+	if (Plat_IDCODE_Ops(Output, STRLEN_MAX) != 0) {
 		printf("%s", Output);
-		(void) strcpy(Output, "FAIL\n");
+		printf("%s: FAIL\n", BIT_p->Name);
+	} else {
+		printf("%s: PASS\n", BIT_p->Name);
 	}
 
-Out:
-	(void) Plat_JTAG_Ops(0);
-	printf("%s: %s", BIT_p->Name, Output);
 	return 0;
 }
 

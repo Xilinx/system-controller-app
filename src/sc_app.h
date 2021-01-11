@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,6 +21,7 @@
 #define BOOTMODEFILE	APPDIR"/boot_mode"
 #define SILICONFILE	APPDIR"/silicon"
 #define CLOCKFILE	APPDIR"/clock"
+#define VOLTAGEFILE	APPDIR"/voltage"
 
 /*
  * I2C Buses
@@ -114,6 +115,7 @@ typedef struct Power_Domains {
 typedef struct {
 	char	Name[STRLEN_MAX];
 	char	Part_Name[STRLEN_MAX];
+	float	Supported_Volt[ITEMS_MAX];
 	float	Maximum_Volt;
 	float	Typical_Volt;
 	float	Minimum_Volt;
@@ -259,8 +261,14 @@ struct Gpio_line_name {
 	} \
 }
 
-#define PMBUS_VOUT_MODE		0x20
-#define PMBUS_READ_VOUT		0x8B
+#define PMBUS_OPERATION			0x1
+#define PMBUS_VOUT_MODE			0x20
+#define PMBUS_VOUT_COMMAND		0x21
+#define PMBUS_VOUT_OV_FAULT_LIMIT	0x40
+#define PMBUS_VOUT_OV_WARN_LIMIT	0x42
+#define PMBUS_VOUT_UV_WARN_LIMIT	0x43
+#define PMBUS_VOUT_UV_FAULT_LIMIT	0x44
+#define PMBUS_READ_VOUT			0x8B
 
 /*
  * Definitions for invoking xsdb.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -47,10 +47,12 @@ time_t GPIO_First_Time = 0;
 int GPIO_State;
 
 extern Clocks_t Clocks;
+extern Voltages_t Voltages;
 extern Workarounds_t Workarounds;
 int (*Workaround_Op)(void *);
 extern int Plat_Board_Name(char *);
 extern int Plat_Reset_Ops(void);
+extern int Access_Regulator(Voltage_t *, float *, int);
 
 static int
 Is_Silicon_ES1(void)
@@ -456,6 +458,51 @@ Set_Clocks(void)
 	return 0;
 }
 
+/*
+ * This routine sets any custom regulator voltage defined by the user.
+ */
+int
+Set_Voltages(void)
+{
+	FILE *FP;
+	Voltage_t *Regulator;
+	char Buffer[SYSCMD_MAX];
+	char Value[STRLEN_MAX];
+	float Voltage;
+
+	/* If there is no voltage file, there is nothing to do */
+	if (access(VOLTAGEFILE, F_OK) != 0) {
+		return 0;
+	}
+
+	FP = fopen(VOLTAGEFILE, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to read voltage file\n");
+		return -1;
+	}
+
+	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		(void) strtok(Buffer, ":");
+		(void) strcpy(Value, strtok(NULL, "\n"));
+		for (int i = 0; i < Voltages.Numbers; i++) {
+			if (strcmp(Buffer, (char *)Voltages.Voltage[i].Name) == 0) {
+				Regulator = &Voltages.Voltage[i];
+				break;
+			}
+		}
+
+		Voltage = strtof(Value, NULL);
+		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
+			printf("ERROR: failed to set voltage on regulator\n");
+			(void) fclose(FP);
+			return -1;
+		}
+	}
+
+	(void) fclose(FP);
+	return 0;
+}
+
 int
 main()
 {
@@ -472,6 +519,12 @@ main()
 	/* Set custom clock frequency */
 	if (Set_Clocks() != 0) {
 		printf("ERROR: failed to set clock frequency\n");
+		return -1;
+	}
+
+	/* Set custom regulator voltage */
+	if (Set_Voltages() != 0) {
+		printf("ERROR: failed to set regulator voltage\n");
 		return -1;
 	}
 

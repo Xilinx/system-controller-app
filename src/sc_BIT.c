@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,7 +22,7 @@ int EBM_EEPROM_Check(void *);
 int DIMM_EEPROM_Check(void *);
 int Voltages_Check(void *);
 
-extern int Read_Voltage(Voltage_t *, float *);
+extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Plat_Reset_Ops(void);
 extern int Plat_JTAG_Ops(int);
 extern int Plat_IDCODE_Ops(char *, int);
@@ -212,7 +212,7 @@ Voltages_Check(void *Arg)
 
 	for (int i = 0; i < Voltages.Numbers; i++) {
 		Regulator = &Voltages.Voltage[i];
-		if (Read_Voltage(Regulator, &Voltage) != 0) {
+		if (Access_Regulator(Regulator, &Voltage, 0) != 0) {
 			printf("ERROR: failed to get voltage for %s\n",
 			    Regulator->Name);
 			printf("%s: FAIL\n", BIT_p->Name);

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -23,9 +29,10 @@
  * 1.7 - Support for QSFP connectors.
  * 1.8 - Support for reading EBM's EEPROM.
  * 1.9 - Support for getting board temperature.
+ * 1.10 - Support for setting VOUT of voltage regulators.
  */
 #define MAJOR	1
-#define MINOR	9
+#define MINOR	10
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -71,6 +78,7 @@ extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
 extern int Plat_Temperature_Ops(void);
 extern int Plat_QSFP_Init(void);
+extern int Access_Regulator(Voltage_t *, float *, int);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -88,6 +96,9 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	restoreclock - restore <target> to default value\n\
 	listvoltage - lists the supported voltage targets\n\
 	getvoltage - get the voltage of <target>\n\
+	setvoltage - set <target> to <value> volts\n\
+	setbootvoltage - set <target> to <value> volts at boot time\n\
+	restorevoltage - restore <target> to default value\n\
 	listpower - lists the supported power targets\n\
 	getpower - get the voltage, current, and power of <target>\n\
 	listpowerdomain - lists the supported power domain targets\n\
@@ -130,6 +141,9 @@ typedef enum {
 	RESTORECLOCK,
 	LISTVOLTAGE,
 	GETVOLTAGE,
+	SETVOLTAGE,
+	SETBOOTVOLTAGE,
+	RESTOREVOLTAGE,
 	LISTPOWER,
 	GETPOWER,
 	LISTPOWERDOMAIN,
@@ -178,6 +192,9 @@ static Command_t Commands[] = {
 	{ .CmdId = RESTORECLOCK, .CmdStr = "restoreclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = LISTVOLTAGE, .CmdStr = "listvoltage", .CmdOps = Voltage_Ops, },
 	{ .CmdId = GETVOLTAGE, .CmdStr = "getvoltage", .CmdOps = Voltage_Ops, },
+	{ .CmdId = SETVOLTAGE, .CmdStr = "setvoltage", .CmdOps = Voltage_Ops, },
+	{ .CmdId = SETBOOTVOLTAGE, .CmdStr = "setbootvoltage", .CmdOps = Voltage_Ops, },
+	{ .CmdId = RESTOREVOLTAGE, .CmdStr = "restorevoltage", .CmdOps = Voltage_Ops, },
 	{ .CmdId = LISTPOWER, .CmdStr = "listpower", .CmdOps = Power_Ops, },
 	{ .CmdId = GETPOWER, .CmdStr = "getpower", .CmdOps = Power_Ops, },
 	{ .CmdId = LISTPOWERDOMAIN, .CmdStr = "listpowerdomain", .CmdOps = Power_Domain_Ops, },
@@ -580,75 +597,6 @@ Clock_Ops(void)
 	return 0;
 }
 
-int Read_Voltage(Voltage_t *Regulator, float *Voltage)
-{
-	int FD;
-	char In_Buffer[STRLEN_MAX];
-	char Out_Buffer[STRLEN_MAX];
-	signed int Exponent;
-	short Mantissa;
-	int Get_Vout_Mode = 1;
-	int Ret = 0;
-
-	FD = open(Regulator->I2C_Bus, O_RDWR);
-	if (FD < 0) {
-		printf("ERROR: unable to open the voltage regulator\n");
-		return -1;
-	}
-
-	/* Select the page, if the voltage regulator supports it */
-	if (-1 != Regulator->Page_Select) {
-		Out_Buffer[0] = 0x0;
-		Out_Buffer[1] = Regulator->Page_Select;
-		I2C_WRITE(FD, Regulator->I2C_Address, 2, Out_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-	}
-
-	/*
-	 * Reading VOUT_MODE indicates what is READ_VOUT format and
-	 * its exponent.  The default format is Linear16:
-	 *
-	 * Voltage =  Mantissa * 2 ^ -(Exponent)
-	 */
-
-	/* IR38164 does not support VOUT_MODE PMBus command */
-	if (0 == strcmp(Regulator->Part_Name, "IR38164")) {
-		Get_Vout_Mode = 0;
-	}
-
-	if (1 == Get_Vout_Mode) {
-		Out_Buffer[0] = PMBUS_VOUT_MODE;
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
-		I2C_READ(FD, Regulator->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		Exponent = In_Buffer[0] - (sizeof(int) * 8);
-	} else {
-		/* For IR38164, use exponent value -8 */
-		Exponent = -8;
-	}
-
-	Out_Buffer[0] = PMBUS_READ_VOUT;
-	(void *) memset(In_Buffer, 0, STRLEN_MAX);
-	I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-	if (Ret != 0) {
-		(void) close(FD);
-		return Ret;
-	}
-
-	Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
-	*Voltage = Mantissa * pow(2, Exponent);
-
-	(void) close(FD);
-	return 0;
-}
-
 /*
  * Voltage Operations
  */
@@ -656,6 +604,8 @@ int Voltage_Ops(void)
 {
 	int Target_Index = -1;
 	Voltage_t *Regulator;
+	FILE *FP;
+	char System_Cmd[SYSCMD_MAX];
 	float Voltage;
 
 	if (Command.CmdId == LISTVOLTAGE) {
@@ -686,12 +636,58 @@ int Voltage_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETVOLTAGE:
-		if (Read_Voltage(Regulator, &Voltage) != 0) {
-			printf("ERROR: failed to read voltage from regulator\n");
+		if (Access_Regulator(Regulator, &Voltage, 0) != 0) {
+			printf("ERROR: failed to get voltage from regulator\n");
 			return -1;
 		}
 
 		printf("Voltage(V):\t%.2f\n", Voltage);
+		break;
+	case SETVOLTAGE:
+	case SETBOOTVOLTAGE:
+		if (V_Flag == 0) {
+			printf("ERROR: no voltage value\n");
+			return -1;
+		}
+
+		Voltage = strtof(Value_Arg, NULL);
+		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
+			printf("ERROR: failed to set voltage on regulator\n");
+			return -1;
+		}
+
+		if (Command.CmdId == SETBOOTVOLTAGE) {
+			/* Remove the old value, if any */
+			(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
+			    Regulator->Name, VOLTAGEFILE);
+			system(System_Cmd);
+
+			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Regulator->Name,
+			    Voltage);
+			FP = fopen(VOLTAGEFILE, "a");
+			if (FP == NULL) {
+				printf("ERROR: failed to append voltage file\n");
+				return -1;
+			}
+
+			(void) fprintf(FP, "%s", System_Cmd);
+			(void) fflush(FP);
+			(void) fsync(fileno(FP));
+			(void) fclose(FP);
+		}
+
+		break;
+	case RESTOREVOLTAGE:
+		Voltage = Regulator->Typical_Volt;
+		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
+			printf("ERROR: failed to set voltage on regulator\n");
+			return -1;
+		}
+
+		/* Remove any custom boot voltage */
+		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
+		    Regulator->Name, VOLTAGEFILE);
+		system(System_Cmd);
 		break;
 	default:
 		printf("ERROR: invalid voltage command\n");

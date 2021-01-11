@@ -8,11 +8,12 @@ PLAT	:= vck190
 BIT	:= BIT
 APP	= sc_app
 APPD	= sc_appd
+COMMON	= sc_common
 CFLAGS	= -I../src
 LDFLAGS ?= -L../src
 SRCDIR	= ../src
-APP_OBJS	= $(APP).o sc_$(PLAT).o sc_$(BIT).o
-APPD_OBJS	= $(APPD).o sc_$(PLAT).o
+APP_OBJS	= $(APP).o $(COMMON).o sc_$(PLAT).o sc_$(BIT).o
+APPD_OBJS	= $(APPD).o $(COMMON).o sc_$(PLAT).o
 DEPS	= $(APP).h
 
 all: $(APP) $(APPD)
@@ -24,7 +25,7 @@ $(APP): $(APP_OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm
 
 $(APPD): $(APPD_OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lrt -lgpiod
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm -lrt -lgpiod
 
 clean:
 	rm -f $(APP) $(APPD) *.o

@@ -18,6 +18,9 @@
 		restoreclock - restore <target> to default value
 		listvoltage - lists the supported voltage targets
 		getvoltage - get the voltage of <target>
+		setvoltage - set <target> to <value> volts
+		setbootvoltage - set <target> to <value> volts at boot time
+		restorevoltage - restore <target> to default value
 		listpower - lists the supported power targets
 		getpower - get the voltage, current, and power of <target>
 		listpowerdomain - lists the supported power domain targets

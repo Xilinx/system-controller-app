@@ -505,11 +505,6 @@ Clock_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETCLOCK:
-		/* XXX - The get clock command prints default value for Beta release */
-		printf("Frequency(MHz):\t%.3f\n",
-		   ((signed long)(Clock->Default_Freq * 1000) * 0.001f));
-		break;
-
 		(void) sprintf(System_Cmd, "cat %s", Clock->Sysfs_Path);
 		FP = popen(System_Cmd, "r");
 		if (FP == NULL) {
@@ -526,10 +521,6 @@ Clock_Ops(void)
 		break;
 	case SETCLOCK:
 	case SETBOOTCLOCK:
-		/* XXX - The set clock commands are not supported for Beta release */
-		printf("ERROR: unsupported clock command for this release\n");
-		return -1;
-
 		/* Validate the frequency */
 		if (V_Flag == 0) {
 			printf("ERROR: no clock frequency\n");
@@ -551,28 +542,33 @@ Clock_Ops(void)
 
 		if (Command.CmdId == SETBOOTCLOCK) {
 			/* Remove the old value, if any */
-			(void) sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
+			(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
 			    Clock->Name, CLOCKFILE);
 			system(System_Cmd);
 
-			(void) sprintf(System_Cmd, "echo \'%s:\t%.3f\' >> %s",
-			    Clock->Name, Frequency, CLOCKFILE);
-			system(System_Cmd);
+			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Clock->Name,
+			    Frequency);
+			FP = fopen(CLOCKFILE, "a");
+			if (FP == NULL) {
+				printf("ERROR: failed to append clock file\n");
+				return -1;
+			}
+
+			(void) fprintf(FP, "%s", System_Cmd);
+			(void) fflush(FP);
+			(void) fsync(fileno(FP));
+			(void) fclose(FP);
 		}
 
 		break;
 	case RESTORECLOCK:
-		/* XXX - The clock set commands are not supported for Beta release */
-		printf("ERROR: unsupported clock command for this release\n");
-		return -1;
-
 		Frequency = Clock->Default_Freq;
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
 		system(System_Cmd);
 
 		/* Remove any custom boot frequency */
-		(void) sprintf(System_Cmd, "sed -i -e \'/^%s/d\' %s 2> /dev/NULL",
+		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
 		    Clock->Name, CLOCKFILE);
 		system(System_Cmd);
 		break;

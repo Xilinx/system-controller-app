@@ -22,7 +22,11 @@ int Plat_Reset_Ops(void);
 int Plat_JTAG_Ops(int);
 int Plat_IDCODE_Ops(char *, int);
 int Plat_Temperature_Ops(void);
+int Plat_FMCAutoAdjust(void);
 int Workaround_Vccaux(void *Arg);
+extern int Access_Regulator(Voltage_t *, float *, int);
+extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *, unsigned int *);
+extern int FMC_Vadj_Range(FMC_t *, float *, float *);
 
 /*
  * I2C Buses
@@ -615,7 +619,7 @@ Voltages_t Voltages = {
 		.Part_Name = "IR38164",
 		.Supported_Volt = { 0.0, 1.2, 1.5, -1 },
 		.Maximum_Volt = VOLT_MAX(1.5),
-		.Typical_Volt = 0.0,
+		.Typical_Volt = 1.5,
 		.Minimum_Volt = 0.0,
 		.I2C_Bus = "/dev/i2c-3",
 		.I2C_Address = 0x4E,
@@ -751,6 +755,29 @@ QSFPs_t QSFPs = {
 	.QSFP[QSFP_0] = {
 		.Name = "zQSFP1",
 		.I2C_Bus = "/dev/i2c-21",
+		.I2C_Address = 0x50,
+	},
+};
+
+/*
+ * FMC Cards
+ */
+typedef enum {
+	FMC_1,
+	FMC_2,
+	FMC_MAX,
+} FMC_Index;
+
+FMCs_t FMCs = {
+	.Numbers = FMC_MAX,
+	.FMC[FMC_1] = {
+		.Name = "FMCP1",
+		.I2C_Bus = "/dev/i2c-12",
+		.I2C_Address = 0x50,
+	},
+	.FMC[FMC_2] = {
+		.Name = "FMCP2",
+		.I2C_Bus = "/dev/i2c-13",
 		.I2C_Address = 0x50,
 	},
 };
@@ -1215,6 +1242,100 @@ Plat_QSFP_Init(void)
 	(void) Plat_JTAG_Ops(0);
 	if (strstr(Output, "no targets found") != NULL) {
 		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+Plat_FMCAutoAdjust(void)
+{
+	int Target_Index = -1;
+	unsigned int Value;
+	Voltage_t *Regulator;
+	FMC_t *FMC;
+	int FMC1 = 0;
+	int FMC2 = 0;
+	float Voltage = 0;
+	float Min_Voltage_1 = 0;
+	float Max_Voltage_1 = 0;
+	float Min_Voltage_2 = 0;
+	float Max_Voltage_2 = 0;
+	float Min_Combined, Max_Combined;
+
+	if (Access_IO_Exp(&IO_Exp, 0, 0x0, NULL, &Value) != 0) {
+		printf("ERROR: failed to read input of IO Expander\n");
+		return -1;
+	}
+
+	/* If bit[0] and bit[2] are 0, then FMC1 is connected */
+	if ((~Value & 0x5) == 0x5) {
+		FMC1 = 1;
+	}
+
+	/* If bit[1] and bit[3] are 0, then FMC2 is connected */
+	if ((~Value & 0xA) == 0xA) {
+		FMC2 = 1;
+	}
+
+	for (int i = 0; i < Voltages.Numbers; i++) {
+		if (strcmp("VADJ_FMC", (char *)Voltages.Voltage[i].Name) == 0) {
+			Target_Index = i;
+			Regulator = &Voltages.Voltage[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: no regulator exists for VADJ_FMC\n");
+		return -1;
+	}
+
+	if (FMC1 == 1) {
+		FMC = &FMCs.FMC[FMC_1];
+		if (FMC_Vadj_Range(FMC, &Min_Voltage_1, &Max_Voltage_1) != 0) {
+			printf("ERROR: failed to get Voltage Adjust range for FMC1\n");
+			return -1;
+		}
+	}
+
+	if (FMC2 == 1) {
+		FMC = &FMCs.FMC[FMC_2];
+		if (FMC_Vadj_Range(FMC, &Min_Voltage_2, &Max_Voltage_2) != 0) {
+			printf("ERROR: failed to get Voltage Adjust range for FMC2\n");
+			return -1;
+		}
+	}
+
+	if (FMC1 == 1 && FMC2 == 0) {
+		Min_Combined = Min_Voltage_1;
+		Max_Combined = Max_Voltage_1;
+	} else if (FMC1 == 0 && FMC2 == 1) {
+		Min_Combined = Min_Voltage_2;
+		Max_Combined = Max_Voltage_2;
+	} else if (FMC1 == 1 && FMC2 == 1) {
+		Min_Combined = MAX(Min_Voltage_1, Min_Voltage_2);
+		Max_Combined = MIN(Max_Voltage_1, Max_Voltage_2);
+	} else {
+		Min_Combined = 0;
+		Max_Combined = 1.5;
+	}
+
+	/*
+	 * Start with satisfying the lower target voltage and then see
+	 * if it does also satisfy the higher voltage.
+	 */
+	if (Min_Combined <= 1.2 && Max_Combined >= 1.2) {
+		Voltage = 1.2;
+	}
+
+	if (Min_Combined <= 1.5 && Max_Combined >= 1.5) {
+		Voltage = 1.5;
+	}
+
+	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
+		printf("ERROR: failed to set voltage of VADJ_FMC regulator\n");
 		return -1;
 	}
 

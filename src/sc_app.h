@@ -179,6 +179,20 @@ typedef struct QSFPs {
 } QSFPs_t;
 
 /*
+ * FMC Cards
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	char	I2C_Bus[STRLEN_MAX];
+	int	I2C_Address;
+} FMC_t;
+
+typedef struct FMCs {
+	int	Numbers;
+	FMC_t	FMC[ITEMS_MAX];
+} FMCs_t;
+
+/*
  * Workarounds
  */
 typedef struct {
@@ -278,6 +292,9 @@ struct Gpio_line_name {
 			 export TCL_LIBRARY=/usr/local/lib/tcl8.5"
 #define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
 #define BIT_PATH	"/usr/share/system-controller-app/BIT/"
+
+#define MAX(x, y)	(((x) > (y)) ? (x) : (y))
+#define MIN(x, y)	(((x) < (y)) ? (x) : (y))
 
 #endif	/* SC_APP_H_ */
 

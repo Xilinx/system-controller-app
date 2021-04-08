@@ -52,6 +52,7 @@ extern Workarounds_t Workarounds;
 int (*Workaround_Op)(void *);
 extern int Plat_Board_Name(char *);
 extern int Plat_Reset_Ops(void);
+extern int Plat_FMCAutoAdjust(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 
 static int
@@ -514,6 +515,12 @@ main()
 			printf("ERROR: failed to create \'.sc_app\' directory\n");
 			return -1;
 		}
+	}
+
+	/* Detect FMC cards and auto adjust voltage */
+	if (Plat_FMCAutoAdjust() != 0) {
+		printf("ERROR: failed to auto adjust FMC cards\n");
+		return -1;
 	}
 
 	/* Set custom clock frequency */

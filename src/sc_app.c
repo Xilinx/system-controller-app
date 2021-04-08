@@ -79,6 +79,7 @@ extern int Plat_EEPROM_Ops(void);
 extern int Plat_Temperature_Ops(void);
 extern int Plat_QSFP_Init(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
+extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *, unsigned int *);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -1177,63 +1178,6 @@ int GPIO_Ops(void)
 	} else {
 		Gpio_get();
 	}
-	return 0;
-}
-
-/*
- * Routine to access IO expander chip.
- *
- * Input -
- *	IO_Exp:	Pointer to IO expander structure.
- *	Op:	0 for read operation, 1 for write operation.
- *	Offset:	0x2 output register offset, 0x6 direction register offset.
- *	*Out:	Pointer to output value to be written to device.
- * Output -
- *	*In:	Pointer to input value read from the device.
- */
-int Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
-    unsigned int *In)
-{
-	int FD;
-	char In_Buffer[STRLEN_MAX];
-	char Out_Buffer[STRLEN_MAX];
-	int Ret = 0;
-
-	FD = open(IO_Exp->I2C_Bus, O_RDWR);
-	if (FD < 0) {
-		printf("ERROR: unable to open IO expander\n");
-		return -1;
-	}
-
-	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-	(void *) memset(In_Buffer, 0, STRLEN_MAX);
-	if (Op == 0) {
-		Out_Buffer[0] = Offset;
-		I2C_READ(FD, IO_Exp->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		*In = ((In_Buffer[0] << 8) | In_Buffer[1]);
-
-	} else if (Op == 1) {
-		Out_Buffer[0] = Offset;
-		Out_Buffer[1] = ((*Out >> 8) & 0xFF);
-		Out_Buffer[2] = (*Out & 0xFF);
-		I2C_WRITE(FD, IO_Exp->I2C_Address, 3, Out_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-	} else {
-		printf("ERROR: invalid access operation\n");
-		(void) close(FD);
-		return -1;
-	}
-
-	(void) close(FD);
 	return 0;
 }
 

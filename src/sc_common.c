@@ -73,7 +73,7 @@ int Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 
 	if (1 == Get_Vout_Mode) {
 		Out_Buffer[0] = PMBUS_VOUT_MODE;
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		I2C_READ(FD, Regulator->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -90,7 +90,7 @@ int Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	case 0:
 		/* Get VOUT */
 		Out_Buffer[0] = PMBUS_READ_VOUT;
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -159,7 +159,7 @@ int Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		}
 
 		/* Enable VOUT */
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = PMBUS_OPERATION;
 		Out_Buffer[1] = 0x80;
 		I2C_WRITE(FD, Regulator->I2C_Address, 2, Out_Buffer, Ret);
@@ -176,5 +176,129 @@ int Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	}
 
 	(void) close(FD);
+	return 0;
+}
+
+/*
+ * Routine to access IO expander chip.
+ *
+ * Input -
+ *      IO_Exp: Pointer to IO expander structure.
+ *      Op:     0 for read operation, 1 for write operation.
+ *      Offset: 0x2 output register offset, 0x6 direction register offset.
+ *      *Out:   Pointer to output value to be written to device.
+ * Output -
+ *      *In:    Pointer to input value read from the device.
+ */
+int Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
+    unsigned int *In)
+{
+	int FD;
+	char In_Buffer[STRLEN_MAX];
+	char Out_Buffer[STRLEN_MAX];
+	int Ret = 0;
+
+	FD = open(IO_Exp->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open IO expander\n");
+		return -1;
+	}
+
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	if (Op == 0) {
+		Out_Buffer[0] = Offset;
+		I2C_READ(FD, IO_Exp->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		*In = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	} else if (Op == 1) {
+		Out_Buffer[0] = Offset;
+		Out_Buffer[1] = ((*Out >> 8) & 0xFF);
+		Out_Buffer[2] = (*Out & 0xFF);
+		I2C_WRITE(FD, IO_Exp->I2C_Address, 3, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+	} else {
+		printf("ERROR: invalid access operation\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+	return 0;
+}
+
+int
+FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
+{
+	char In_Buffer[SYSCMD_MAX];
+	char Out_Buffer[SYSCMD_MAX];
+	int FD;
+	int Offset;
+	int Found;
+	int Ret = 0;
+
+	/* Read FMC's EEPROM */
+	FD = open(FMC->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open FMC EEPROM\n");
+		return -1;
+	}
+
+	(void) memset(Out_Buffer, 0, SYSCMD_MAX);
+	(void) memset(In_Buffer, 0, SYSCMD_MAX);
+	Out_Buffer[0] = 0x0;    // EEPROM offset 0
+	I2C_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	/* Common Header offset 0x5 points to Multirecord areas */
+	Offset = In_Buffer[5] * 8;
+
+	/*
+	 * 'Record Type' for DC Load is 0x2, bit 7 of 'Record Format' indicates
+	 * the end of Multirecord, and don't go over amount of data read from
+	 * EEPROM.
+	 */ 
+	Found = 0;
+	while ((In_Buffer[Offset] == 0x2) &&
+	       ((In_Buffer[Offset + 1] & 0x80) != 0x80) && (Offset < 0xFF)) {
+		/*
+		 * In Multirecord area of DC Load, 'Output Number' (Offset + 5)
+		 * should have value of 0 (for Vadj).  Other values belong
+		 * to other power supplies.
+		 */
+		if (In_Buffer[Offset + 5] == 0x0) {
+			Found = 1;
+			break;
+		}
+
+		/*
+		 * Skip to the next DC Load record.  There are 5 bytes of
+		 * header in this record plus length of data in offset 0x2.
+		 */
+		Offset += (5 + In_Buffer[Offset + 2]);
+	}
+
+	if (Found == 1) {
+		/* Unit of reading is per 10mV */
+		*Min_Voltage = (float)((In_Buffer[Offset + 9] << 8) |
+					In_Buffer[Offset + 8]) / 100;
+		*Max_Voltage = (float)((In_Buffer[Offset + 11] << 8) |
+					In_Buffer[Offset + 10]) / 100;
+	} else {
+		*Min_Voltage = *Max_Voltage = 0;
+	}
+
 	return 0;
 }

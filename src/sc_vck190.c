@@ -706,7 +706,7 @@ IO_Exp_t IO_Exp = {
 		    "Port 1(0) - FMCP1 FMC PRSNT M2C B (AL)" },
 	.Directions = { 1, -1, -1, 1, -1, -1, 1, 1,
 			1, 1, 0, 1, 1, 1, 1, 1 },
-	.I2C_Bus = "/dev/i2c-1",
+	.I2C_Bus = "/dev/i2c-0",
 	.I2C_Address = 0x20,
 };
 

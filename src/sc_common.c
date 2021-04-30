@@ -9,9 +9,11 @@
 #include <fcntl.h>
 #include <string.h>
 #include <math.h>
+#include <gpiod.h>
 #include "sc_app.h"
 
-int Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
+int
+Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 {
 	int FD;
 	int Supported = 0;
@@ -190,7 +192,8 @@ int Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
  * Output -
  *      *In:    Pointer to input value read from the device.
  */
-int Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
+int
+Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
     unsigned int *In)
 {
 	int FD;
@@ -298,6 +301,75 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 					In_Buffer[Offset + 10]) / 100;
 	} else {
 		*Min_Voltage = *Max_Voltage = 0;
+	}
+
+	return 0;
+}
+
+int
+GPIO_Get(char *Label, int *State)
+{
+	FILE *FP;
+	char Chip_Name[STRLEN_MAX];
+	char Buffer[STRLEN_MAX];
+	char Output[STRLEN_MAX] = {'\0'};
+	unsigned int Line_Offset;
+	struct gpiod_line *GPIO_Line;
+
+	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
+	    &Line_Offset) != 1) {
+		printf("ERROR: failed to find GPIO line %s\n", Label);
+		return -1;
+	}
+
+	(void) sprintf(Buffer, "gpioget %s %d 2>&1", Chip_Name, Line_Offset);
+	FP = popen(Buffer, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to get the state of GPIO line %s\n",
+		       Label);
+		return -1;
+	}
+
+	(void) fgets(Output, sizeof(Output), FP);
+	(void) pclose(FP);
+	if ((strcmp(Output, "0\n") != 0) && (strcmp(Output, "1\n") != 0)) {
+		printf("ERROR: %s", Output);
+		return -1;
+	}
+
+	*State = atoi(Output);
+	return 0;
+}
+
+int
+GPIO_Set(char *Label, int State)
+{
+	FILE *FP;
+	char Chip_Name[STRLEN_MAX];
+	char Buffer[STRLEN_MAX];
+	char Output[STRLEN_MAX] = {'\0'};
+	unsigned int Line_Offset;
+	struct gpiod_line *GPIO_Line;
+
+	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
+	    &Line_Offset) != 1) {
+		printf("ERROR: failed to find GPIO line.\n");
+		return -1;
+	}
+
+	(void) sprintf(Buffer, "gpioset %s %d=%d 2>&1", Chip_Name, Line_Offset,
+		       State);
+	FP = popen(Buffer, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to set GPIO line\n");
+		return -1;
+	}
+
+	(void) fgets(Output, sizeof(Output), FP);
+	(void) pclose(FP);
+	if (Output[0] != '\0') {
+		printf("ERROR: %s", Output);
+		return -1;
 	}
 
 	return 0;

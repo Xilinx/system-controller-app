@@ -20,8 +20,7 @@
 #define LOGFILE		APPDIR"/gpio.log"
 #endif /* DEBUG */
 
-#define GPIOCHIP	"gpiochip0"
-#define GPIOLINE	11
+#define GPIOLINE	"ZU4_TRIGGER"
 
 /*
  * Default configurable variables.  They can be modified in 'config' file.
@@ -176,6 +175,8 @@ VCK190_GPIO(void)
 	sigset_t Sig_Mask;
 	struct gpiod_chip *GPIO_Chip;
 	struct gpiod_line *GPIO_Line;
+	char GPIO_ChipName[STRLEN_MAX];
+	unsigned int GPIO_Offset;
 	time_t Now;
 	double MSeconds;
 	
@@ -259,14 +260,21 @@ VCK190_GPIO(void)
 	Timer_Start.it_interval.tv_sec = Timer_Start.it_value.tv_sec;
 	Timer_Start.it_interval.tv_nsec = Timer_Start.it_value.tv_nsec;
 
+	/* Find the GPIO chip name that handles WDT line */
+	if (gpiod_ctxless_find_line(GPIOLINE, GPIO_ChipName, STRLEN_MAX,
+	    &GPIO_Offset) != 1) {
+		printf("ERROR: failed to find GPIO line.\n");
+                return -1;
+        }
+
 	/* Open the GPIO line for monitoring */
-	GPIO_Chip = gpiod_chip_open_by_name(GPIOCHIP);
+	GPIO_Chip = gpiod_chip_open_by_name(GPIO_ChipName);
 	if (GPIO_Chip == NULL) {
 		printf("ERROR: failed to open gpio chip\n");
 		return -1;
 	}
 
-	GPIO_Line = gpiod_chip_get_line(GPIO_Chip, GPIOLINE);
+	GPIO_Line = gpiod_chip_get_line(GPIO_Chip, GPIO_Offset);
 	if (GPIO_Line == NULL) {
 		printf("ERROR: failed to get gpio line\n");
 		return -1;

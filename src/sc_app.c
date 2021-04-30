@@ -72,7 +72,6 @@ int SFP_Ops(void);
 int QSFP_Ops(void);
 int EBM_Ops(void);
 extern int Plat_Gpio_target_size(void);
-extern int Plat_Gpio_match(int, char *);
 extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
 extern int Plat_EEPROM_Ops(void);
@@ -80,6 +79,7 @@ extern int Plat_Temperature_Ops(void);
 extern int Plat_QSFP_Init(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *, unsigned int *);
+extern int GPIO_Get(char *, int *);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -1119,51 +1119,100 @@ int DDR_Ops(void)
 	return Ret;
 }
 
-static void Gpio_get1(const struct Gpio_line_name *p)
+static int Gpio_get1(const struct Gpio_line_name *p)
 {
-	char Cmd[STRLEN_MAX];
+	int State;
 
-	sprintf(Cmd, "gpioget gpiochip0 %d", p->Line);
-	printf("%s (line %2d):\t", p->Name, p->Line);
-	fflush(NULL);
-	system(Cmd);
+	if (GPIO_Get((char *)p->Internal_Name, &State) != 0) {
+		printf("ERROR: failed to get GPIO line %s\n", p->Display_Name);
+		return -1;
+	}
+
+	printf("%s (line %2d):\t%d\n", p->Display_Name, p->Line, State);
+	return 0;
 }
 
-static const char Cmd_awk[] = "/usr/bin/gpioinfo |awk -e \'/unnamed/ {next};"
-	"/gpiochip.*lines:/ {e=z=\"\"; chip=$1; c=1 + $3 };"
-	"/line / { gsub(/[:\"]/,e); a[$2]=$3;"
-	" if ($NF ==\"[used]\") used[$2]=$4; else z=z \" \" $2; };"
-	"END { \"/usr/bin/gpioget gpiochip0 \" z |getline r;"
-	" ct =split(z, az); split(r, ar); for (i=1; i<=ct; i++){"
-	" g=az[i]; printf \"%-28s(line %2u): %u\\n\", a[g], g, ar[i];};"
-	" for (u in used) printf \"%-28s(line %2u): busy, used by %s\\n\","
-	" a[u], u, used[u];}\'";
+static int Gpio_get_all(void)
+{
+	FILE *FP;
+	int Line, State;
+	char Buffer[SYSCMD_MAX];
+	char Label[STRLEN_MAX];
+	char Usage[STRLEN_MAX];
 
-static void Gpio_get(void)
+	(void) strcpy(Buffer, "/usr/bin/gpioinfo");
+	FP = popen(Buffer, "r");
+	if (FP == NULL) {
+		printf("ERROR: failed to get GPIO info\n");
+		return -1;
+	}
+
+	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
+		if ((strstr(Buffer, "unnamed") != NULL) ||
+		    (strstr(Buffer, "lines") != NULL)) {
+			continue;
+		}
+
+		(void) strtok(Buffer, " :\"");
+		Line = atoi(strtok(NULL, " :\""));
+		(void) strcpy(Label, strtok(NULL, " :\""));
+		(void) strcpy(Usage, strtok(NULL, " :\""));
+		if (strcmp(Usage, "unused") != 0) {
+			printf("%s (line %d):\tbusy, used by %s\n", Label,
+			       Line, Usage);
+			continue;
+		}
+
+		if (GPIO_Get(Label, &State) != 0) {
+			printf("ERROR: failed to get GPIO line %s\n", Label);
+			(void) pclose(FP);
+			return -1;
+		}
+
+		printf("%s (line %d):\t%d\n", Label, Line, State);
+	}
+
+	(void) pclose(FP);
+	return 0;
+}
+
+static int Gpio_get(void)
 {
 	int i, Total = Plat_Gpio_target_size();
 	long Tval = strtol(Target_Arg, NULL, 0);
 
 	if (!strcmp("all", Target_Arg)) {
-		system(Cmd_awk);
-		return;
+		if (Gpio_get_all() != 0) {
+			printf("ERROR: failed to get all GPIO lines\n");
+			return -1;
+		};
+
+		return 0;
 	}
+
 	for (i = 0; i < Total; i++) {
-		if (Tval == Gpio_target[i].Line || Plat_Gpio_match(i, Target_Arg)) {
-			Gpio_get1(&Gpio_target[i]);
-			return;
+		if (Tval == Gpio_target[i].Line ||
+		    !strncmp(Gpio_target[i].Display_Name, Target_Arg, STRLEN_MAX) ||
+		    !strncmp(Gpio_target[i].Internal_Name, Target_Arg, STRLEN_MAX)) {
+			if (Gpio_get1(&Gpio_target[i]) != 0) {
+				return -1;
+			}
+
+			return 0;
 		}
 	}
-	fprintf(stderr, "%sERROR: no %s target for %s command\n",
-		Usage, Target_Arg, Command.CmdStr);
+
+	fprintf(stderr, "ERROR: no %s target for %s command\n", Target_Arg,
+		Command.CmdStr);
+	return -1;
 }
 
-void Gpio_list(void)
+static void Gpio_list(void)
 {
 	int i, Total = Plat_Gpio_target_size();
 
 	for (i = 0; i < Total; i++) {
-		puts(Gpio_target[i].Name);
+		puts(Gpio_target[i].Display_Name);
 	}
 }
 
@@ -1176,8 +1225,11 @@ int GPIO_Ops(void)
 	if (Command.CmdId == LISTGPIO) {
 		Gpio_list();
 	} else {
-		Gpio_get();
+		if (Gpio_get() != 0) {
+			return -1;
+		}
 	}
+
 	return 0;
 }
 

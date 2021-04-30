@@ -27,6 +27,8 @@ int Workaround_Vccaux(void *Arg);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *, unsigned int *);
 extern int FMC_Vadj_Range(FMC_t *, float *, float *);
+extern int GPIO_Get(char *, int *);
+extern int GPIO_Set(char *, int);
 
 /*
  * I2C Buses
@@ -68,8 +70,8 @@ typedef enum {
 BootModes_t BootModes = {
 	.Numbers = BOOTMODE_MAX,
 	.Mode_Lines = {
-		 "gpiochip0 78", "gpiochip0 79",
-		 "gpiochip0 80", "gpiochip0 81"
+		 "SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+		 "SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"
 	},
 	.BootMode[JTAG] = {
 		.Name = "jtag",
@@ -918,14 +920,18 @@ Plat_Reset_Ops(void)
 	}
 
 	// Assert POR
-	sprintf(Buffer, "gpioset gpiochip0 82=0");
-	system(Buffer);
+	if (GPIO_Set("SYSCTLR_POR_B_LS", 0) != 0) {
+		printf("ERROR: failed to assert power-on-reset\n");
+		return -1;
+	}
 
 	sleep(1);
 
 	// De-assert POR
-	sprintf(Buffer, "gpioset gpiochip0 82=1");
-	system(Buffer);
+	if (GPIO_Set("SYSCTLR_POR_B_LS", 1) != 0) {
+		printf("ERROR: failed to de-assert power-on-reset\n");
+		return -1;
+	}
 
 	/* If a boot mode is defined, set it after POR */
 	if (access(BOOTMODEFILE, F_OK) == 0) {
@@ -955,18 +961,38 @@ Plat_Reset_Ops(void)
 int
 Plat_JTAG_Ops(int Select)
 {
+	int State;
+
 	switch (Select) {
 	case 1:
 		/* Overwrite the default JTAG switch */
-		system("gpioset gpiochip0 85=0 86=0");
+		if (GPIO_Set("SYSCTLR_JTAG_S0", 0) != 0) {
+			printf("ERROR: failed to set JTAG 0\n");
+			return -1;
+		}
+
+		if (GPIO_Set("SYSCTLR_JTAG_S1", 0) != 0) {
+			printf("ERROR: failed to set JTAG 1\n");
+			return -1;
+		}
+
 		break;
 	case 0:
 		/*
 		 * Reading the gpio lines causes ZU4 to tri-state the select
 		 * lines and that allows the switch to set back the default
-		 * values.
+		 * values.  The value of 'State' is ignored.
 		 */
-		system("gpioget gpiochip0 85 86 > /dev/NULL");
+		if (GPIO_Get("SYSCTLR_JTAG_S0", &State) != 0) {
+			printf("ERROR: failed to release JTAG 0\n");
+			return -1;
+		}
+
+		if (GPIO_Get("SYSCTLR_JTAG_S1", &State) != 0) {
+			printf("ERROR: failed to release JTAG 1\n");
+			return -1;
+		}
+
 		break;
 	default:
 		printf("ERROR: invalid JTAG select option\n");
@@ -1171,44 +1197,38 @@ struct ddr_dimm1 Dimm1 = {
 };
 
 /*
- * We are using spaces in .Name to be consistent with 'getclock' code.
- * Using spaces or tabs as a part of an option argument is problematic,
- * because they have special meaning for every Linux shell.
- * A better way is to split the name in to bank and gpio_label, print
- * both and accept both forms "xxx - gpio_label" and gpio_label.
- * Use Plat_Gpio_match() to accept both forms knowing that
- * that the gpio_label starts at .Name[6]
+ * The display name for a GPIO line and the label name used in the device
+ * tree may be different.
  */
-#define GPIO_LN(Num, name) { .Line = Num, .Name = name }
-const struct Gpio_line_name Gpio_target[] = {
-	GPIO_LN(12, "500 - SYSCTLR_PB"),
-	GPIO_LN(10, "500 - DC_SYS_CTRL3"),
-	GPIO_LN(9, "500 - DC_SYS_CTRL2"),
-	GPIO_LN(8, "500 - DC_SYS_CTRL1"),
-	GPIO_LN(7, "500 - DC_SYS_CTRL0"),
-	GPIO_LN(51, "501 - SYSCTLR_SD1_CLK"),
-	GPIO_LN(50, "501 - SYSCTLR_SD1_CMD"),
-	GPIO_LN(49, "501 - SYSCTLR_SD1_DATA3"),
-	GPIO_LN(48, "501 - SYSCTLR_SD1_DATA2"),
-	GPIO_LN(47, "501 - SYSCTLR_SD1_DATA1"),
-	GPIO_LN(46, "501 - SYSCTLR_SD1_DATA0"),
-	GPIO_LN(45, "501 - SYSCTLR_SD1_CD_B"),
-	GPIO_LN(42, "501 - SYSCTLR_ETH_RESET_B_R"),
-	GPIO_LN(39, "501 - SYSCTLR_UART0_TXD_OUT"),
-	GPIO_LN(38, "501 - SYSCTLR_UART0_RXD_IN"),
-	GPIO_LN(37, "501 - LP_I2C1_SDA"),
-	GPIO_LN(36, "501 - LP_I2C1_SCL"),
-	GPIO_LN(35, "501 - LP_I2C0_PMC_SDA"),
-	GPIO_LN(34, "501 - LP_I2C0_PMC_SCL"),
-	GPIO_LN(77, "502 - SYSCTLR_ETH_MDIO"),
-	GPIO_LN(76, "502 - SYSCTLR_ETH_MDC")
-};
-
-int Plat_Gpio_match(int Idx, char *Target)
-{
-	return !strncmp(Gpio_target[Idx].Name, Target, STRLEN_MAX) ||
-		!strncmp(&Gpio_target[Idx].Name[6], Target, STRLEN_MAX);
+#define GPIO_LN(Num, Display, Internal) { \
+		.Line = Num, \
+		.Display_Name = Display, \
+		.Internal_Name = Internal, \
 }
+
+const struct Gpio_line_name Gpio_target[] = {
+	GPIO_LN(12, "500 - SYSCTLR_PB", "SYSCTLR_PB"),
+	GPIO_LN(10, "500 - DC_SYS_CTRL3", "DC_SYS_CTRL3"),
+	GPIO_LN(9, "500 - DC_SYS_CTRL2", "DC_SYS_CTRL2"),
+	GPIO_LN(8, "500 - DC_SYS_CTRL1", "DC_SYS_CTRL1"),
+	GPIO_LN(7, "500 - DC_SYS_CTRL0", "DC_SYS_CTRL0"),
+	GPIO_LN(51, "501 - SYSCTLR_SD1_CLK", "SD1_CLK"),
+	GPIO_LN(50, "501 - SYSCTLR_SD1_CMD", "SD1_CMD"),
+	GPIO_LN(49, "501 - SYSCTLR_SD1_DATA3", "SD1_DATA3"),
+	GPIO_LN(48, "501 - SYSCTLR_SD1_DATA2", "SD1_DATA2"),
+	GPIO_LN(47, "501 - SYSCTLR_SD1_DATA1", "SD1_DATA1"),
+	GPIO_LN(46, "501 - SYSCTLR_SD1_DATA0", "SD1_DATA0"),
+	GPIO_LN(45, "501 - SYSCTLR_SD1_CD_B", "SD1_CD_B"),
+	GPIO_LN(42, "501 - SYSCTLR_ETH_RESET_B_R", "ETH_RESET_B"),
+	GPIO_LN(39, "501 - SYSCTLR_UART0_TXD_OUT", "UART0_TXD_OUT"),
+	GPIO_LN(38, "501 - SYSCTLR_UART0_RXD_IN", "UART0_RXD_IN"),
+	GPIO_LN(37, "501 - LP_I2C1_SDA", "LP_I2C1_SDA"),
+	GPIO_LN(36, "501 - LP_I2C1_SCL", "LP_I2C1_SCL"),
+	GPIO_LN(35, "501 - LP_I2C0_PMC_SDA", "LP_I2C0_PMC_SDA"),
+	GPIO_LN(34, "501 - LP_I2C0_PMC_SCL", "LP_I2C0_PMC_SCL"),
+	GPIO_LN(77, "502 - SYSCTLR_ETH_MDIO", "ETH_MDIO"),
+	GPIO_LN(76, "502 - SYSCTLR_ETH_MDC", "ETH_MDC")
+};
 
 int Plat_Gpio_target_size(void)
 {

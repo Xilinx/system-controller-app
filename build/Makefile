@@ -22,7 +22,7 @@ all: $(APP) $(APPD)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(APP): $(APP_OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm -lgpiod
 
 $(APPD): $(APPD_OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm -lrt -lgpiod

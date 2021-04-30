@@ -236,11 +236,12 @@ struct ddr_dimm1 {
 };
 
 /*
- * GPIO line-number, sc_app-display-name pairs
+ * GPIO line-number, sc_app-display-name, and internal name
  */
 struct Gpio_line_name {
-	const char *Name;
 	int Line;
+	const char *Display_Name;
+	const char *Internal_Name;
 };
 
 #define I2C_READ(FD, Address, Len, Out, In, Return) \

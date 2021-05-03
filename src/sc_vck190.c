@@ -15,12 +15,15 @@
 #include "sc_app.h"
 
 #define BOARDNAME	"vck190"
+#define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"
+#define IDCODE_TCL	"idcode/idcode_check.tcl"
 
 int Plat_Board_Name(char *Name);
 int Plat_BootMode_Ops(int);
 int Plat_Reset_Ops(void);
 int Plat_JTAG_Ops(int);
 int Plat_IDCODE_Ops(char *, int);
+int Plat_XSDB_Ops(const char *, char *, int);
 int Plat_Temperature_Ops(void);
 int Plat_FMCAutoAdjust(void);
 int Workaround_Vccaux(void *Arg);
@@ -875,7 +878,7 @@ Plat_BootMode_Ops(int Value)
 
 	(void) Plat_JTAG_Ops(1);
 	sprintf(System_Cmd, "%s; %s %s%s %x 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    "boot_mode/alt_boot_mode.tcl", Value);
+	    BOOTMODE_TCL, Value);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
 		printf("ERROR: failed to invoke xsdb\n");
@@ -1003,11 +1006,17 @@ Plat_JTAG_Ops(int Select)
 }
 
 int
-Plat_IDCODE_Ops(char *Output, int Length)
+Plat_XSDB_Ops(const char *TCL_File, char *Output, int Length)
 {
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
 	int Ret = 0;
+
+	(void) sprintf(System_Cmd, "%s%s", BIT_PATH, TCL_File);
+	if (access(System_Cmd, F_OK) != 0) {
+		printf("ERROR: failed to access file %s\n", System_Cmd);
+		return -1;
+	}
 
 	if (Output == NULL) {
 		printf("ERROR: unallocated output buffer\n");
@@ -1015,8 +1024,8 @@ Plat_IDCODE_Ops(char *Output, int Length)
 	}
 
 	(void) Plat_JTAG_Ops(1);
-	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    "idcode/idcode_check.tcl");
+	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD,
+		       BIT_PATH, TCL_File);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
 		strcpy(Output, "ERROR: failed to invoke xsdb\n");
@@ -1039,6 +1048,12 @@ Plat_IDCODE_Ops(char *Output, int Length)
 Out:
 	(void) Plat_JTAG_Ops(0);
 	return Ret;
+}
+
+int
+Plat_IDCODE_Ops(char *Output, int Length)
+{
+	return (Plat_XSDB_Ops(IDCODE_TCL, Output, Length));
 }
 
 /*

@@ -17,15 +17,14 @@ extern struct ddr_dimm1 Dimm1;
 extern Voltages_t Voltages;
 
 int Clocks_Check(void *);
-int IDCODE_Check(void *);
+int XSDB_BIT(void *);
 int EBM_EEPROM_Check(void *);
 int DIMM_EEPROM_Check(void *);
 int Voltages_Check(void *);
 
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Plat_Reset_Ops(void);
-extern int Plat_JTAG_Ops(int);
-extern int Plat_IDCODE_Ops(char *, int);
+extern int Plat_XSDB_Ops(char *, char *, int);
 
 /*
  * BITs
@@ -33,6 +32,7 @@ extern int Plat_IDCODE_Ops(char *, int);
 typedef enum {
 	BIT_CLOCKS_CHECK,
 	BIT_IDCODE_CHECK,
+	BIT_EFUSE_CHECK,
 	BIT_EBM_EEPROM_CHECK,
 	BIT_DIMM_EEPROM_CHECK,
 	BIT_VOLTAGES_CHECK,
@@ -48,7 +48,12 @@ BITs_t BITs = {
 	.BIT[BIT_IDCODE_CHECK] = {
 		.Name = "IDCODE Check",
 		.TCL_File = "idcode/idcode_check.tcl",
-		.Plat_BIT_Op = IDCODE_Check,
+		.Plat_BIT_Op = XSDB_BIT,
+	},
+	.BIT[BIT_EFUSE_CHECK] = {
+		.Name = "EFUSE Check",
+		.TCL_File = "efuse/read_efuse.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
 	},
 	.BIT[BIT_EBM_EEPROM_CHECK] = {
 		.Name = "EBM EEPROM Check",
@@ -104,15 +109,15 @@ Clocks_Check(void *Arg)
 }
 
 /*
- * This test checks whether the IDCODE is valid.
+ * Run the test using XSDB.
  */
 int
-IDCODE_Check(void *Arg)
+XSDB_BIT(void *Arg)
 {
 	BIT_t *BIT_p = Arg;
 	char Output[STRLEN_MAX];
 
-	if (Plat_IDCODE_Ops(Output, STRLEN_MAX) != 0) {
+	if (Plat_XSDB_Ops(BIT_p->TCL_File, Output, STRLEN_MAX) != 0) {
 		printf("%s", Output);
 		printf("%s: FAIL\n", BIT_p->Name);
 	} else {

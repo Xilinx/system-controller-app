@@ -141,6 +141,23 @@ typedef struct {
 	int	I2C_Address;
 } IO_Exp_t;
 
+typedef enum {
+	EEPROM_SUMMARY,
+	EEPROM_ALL,
+	EEPROM_COMMON,
+	EEPROM_BOARD,
+	EEPROM_MULTIRECORD,
+} EEPROM_Targets;
+
+/*
+ * On-Board EEPROM
+ */
+typedef struct {
+	char	Name[STRLEN_MAX];
+	char	I2C_Bus[STRLEN_MAX];
+	int	I2C_Address;
+} OnBoard_EEPROM_t;
+
 /*
  * Daughter Card
  */

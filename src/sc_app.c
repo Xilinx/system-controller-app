@@ -30,9 +30,10 @@
  * 1.8 - Support for reading EBM's EEPROM.
  * 1.9 - Support for getting board temperature.
  * 1.10 - Support for setting VOUT of voltage regulators.
+ * 1.11 - Add 'geteeprom' command to get the entire content of on-board's EEPROM.
  */
 #define MAJOR	1
-#define MINOR	10
+#define MINOR	11
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -52,6 +53,7 @@ extern struct Gpio_line_name Gpio_target[];
 extern IO_Exp_t IO_Exp;
 extern SFPs_t SFPs;
 extern QSFPs_t QSFPs;
+extern OnBoard_EEPROM_t OnBoard_EEPROM;
 extern Daughter_Card_t Daughter_Card;
 
 int Parse_Options(int argc, char **argv);
@@ -59,6 +61,7 @@ int Create_Lockfile(void);
 int Destroy_Lockfile(void);
 int Version_Ops(void);
 int BootMode_Ops(void);
+int EEPROM_Ops(void);
 int Clock_Ops(void);
 int Voltage_Ops(void);
 int Power_Ops(void);
@@ -74,51 +77,56 @@ int EBM_Ops(void);
 extern int Plat_Gpio_target_size(void);
 extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
-extern int Plat_EEPROM_Ops(void);
+extern int Plat_IDCODE_Ops(char *, int);
 extern int Plat_Temperature_Ops(void);
 extern int Plat_QSFP_Init(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *, unsigned int *);
 extern int GPIO_Get(char *, int *);
+extern int EEPROM_Common(char *);
+extern int EEPROM_Board(char *, int);
+extern int EEPROM_MultiRecord(char *);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
 	version - version and compatibility information\n\
-	listbootmode - lists the supported boot mode targets\n\
+	listbootmode - list the supported boot mode targets\n\
 	setbootmode - set boot mode to <target>\n\
 	reset - apply power-on-reset\n\
-	eeprom - lists the content of EEPROM\n\
+	eeprom - list the selected content of on-board EEPROM\n\
+	geteeprom - get the content of on-board EEPROM from either <target>:\n\
+		    'common', 'board', or 'multirecord'\n\
 	temperature - get the board temperature\n\
-	listclock - lists the supported clock targets\n\
+	listclock - list the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
 	setbootclock - set <target> to <value> frequency at boot time\n\
 	restoreclock - restore <target> to default value\n\
-	listvoltage - lists the supported voltage targets\n\
+	listvoltage - list the supported voltage targets\n\
 	getvoltage - get the voltage of <target>\n\
 	setvoltage - set <target> to <value> volts\n\
 	setbootvoltage - set <target> to <value> volts at boot time\n\
 	restorevoltage - restore <target> to default value\n\
-	listpower - lists the supported power targets\n\
+	listpower - list the supported power targets\n\
 	getpower - get the voltage, current, and power of <target>\n\
-	listpowerdomain - lists the supported power domain targets\n\
+	listpowerdomain - list the supported power domain targets\n\
 	powerdomain - get the power used by <target> power domain\n\
-	listworkaround - lists the applicable workaround targets\n\
+	listworkaround - list the applicable workaround targets\n\
 	workaround - apply <target> workaround (may requires <value>)\n\
-	listBIT - lists the supported Board Interface Test targets\n\
+	listBIT - list the supported Board Interface Test targets\n\
 	BIT - run BIT target\n\
 	ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'\n\
-	listgpio - lists the supported gpio lines\n\
+	listgpio - list the supported gpio lines\n\
 	getgpio - get the state of <target> gpio\n\
 	getioexp - get IO expander <target> of either 'all', 'input', or 'output'\n\
 	setioexp - set IO expander <target> of either 'direction' or 'output' to <value>\n\
 	restoreioexp - restore IO expander to default values\n\
-	listSFP - lists the supported SFP connectors\n\
+	listSFP - list the supported SFP connectors\n\
 	getSFP - get the connector information of <target> SFP\n\
 	getpwmSFP - get the power mode value of <target> SFP\n\
 	setpwmSFP - set the power mode value of <target> SFP to <value>\n\
-	listQSFP - lists the supported QSFP connectors\n\
+	listQSFP - list the supported QSFP connectors\n\
 	getQSFP - get the connector information of <target> QSFP\n\
 	getpwmQSFP - get the power mode value of <target> QSFP\n\
 	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
@@ -134,6 +142,7 @@ typedef enum {
 	SETBOOTMODE,
 	RESET,
 	EEPROM,
+	GETEEPROM,
 	TEMPERATURE,
 	LISTCLOCK,
 	GETCLOCK,
@@ -184,7 +193,8 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTBOOTMODE, .CmdStr = "listbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Plat_Reset_Ops, },
-	{ .CmdId = EEPROM, .CmdStr = "eeprom", .CmdOps = Plat_EEPROM_Ops, },
+	{ .CmdId = EEPROM, .CmdStr = "eeprom", .CmdOps = EEPROM_Ops, },
+	{ .CmdId = GETEEPROM, .CmdStr = "geteeprom", .CmdOps = EEPROM_Ops, },
 	{ .CmdId = TEMPERATURE, .CmdStr = "temperature", .CmdOps = Plat_Temperature_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
@@ -476,6 +486,137 @@ BootMode_Ops(void)
 	default:
 		printf("ERROR: invalid bootmode command\n");
 		break;
+	}
+
+	return 0;
+}
+
+/*
+ * EEPROM Operations
+ */
+int
+EEPROM_Ops(void)
+{
+	EEPROM_Targets Target;
+	int FD;
+	char In_Buffer[SYSCMD_MAX];
+	char Out_Buffer[STRLEN_MAX];
+	char Buffer[STRLEN_MAX];
+	static struct tm BuildDate;
+	time_t Time;
+
+	if (Command.CmdId == EEPROM) {
+		Target = EEPROM_SUMMARY;
+	}
+
+	if (Command.CmdId == GETEEPROM) {
+		if (T_Flag == 0) {
+			printf("ERROR: no geteeprom target\n");
+			return -1;
+		}
+
+		if (strcmp(Target_Arg, "common") == 0) {
+			Target = EEPROM_COMMON;
+		} else if (strcmp(Target_Arg, "board") == 0) {
+			Target = EEPROM_BOARD;
+		} else if (strcmp(Target_Arg, "multirecord") == 0) {
+			Target = EEPROM_MULTIRECORD;
+		} else {
+			printf("ERROR: invalid geteeprom target\n");
+			return -1;
+		}
+	}
+
+	FD = open(OnBoard_EEPROM.I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open onboard EEPROM\n");
+		return -1;
+	}
+
+	if (ioctl(FD, I2C_SLAVE_FORCE, OnBoard_EEPROM.I2C_Address) < 0) {
+		printf("ERROR: unable to access onboard EEPROM\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	Out_Buffer[0] = 0x0;
+	Out_Buffer[1] = 0x0;
+	if (write(FD, Out_Buffer, 2) != 2) {
+		printf("ERROR: unable to set register address of onboard EEPROM\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) memset(In_Buffer, 0, SYSCMD_MAX);
+	if (read(FD, In_Buffer, 256) != 256) {
+		printf("ERROR: unable to read onboard EEPROM\n");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+	switch (Target) {
+	case EEPROM_SUMMARY:
+		printf("Language: %d\n", In_Buffer[0xA]);
+		if (Plat_IDCODE_Ops(Buffer, STRLEN_MAX) != 0) {
+			printf("ERROR: failed to get silicon revision\n");
+			return -1;
+		}
+
+		(void) strtok(Buffer, " ");
+		(void) strcpy(Buffer, strtok(NULL, "\n"));
+		printf("Silicon Revision: %s\n", Buffer);
+
+		/* Base build date for manufacturing is 1/1/1996 */
+		BuildDate.tm_year = 96;
+		BuildDate.tm_mday = 1;
+		BuildDate.tm_min = (In_Buffer[0xD] << 16 | In_Buffer[0xC] << 8 |
+				    In_Buffer[0xB]);
+		Time = mktime(&BuildDate);
+		if (Time == -1) {
+			printf("ERROR: invalid manufacturing date\n");
+			return -1;
+		}
+
+		printf("Manufacturing Date: %s", ctime(&Time));
+		snprintf(Buffer, 6+1, "%s", &In_Buffer[0xF]);
+		printf("Manufacturer: %s\n", Buffer);
+		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x16]);
+		printf("Product Name: %s\n", Buffer);
+		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x27]);
+		printf("Board Serial Number: %s\n", Buffer);
+		snprintf(Buffer, 9+1, "%s", &In_Buffer[0x38]);
+		printf("Board Part Number: %s\n", Buffer);
+		snprintf(Buffer, 8+1, "%s", &In_Buffer[0x44]);
+		printf("Board Revision: %s\n", Buffer);
+		printf("MAC Address 0: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+		       In_Buffer[0x80], In_Buffer[0x81], In_Buffer[0x82],
+		       In_Buffer[0x83], In_Buffer[0x84], In_Buffer[0x85]);
+		printf("MAC Address 1: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+		       In_Buffer[0x86], In_Buffer[0x87], In_Buffer[0x88],
+		       In_Buffer[0x89], In_Buffer[0x8A], In_Buffer[0x8B]);
+		break;
+	case EEPROM_COMMON:
+		if (EEPROM_Common(In_Buffer) != 0) {
+			return -1;
+		}
+
+		break;
+	case EEPROM_BOARD:
+		if (EEPROM_Board(In_Buffer, 1) != 0) {
+			return -1;
+		}
+
+		break;
+	case EEPROM_MULTIRECORD:
+		if (EEPROM_MultiRecord(In_Buffer) != 0) {
+			return -1;
+		}
+
+		break;
+	default:
+		printf("ERROR: invalid geteeprom target\n");
+		return -1;
 	}
 
 	return 0;
@@ -1781,25 +1922,16 @@ Out:
 	return Ret;
 }
 
-typedef enum {
-	EBM_ALL,
-	EBM_COMMON,
-	EBM_BOARD,
-	EBM_MULTIRECORD,
-} EBM_Targets;
-
 /*
  * EBM Operations
  */
 int EBM_Ops(void)
 {
-	EBM_Targets Target;
+	EEPROM_Targets Target;
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
 	char Out_Buffer[SYSCMD_MAX];
 	char Buffer[STRLEN_MAX];
-	static struct tm EBM_BuildDate;
-	time_t Time;
 	int Ret = 0;
 
 	/* Validate the EBM target */
@@ -1809,13 +1941,13 @@ int EBM_Ops(void)
 	}
 
 	if (strcmp(Target_Arg, "all") == 0) {
-		Target = EBM_ALL;
+		Target = EEPROM_ALL;
 	} else if (strcmp(Target_Arg, "common") == 0) {
-		Target = EBM_COMMON;
+		Target = EEPROM_COMMON;
 	} else if (strcmp(Target_Arg, "board") == 0) {
-		Target = EBM_BOARD;
+		Target = EEPROM_BOARD;
 	} else if (strcmp(Target_Arg, "multirecord") == 0) {
-		Target = EBM_MULTIRECORD;
+		Target = EEPROM_MULTIRECORD;
 	} else {
 		printf("ERROR: invalid EBM target\n");
 		return -1;
@@ -1827,16 +1959,18 @@ int EBM_Ops(void)
 		return -1;
 	}
 
-	(void *) memset(Out_Buffer, 0, SYSCMD_MAX);
-	(void *) memset(In_Buffer, 0, SYSCMD_MAX);
+	(void) memset(Out_Buffer, 0, SYSCMD_MAX);
+	(void) memset(In_Buffer, 0, SYSCMD_MAX);
 	Out_Buffer[0] = 0x0;
 	I2C_READ(FD, Daughter_Card.I2C_Address, 256, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
+		(void) close(FD);
 		return Ret;
 	}
 
+	(void) close(FD);
 	switch (Target) {
-	case EBM_ALL:
+	case EEPROM_ALL:
 		for (int i = 0; i < 256; i++) {
 			printf("%2x ", In_Buffer[i]);
 			if (((i+1) % 25) == 0) {
@@ -1845,70 +1979,28 @@ int EBM_Ops(void)
 		}
 		printf("\n");
 		break;
-
-	case EBM_COMMON:
-		printf("0x00 - Version:\t%x\n", In_Buffer[0x0]);
-		printf("0x01 - Internal User Area:\t%x\n", In_Buffer[0x1]);
-		printf("0x02 - Chassis Info Area:\t%x\n", In_Buffer[0x2]);
-		printf("0x03 - Board Area:\t%x\n", In_Buffer[0x3]);
-		printf("0x04 - Product Info Area:\t%x\n", In_Buffer[0x4]);
-		printf("0x05 - Multi Record Area:\t%x\n", In_Buffer[0x5]);
-		printf("0x06 - Pad, Check Sum:\t%x %x\n", In_Buffer[0x6],
-		    In_Buffer[0x7]);
-		break;
-
-	case EBM_BOARD:
-		printf("0x08 - Version:\t%x\n", In_Buffer[0x8]);
-		printf("0x09 - Length:\t%x\n", In_Buffer[0x9]);
-		printf("0x0A - Language Code:\t%x\n", In_Buffer[0xA]);
-
-		/* Base build date for manufacturing is 1/1/1996 */
-		EBM_BuildDate.tm_year = 96;
-		EBM_BuildDate.tm_mday = 1;
-		EBM_BuildDate.tm_min = (In_Buffer[0xD] << 16 | In_Buffer[0xC] << 8 |
-		    In_Buffer[0xB]);
-		Time = mktime(&EBM_BuildDate);
-		if (Time == -1) {
-			printf("ERROR: invalid manufacturing date\n");
-			(void) close(FD);
+	case EEPROM_COMMON:
+		if (EEPROM_Common(In_Buffer) != 0) {
 			return -1;
 		}
 
-		printf("0x0B - Manufacturing Date:\t%s", ctime(&Time));
-		snprintf(Buffer, 6+1, "%s", &In_Buffer[0xF]);
-		printf("0x0F - Manufacturer:\t%s\n", Buffer);
-		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x16]);
-		printf("0x16 - Product Name:\t%s\n", Buffer);
-		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x27]);
-		printf("0x27 - Serial Number:\t%s\n", Buffer);
-		snprintf(Buffer, 9+1, "%s", &In_Buffer[0x38]);
-		printf("0x38 - Part Number:\t%s\n", Buffer);
-		snprintf(Buffer, 1+1, "%s", &In_Buffer[0x42]);
-		printf("0x42 - FRU ID:\t%s\n", Buffer);
-		snprintf(Buffer, 8+1, "%s", &In_Buffer[0x44]);
-		printf("0x44 - Revision:\t%s\n", Buffer);
-		printf("0x4C - EoF, Pad, Check Sum:\t%x %x%x %x\n", In_Buffer[0x4C],
-		    In_Buffer[0x4D], In_Buffer[0x4E], In_Buffer[0x4F]);
 		break;
+	case EEPROM_BOARD:
+		if (EEPROM_Board(In_Buffer, 0) != 0) {
+			return -1;
+		}
 
-	case EBM_MULTIRECORD:
-		printf("0x50 - Record Type:\t%x\n", In_Buffer[0x50]);
-		printf("0x51 - Record Format:\t%x\n", In_Buffer[0x51]);
-		printf("0x52 - Length:\t%x\n", In_Buffer[0x52]);
-		printf("0x53 - Record Check Sum:\t%x\n", In_Buffer[0x53]);
-		printf("0x54 - Header Check sum:\t%x\n", In_Buffer[0x54]);
-		printf("0x55 - Xilinx IANA ID:\t%x%x%x\n", In_Buffer[0x55],
-		    In_Buffer[0x56],In_Buffer[0x57]);
-		snprintf(Buffer, 8+1, "%s", &In_Buffer[0x58]);
-		printf("0x58 - Field Name Identifier:\t%s\n", Buffer);
 		break;
+	case EEPROM_MULTIRECORD:
+		if (EEPROM_MultiRecord(In_Buffer) != 0) {
+			return -1;
+		}
 
+		break;
 	default:
 		printf("ERROR: invalid EBM target\n");
-		(void) close(FD);
 		return -1;
 	}
 
-	(void) close(FD);
 	return 0;
 }

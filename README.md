@@ -6,40 +6,42 @@
 
 	<command> - 
 		version - version and compatibility information
-		listbootmode - lists the supported boot mode targets
+		listbootmode - list the supported boot mode targets
 		setbootmode - set boot mode to <target>
 		reset - apply power-on-reset
-		eeprom - lists the content of EEPROM
+		eeprom - list the selected content of on-board EEPROM
+		geteeprom - get the content of on-board EEPROM from either <target>:
+			    'common', 'board', or 'multirecord'
 		temperature - get the board temperature
-		listclock - lists the supported clock targets
+		listclock - list the supported clock targets
 		getclock - get the frequency of <target>
 		setclock - set <target> to <value> frequency
 		setbootclock - set <target> to <value> frequency at boot time
 		restoreclock - restore <target> to default value
-		listvoltage - lists the supported voltage targets
+		listvoltage - list the supported voltage targets
 		getvoltage - get the voltage of <target>
 		setvoltage - set <target> to <value> volts
 		setbootvoltage - set <target> to <value> volts at boot time
 		restorevoltage - restore <target> to default value
-		listpower - lists the supported power targets
+		listpower - list the supported power targets
 		getpower - get the voltage, current, and power of <target>
-		listpowerdomain - lists the supported power domain targets
+		listpowerdomain - list the supported power domain targets
 		powerdomain - get the power used by <target> power domain
-		listworkaround - lists the applicable workaround targets
+		listworkaround - list the applicable workaround targets
 		workaround - apply <target> workaround (may requires <value>)
-		listBIT - lists the supported Board Interface Test targets
+		listBIT - list the supported Board Interface Test targets
 		BIT - run BIT target
 		ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'
-		listgpio - lists the supported gpio lines
+		listgpio - list the supported gpio lines
 		getgpio - get the state of <target> gpio
 		getioexp - get IO expander <target> of either 'all', 'input', or 'output'
 		setioexp - set IO expander <target> of either 'direction' or 'output' to <value>
 		restoreioexp - restore IO expander to default values
-		listSFP - lists the supported SFP connectors
+		listSFP - list the supported SFP connectors
 		getSFP - get the connector information of <target> SFP
 		getpwmSFP - get the power mode value of <target> SFP
 		setpwmSFP - set the power mode value of <target> SFP to <value>
-		listQSFP - lists the supported QSFP connectors
+		listQSFP - list the supported QSFP connectors
 		getQSFP - get the connector information of <target> QSFP
 		getpwmQSFP - get the power mode value of <target> QSFP
 		setpwmQSFP - set the power mode value of <target> QSFP to <value>

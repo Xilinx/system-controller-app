@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <time.h>
 #include <math.h>
 #include <gpiod.h>
 #include "sc_app.h"
@@ -373,4 +374,181 @@ GPIO_Set(char *Label, int State)
 	}
 
 	return 0;
+}
+
+int
+EEPROM_Common(char *Buffer)
+{
+	printf("0x00 - Version:\t%.2x\n", Buffer[0x0]);
+	printf("0x01 - Internal User Area:\t%.2x\n", Buffer[0x1]);
+	printf("0x02 - Chassis Info Area:\t%.2x\n", Buffer[0x2]);
+	printf("0x03 - Board Area:\t%.2x\n", Buffer[0x3]);
+	printf("0x04 - Product Info Area:\t%.2x\n", Buffer[0x4]);
+	printf("0x05 - Multi Record Area:\t%.2x\n", Buffer[0x5]);
+	printf("0x06 - Pad and Check sum:\t%.2x %.2x\n", Buffer[0x6], Buffer[0x7]);
+	return 0;
+}
+
+int
+EEPROM_Board(char *Buffer, int PCIe)
+{
+	char Buf[STRLEN_MAX];
+	static struct tm BuildDate;
+	time_t Time;
+
+	printf("0x08 - Version:\t%.2x\n", Buffer[0x8]);
+	printf("0x09 - Length:\t%.2x\n", Buffer[0x9]);
+	printf("0x0A - Language Code:\t%.2x\n", Buffer[0xA]);
+
+	/* Base build date for manufacturing is 1/1/1996 */
+	BuildDate.tm_year = 96;
+	BuildDate.tm_mday = 1;
+	BuildDate.tm_min = (Buffer[0xD] << 16 | Buffer[0xC] << 8 |
+			    Buffer[0xB]);
+	Time = mktime(&BuildDate);
+	if (Time == -1) {
+		printf("ERROR: invalid manufacturing date\n");
+		return -1;
+	}
+
+	printf("0x0B - Manufacturing Date:\t%s", ctime(&Time));
+	snprintf(Buf, 6+1, "%s", &Buffer[0xF]);
+	printf("0x0F - Manufacturer:\t%s\n", Buf);
+	snprintf(Buf, 16+1, "%s", &Buffer[0x16]);
+	printf("0x16 - Product Name:\t%s\n", Buf);
+	snprintf(Buf, 16+1, "%s", &Buffer[0x27]);
+	printf("0x27 - Serial Number:\t%s\n", Buf);
+	snprintf(Buf, 9+1, "%s", &Buffer[0x38]);
+	printf("0x38 - Part Number:\t%s\n", Buf);
+	if (Buffer[0x42] == 0) {
+		printf("0x42 - FRU ID:\t%.2x\n",Buffer[0x42]);
+	} else {
+		snprintf(Buf, 1+1, "%s", &Buffer[0x42]);
+		printf("0x42 - FRU ID:\t%s\n", Buf);
+	}
+
+	snprintf(Buf, 8+1, "%s", &Buffer[0x44]);
+	printf("0x44 - Revision:\t%s\n", Buf);
+	if (PCIe == 1) {
+		printf("0x4D - PCIe Info:\t");
+		for (int i = 0; i < Buffer[0x4C]; i++) {
+			printf("%.2x", Buffer[0x4D + i]);
+		}
+
+		printf("\n");
+		printf("0x56 - UUID:\t");
+		for (int i = 0; i < Buffer[0x55]; i++) {
+			printf("%.2x", Buffer[0x56 + i]);
+			if (i == 3 || i == 5 || i == 7 || i == 9) {
+				printf("-");
+			}
+		}
+
+		printf("\n");
+		printf("0x66 - EoR and Check sum:\t%.2x %.2x\n", Buffer[0x66],
+		       Buffer[0x67]);
+	} else {
+		printf("0x4C - EoR, Pad, Check sum:\t%.2x %.2x%.2x %.2x\n",
+		       Buffer[0x4C], Buffer[0x4D], Buffer[0x4E], Buffer[0x4F]);
+	}
+
+	return 0;
+}
+
+int
+EEPROM_MultiRecord(char *Buffer)
+{
+	int Offset;
+	int Type;
+	int Last_Record;
+	int Length;
+
+	/* Common Header offset 0x5 points to Multirecord areas */
+	Offset = Buffer[5] * 8;
+
+	/*
+	 * XXX - Some early VCK190/VMK180 boards have incorrect offset
+	 * value programmed.  If 'Type' is not one of the expected codes
+	 * for 'Multi Record Area' field, adjust the offset to reach to
+	 * the correct area.
+	 */
+	Type = Buffer[Offset];
+	if (Type != 0xD2 && Type != 0xD3) {
+		Offset = 0x68;
+	}
+
+	do {
+		Type = Buffer[Offset];
+		Last_Record = Buffer[Offset + 1] & 0x80;
+		if (Type == 0x2) {
+			printf("0x%.2x - Record Type:\t%.2x (DC Load)\n",
+			       Offset, Type);
+		} else if (Type == 0xD2) {
+			printf("0x%.2x - Record Type:\t%.2x (Mac ID)\n",
+			       Offset, Type);
+		} else if (Type == 0xD3) {
+			printf("0x%.2x - Record Type:\t%.2x (Memory)\n",
+			       Offset, Type);
+		} else {
+			printf("ERROR: unknown multirecord type\n");
+			return -1;
+		}
+
+		printf("0x%.2x - Record Format:\t%.2x\n", (Offset + 1),
+		       Buffer[Offset + 1]);
+		printf("0x%.2x - Length:\t%.2x\n", (Offset + 2),
+		       Buffer[Offset + 2]);
+		printf("0x%.2x - Record Check sum:\t%.2x\n", (Offset + 3),
+		       Buffer[Offset + 3]);
+		printf("0x%.2x - Header Check sum:\t%.2x\n", (Offset + 4),
+		       Buffer[Offset + 4]);
+		if (Type == 0xD2 || Type == 0xD3) {
+			printf("0x%.2x - Xilinx IANA ID:\t%.2x%.2x%.2x\n", (Offset + 5),
+			       Buffer[Offset + 5], Buffer[Offset + 6], Buffer[Offset + 7]);
+		}
+
+		if (Type == 0xD2) {
+			if (Buffer[Offset + 8] == 0x11) {
+				printf("0x%.2x - Version Number:\t%.2x (SC Mac ID)\n",
+				       (Offset + 8), Buffer[Offset + 8]);
+				printf("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+				       (Offset + 9), Buffer[Offset + 9],
+				       Buffer[Offset + 10], Buffer[Offset + 11],
+				       Buffer[Offset + 12], Buffer[Offset + 13],
+				       Buffer[Offset + 14]);
+			} else if (Buffer[Offset + 8] == 0x31) {
+				printf("0x%.2x - Version Number:\t%.2x (Veral Mac ID)\n",
+				       (Offset + 8), Buffer[Offset + 8]);
+				printf("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+				       (Offset + 9), Buffer[Offset + 9],
+				       Buffer[Offset + 10], Buffer[Offset + 11],
+				       Buffer[Offset + 12], Buffer[Offset + 13],
+				       Buffer[Offset + 14]);
+				printf("0x%.2x - Mac ID 1:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+				       (Offset + 15), Buffer[Offset + 15],
+				       Buffer[Offset + 16], Buffer[Offset + 17],
+				       Buffer[Offset + 18], Buffer[Offset + 19],
+				       Buffer[Offset + 20]);
+			} else {
+				printf("ERROR: unsupported D3 version number\n");
+			}
+		}
+
+		if (Type == 0xD3) {
+			printf("0x%.2x - Memory Type:\t%s\n", (Offset + 8),
+			       &Buffer[Offset + 8]);
+			Length = strlen(&Buffer[Offset + 8]) + 1;
+			printf("0x%.2x - Voltage Supply:\t%s\n", (Offset + 8 + Length),
+			       &Buffer[Offset + 8 + Length]);
+		}
+
+		if (!Last_Record) {
+			/*
+			 * Skip to the next multi-record.  There are 5 bytes of
+			 * header in this record plus length of data in offset 0x2.
+			 */
+			Offset += (5 + Buffer[Offset + 2]);
+			printf("\n");
+		}
+	} while (!Last_Record);
 }

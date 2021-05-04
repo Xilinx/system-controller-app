@@ -24,7 +24,7 @@ int Voltages_Check(void *);
 
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Plat_Reset_Ops(void);
-extern int Plat_XSDB_Ops(char *, char *, int);
+extern int Plat_XSDB_Ops(const char *, char *, int);
 
 /*
  * BITs

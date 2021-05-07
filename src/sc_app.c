@@ -31,9 +31,10 @@
  * 1.9 - Support for getting board temperature.
  * 1.10 - Support for setting VOUT of voltage regulators.
  * 1.11 - Add 'geteeprom' command to get the entire content of on-board's EEPROM.
+ * 1.12 - Support for FPGA Mezzanine Cards (FMCs).
  */
 #define MAJOR	1
-#define MINOR	11
+#define MINOR	12
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -55,6 +56,7 @@ extern SFPs_t SFPs;
 extern QSFPs_t QSFPs;
 extern OnBoard_EEPROM_t OnBoard_EEPROM;
 extern Daughter_Card_t Daughter_Card;
+extern FMCs_t FMCs;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -74,6 +76,7 @@ int IO_Exp_Ops(void);
 int SFP_Ops(void);
 int QSFP_Ops(void);
 int EBM_Ops(void);
+int FMC_Ops(void);
 extern int Plat_Gpio_target_size(void);
 extern int Plat_Version_Ops(int *Major, int *Minor);
 extern int Plat_Reset_Ops(void);
@@ -96,7 +99,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	reset - apply power-on-reset\n\
 	eeprom - list the selected content of on-board EEPROM\n\
 	geteeprom - get the content of on-board EEPROM from either <target>:\n\
-		    'common', 'board', or 'multirecord'\n\
+		    'all', 'common', 'board', or 'multirecord'\n\
 	temperature - get the board temperature\n\
 	listclock - list the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
@@ -132,8 +135,11 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
 	getpwmoQSFP - get the power mode override value of <target> QSFP\n\
 	setpwmoQSFP - set the power mode override value of <target> QSFP to <value>\n\
-	getEBM - get the content of EEPROM from EBM card from either <target>:\n\
+	getEBM - get the content of EEPROM on EBM card from either <target>:\n\
 		 'all', 'common', 'board', or 'multirecord'\n\
+	listFMC - list the plugged FMCs\n\
+	getFMC - get the content of EEPROM on FMC from a plugged <target>.  The <value>\n\
+		 should be either: 'all', 'common', 'board', or 'multirecord'\n\
 ";
 
 typedef enum {
@@ -179,6 +185,8 @@ typedef enum {
 	GETPWMOQSFP,
 	SETPWMOQSFP,
 	GETEBM,
+	LISTFMC,
+	GETFMC,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -231,6 +239,8 @@ static Command_t Commands[] = {
 	{ .CmdId = GETPWMOQSFP, .CmdStr = "getpwmoQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = SETPWMOQSFP, .CmdStr = "setpwmoQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = GETEBM, .CmdStr = "getEBM", .CmdOps = EBM_Ops, },
+	{ .CmdId = LISTFMC, .CmdStr = "listFMC", .CmdOps = FMC_Ops, },
+	{ .CmdId = GETFMC, .CmdStr = "getFMC", .CmdOps = FMC_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -491,6 +501,29 @@ BootMode_Ops(void)
 	return 0;
 }
 
+void
+EEPROM_Print_All(char *Buffer, int Size, int Partition)
+{
+	printf("    ");
+	for (int i = 0; i < Partition; i++) {
+		printf("%2x ", i);
+	}
+
+	printf("\n00: ");
+	for (int i = 0, j = Partition; i < Size; i++) {
+		printf("%.2x ", Buffer[i]);
+		if (((i + 1) % Partition) == 0) {
+			if ((i + 1) < Size) {
+				printf("\n%.2x: ", j);
+				j += Partition;
+			}
+		}
+	}
+
+	printf("\n");
+	return;
+}
+
 /*
  * EEPROM Operations
  */
@@ -504,6 +537,7 @@ EEPROM_Ops(void)
 	char Buffer[STRLEN_MAX];
 	static struct tm BuildDate;
 	time_t Time;
+	int Offset, Length;
 
 	if (Command.CmdId == EEPROM) {
 		Target = EEPROM_SUMMARY;
@@ -515,7 +549,9 @@ EEPROM_Ops(void)
 			return -1;
 		}
 
-		if (strcmp(Target_Arg, "common") == 0) {
+		if (strcmp(Target_Arg, "all") == 0) {
+			Target = EEPROM_ALL;
+		} else if (strcmp(Target_Arg, "common") == 0) {
 			Target = EEPROM_COMMON;
 		} else if (strcmp(Target_Arg, "board") == 0) {
 			Target = EEPROM_BOARD;
@@ -579,15 +615,28 @@ EEPROM_Ops(void)
 		}
 
 		printf("Manufacturing Date: %s", ctime(&Time));
-		snprintf(Buffer, 6+1, "%s", &In_Buffer[0xF]);
+		Offset = 0xE;
+		Length = (In_Buffer[Offset] & 0x3F);
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		printf("Manufacturer: %s\n", Buffer);
-		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x16]);
+		Offset = Offset + Length + 1;
+		Length = (In_Buffer[Offset] & 0x3F);
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		printf("Product Name: %s\n", Buffer);
-		snprintf(Buffer, 16+1, "%s", &In_Buffer[0x27]);
+		Offset = Offset + Length + 1;
+		Length = (In_Buffer[Offset] & 0x3F);
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		printf("Board Serial Number: %s\n", Buffer);
-		snprintf(Buffer, 9+1, "%s", &In_Buffer[0x38]);
+		Offset = Offset + Length + 1;
+		Length = (In_Buffer[Offset] & 0x3F);
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		printf("Board Part Number: %s\n", Buffer);
-		snprintf(Buffer, 8+1, "%s", &In_Buffer[0x44]);
+		Offset = Offset + Length + 1;
+		Length = (In_Buffer[Offset] & 0x3F);
+		/* Skip FRU File ID */
+		Offset = Offset + Length + 1;
+		Length = (In_Buffer[Offset] & 0x3F);
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		printf("Board Revision: %s\n", Buffer);
 		printf("MAC Address 0: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
 		       In_Buffer[0x80], In_Buffer[0x81], In_Buffer[0x82],
@@ -595,6 +644,9 @@ EEPROM_Ops(void)
 		printf("MAC Address 1: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
 		       In_Buffer[0x86], In_Buffer[0x87], In_Buffer[0x88],
 		       In_Buffer[0x89], In_Buffer[0x8A], In_Buffer[0x8B]);
+		break;
+	case EEPROM_ALL:
+		EEPROM_Print_All(In_Buffer, 256, 16);
 		break;
 	case EEPROM_COMMON:
 		if (EEPROM_Common(In_Buffer) != 0) {
@@ -1971,13 +2023,7 @@ int EBM_Ops(void)
 	(void) close(FD);
 	switch (Target) {
 	case EEPROM_ALL:
-		for (int i = 0; i < 256; i++) {
-			printf("%2x ", In_Buffer[i]);
-			if (((i+1) % 25) == 0) {
-				printf("\n");
-			}
-		}
-		printf("\n");
+		EEPROM_Print_All(In_Buffer, 256, 16);
 		break;
 	case EEPROM_COMMON:
 		if (EEPROM_Common(In_Buffer) != 0) {
@@ -1999,6 +2045,169 @@ int EBM_Ops(void)
 		break;
 	default:
 		printf("ERROR: invalid EBM target\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int FMC_List(void)
+{
+	FMC_t *FMC;
+	int FD;
+	char In_Buffer[SYSCMD_MAX];
+	char Out_Buffer[STRLEN_MAX];
+	char Buffer[STRLEN_MAX];
+	int Ret = 0;
+	int Offset, Length;
+
+	for (int i = 0; i < FMCs.Numbers; i++) {
+		FMC = &FMCs.FMC[i];
+		FD = open(FMC->I2C_Bus, O_RDWR);
+		if (FD < 0) {
+			printf("ERROR: unable to open I2C bus %s\n",
+			       FMC->I2C_Bus);
+			return -1;
+		}
+
+		if (ioctl(FD, I2C_SLAVE_FORCE, FMC->I2C_Address) < 0) {
+			printf("ERROR: unable to configure I2C for address 0x%x\n",
+			       FMC->I2C_Address);
+			(void) close(FD);
+			return -1;
+		}
+
+		/*
+		 * If write fails, it indicates that there is no FMC plugged into
+		 * the connector referenced by the I2C device address.
+		 */
+		Out_Buffer[0] = 0x0;
+		if (write(FD, Out_Buffer, 1) != 1) {
+			(void) close(FD);
+			continue;
+		}
+
+		/*
+		 * Since there is a FMC on this connector, read its Manufacturer
+		 * and its Product Name.
+		 */
+		(void) memset(Out_Buffer, 0, SYSCMD_MAX);
+		(void) memset(In_Buffer, 0, SYSCMD_MAX);
+		Out_Buffer[0] = 0x0;    // EEPROM offset 0
+		I2C_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return -1;
+		}
+
+		(void) close(FD);
+		Offset = 0xE;
+		Length = (In_Buffer[Offset] & 0x3F);
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		printf("%s - %s ", FMC->Name, Buffer);
+		Offset = Offset + Length + 1;
+		Length = (In_Buffer[Offset] & 0x3F);
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		printf("%s\n", Buffer);
+        }
+
+	return 0;
+}
+
+/*
+ * FMC Operations
+ */
+int FMC_Ops(void)
+{
+	int Target_Index = -1;
+	FMC_t *FMC;
+	EEPROM_Targets Area;
+	int FD;
+	char In_Buffer[SYSCMD_MAX];
+	char Out_Buffer[SYSCMD_MAX];
+	int Ret = 0;
+
+	if (Command.CmdId == LISTFMC) {
+		return FMC_List();
+	}
+
+	if (T_Flag == 0) {
+		printf("ERROR: no FMC target\n");
+		return -1;
+	}
+
+	(void) strcpy(Out_Buffer, strtok(Target_Arg, " - "));
+	for (int i = 0; i < FMCs.Numbers; i++) {
+		if (strcmp(Out_Buffer, FMCs.FMC[i].Name) == 0) {
+			Target_Index = i;
+			FMC = &FMCs.FMC[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		printf("ERROR: invalid FMC target\n");
+		return -1;
+	}
+
+	if (V_Flag == 0) {
+		printf("ERROR: no FMC value\n");
+		return -1;
+	}
+
+	if (strcmp(Value_Arg, "all") == 0) {
+		Area = EEPROM_ALL;
+	} else if (strcmp(Value_Arg, "common") == 0) {
+		Area = EEPROM_COMMON;
+	} else if (strcmp(Value_Arg, "board") == 0) {
+		Area = EEPROM_BOARD;
+	} else if (strcmp(Value_Arg, "multirecord") == 0) {
+		Area = EEPROM_MULTIRECORD;
+	} else {
+		printf("ERROR: invalid FMC value\n");
+		return -1;
+	}
+
+	FD = open(FMC->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		printf("ERROR: unable to open FMC\n");
+		return -1;
+	}
+
+	(void) memset(Out_Buffer, 0, SYSCMD_MAX);
+	(void) memset(In_Buffer, 0, SYSCMD_MAX);
+	Out_Buffer[0] = 0x0;
+	I2C_READ(FD, FMC->I2C_Address, 256, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	(void) close(FD);
+	switch (Area) {
+	case EEPROM_ALL:
+		EEPROM_Print_All(In_Buffer, 256, 16);
+		break;
+	case EEPROM_COMMON:
+		if (EEPROM_Common(In_Buffer) != 0) {
+			return -1;
+		}
+
+		break;
+	case EEPROM_BOARD:
+		if (EEPROM_Board(In_Buffer, 0) != 0) {
+			return -1;
+		}
+
+		break;
+	case EEPROM_MULTIRECORD:
+		if (EEPROM_MultiRecord(In_Buffer) != 0) {
+			return -1;
+		}
+
+		break;
+	default:
+		printf("ERROR: invalid FMC value\n");
 		return -1;
 	}
 

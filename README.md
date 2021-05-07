@@ -11,7 +11,7 @@
 		reset - apply power-on-reset
 		eeprom - list the selected content of on-board EEPROM
 		geteeprom - get the content of on-board EEPROM from either <target>:
-			    'common', 'board', or 'multirecord'
+			    'all', 'common', 'board', or 'multirecord'
 		temperature - get the board temperature
 		listclock - list the supported clock targets
 		getclock - get the frequency of <target>
@@ -49,3 +49,6 @@
 		setpwmoQSFP - set the power mode override value of <target> QSFP to <value>
 		getEBM - get the content of EEPROM from EBM card from either <target>:
 			 'all', 'common', 'board', or 'multirecord'
+		listFMC - list the plugged FMCs
+		getFMC - get the content of EEPROM on FMC from a plugged <target>.  The <value>
+			 should be either: 'all', 'common', 'board', or 'multirecord'

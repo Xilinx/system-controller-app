@@ -395,6 +395,7 @@ EEPROM_Board(char *Buffer, int PCIe)
 	char Buf[STRLEN_MAX];
 	static struct tm BuildDate;
 	time_t Time;
+	int Offset, Length;
 
 	printf("0x08 - Version:\t%.2x\n", Buffer[0x8]);
 	printf("0x09 - Length:\t%.2x\n", Buffer[0x9]);
@@ -412,48 +413,80 @@ EEPROM_Board(char *Buffer, int PCIe)
 	}
 
 	printf("0x0B - Manufacturing Date:\t%s", ctime(&Time));
-	snprintf(Buf, 6+1, "%s", &Buffer[0xF]);
-	printf("0x0F - Manufacturer:\t%s\n", Buf);
-	snprintf(Buf, 16+1, "%s", &Buffer[0x16]);
-	printf("0x16 - Product Name:\t%s\n", Buf);
-	snprintf(Buf, 16+1, "%s", &Buffer[0x27]);
-	printf("0x27 - Serial Number:\t%s\n", Buf);
-	snprintf(Buf, 9+1, "%s", &Buffer[0x38]);
-	printf("0x38 - Part Number:\t%s\n", Buf);
-	if (Buffer[0x42] == 0) {
-		printf("0x42 - FRU ID:\t%.2x\n",Buffer[0x42]);
+	Offset = 0xE;
+	Length = (Buffer[Offset] & 0x3F);
+	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
+	printf("0x%.2x - Manufacturer:\t%s\n", (Offset + 1), Buf);
+	Offset = Offset + Length + 1;
+	Length = (Buffer[Offset] & 0x3F);
+	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
+	printf("0x%.2x - Product Name:\t%s\n", (Offset + 1), Buf);
+	Offset = Offset + Length + 1;
+	Length = (Buffer[Offset] & 0x3F);
+	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
+	printf("0x%.2x - Serial Number:\t%s\n", (Offset + 1), Buf);
+	Offset = Offset + Length + 1;
+	Length = (Buffer[Offset] & 0x3F);
+	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
+	printf("0x%.2x - Part Number:\t%s\n", (Offset + 1), Buf);
+	Offset = Offset + Length + 1;
+	Length = (Buffer[Offset] & 0x3F);
+	if (Length == 1) {
+		printf("0x%.2x - FRU ID:\t%.2x\n", Offset, Buffer[Offset + 1]);
 	} else {
-		snprintf(Buf, 1+1, "%s", &Buffer[0x42]);
-		printf("0x42 - FRU ID:\t%s\n", Buf);
+		snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
+		printf("0x%.2x - FRU ID:\t%s\n", (Offset + 1), Buf);
+		Offset = Offset + Length + 1;
+		if (Buffer[Offset] != 0xC1) {
+			printf("ERROR: End-of-Record was not found\n");
+			return -1;
+		} else {
+			printf("0x%.2x - EoR:\t%.2x\n", Offset, Buffer[Offset]);
+			return 0;
+		}
 	}
 
-	snprintf(Buf, 8+1, "%s", &Buffer[0x44]);
-	printf("0x44 - Revision:\t%s\n", Buf);
+	Offset = Offset + Length + 1;
+	Length = (Buffer[Offset] & 0x3F);
+	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
+	printf("0x%.2x - Revision:\t%s\n", (Offset + 1), Buf);
+	Offset = Offset + Length + 1;
 	if (PCIe == 1) {
-		printf("0x4D - PCIe Info:\t");
-		for (int i = 0; i < Buffer[0x4C]; i++) {
-			printf("%.2x", Buffer[0x4D + i]);
+		Length = (Buffer[Offset] & 0x3F);
+		printf("0x%.2x - PCIe Info:\t", (Offset + 1));
+		for (int i = 0; i < Length; i++) {
+			printf("%.2x", Buffer[Offset + i + 1]);
 		}
 
 		printf("\n");
-		printf("0x56 - UUID:\t");
-		for (int i = 0; i < Buffer[0x55]; i++) {
-			printf("%.2x", Buffer[0x56 + i]);
+		Offset = Offset + Length + 1;
+		Length = (Buffer[Offset] & 0x3F);
+		printf("0x%.2x - UUID:\t", (Offset + 1));
+		for (int i = 0; i < Length; i++) {
+			printf("%.2x", Buffer[Offset + i + 1]);
 			if (i == 3 || i == 5 || i == 7 || i == 9) {
 				printf("-");
 			}
 		}
 
 		printf("\n");
-		printf("0x66 - EoR and Check sum:\t%.2x %.2x\n", Buffer[0x66],
-		       Buffer[0x67]);
+		Offset = Offset + Length + 1;
+		printf("0x%.2x - EoR and Check sum:\t%.2x %.2x\n", Offset,
+		       Buffer[Offset], Buffer[Offset + 1]);
 	} else {
-		printf("0x4C - EoR, Pad, Check sum:\t%.2x %.2x%.2x %.2x\n",
-		       Buffer[0x4C], Buffer[0x4D], Buffer[0x4E], Buffer[0x4F]);
+		printf("0x%.2x - EoR, Pad, Check sum:\t%.2x %.2x%.2x %.2x\n",
+		       Offset, Buffer[Offset], Buffer[Offset + 1],
+		       Buffer[Offset + 2], Buffer[Offset + 3]);
 	}
 
 	return 0;
 }
+
+#define DC_OUTPUT	0x1
+#define DC_LOAD		0x2
+#define OEM_D2		0xD2
+#define OEM_D3		0xD3
+#define OEM_VITA_57_1	0xFA
 
 int
 EEPROM_MultiRecord(char *Buffer)
@@ -473,24 +506,32 @@ EEPROM_MultiRecord(char *Buffer)
 	 * the correct area.
 	 */
 	Type = Buffer[Offset];
-	if (Type != 0xD2 && Type != 0xD3) {
+	if (!(Type == DC_OUTPUT || Type == DC_LOAD || Type == OEM_D2 ||
+	      Type == OEM_D3 || Type == OEM_VITA_57_1)) {
 		Offset = 0x68;
 	}
 
 	do {
 		Type = Buffer[Offset];
 		Last_Record = Buffer[Offset + 1] & 0x80;
-		if (Type == 0x2) {
-			printf("0x%.2x - Record Type:\t%.2x (DC Load)\n",
-			       Offset, Type);
-		} else if (Type == 0xD2) {
-			printf("0x%.2x - Record Type:\t%.2x (Mac ID)\n",
-			       Offset, Type);
-		} else if (Type == 0xD3) {
-			printf("0x%.2x - Record Type:\t%.2x (Memory)\n",
-			       Offset, Type);
-		} else {
-			printf("ERROR: unknown multirecord type\n");
+		switch (Type) {
+		case DC_OUTPUT:
+			printf("0x%.2x - Record Type:\t%.2x (DC Output)\n", Offset, Type);
+			break;
+		case DC_LOAD:
+			printf("0x%.2x - Record Type:\t%.2x (DC Load)\n", Offset, Type);
+			break;
+		case OEM_D2:
+			printf("0x%.2x - Record Type:\t%.2x (Mac ID)\n", Offset, Type);
+			break;
+		case OEM_D3:
+			printf("0x%.2x - Record Type:\t%.2x (Memory)\n", Offset, Type);
+			break;
+		case OEM_VITA_57_1:
+			printf("0x%.2x - Record Type:\t%.2x (Vita 57.1)\n", Offset, Type);
+			break;
+		default:
+			printf("ERROR: unsupported multirecord type\n");
 			return -1;
 		}
 
@@ -502,12 +543,66 @@ EEPROM_MultiRecord(char *Buffer)
 		       Buffer[Offset + 3]);
 		printf("0x%.2x - Header Check sum:\t%.2x\n", (Offset + 4),
 		       Buffer[Offset + 4]);
-		if (Type == 0xD2 || Type == 0xD3) {
+		if (Type == OEM_D2 || Type == OEM_D3) {
 			printf("0x%.2x - Xilinx IANA ID:\t%.2x%.2x%.2x\n", (Offset + 5),
 			       Buffer[Offset + 5], Buffer[Offset + 6], Buffer[Offset + 7]);
 		}
 
-		if (Type == 0xD2) {
+		switch (Type) {
+		case DC_OUTPUT:
+			printf("0x%.2x - Output Number:\t%.2x (Power Rail)\n",
+			       (Offset + 5), Buffer[Offset + 5]);
+			printf("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)\n",
+			       (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
+			       (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
+			printf("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)\n",
+			       (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
+			       (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
+			printf("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)\n",
+			       (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
+			       (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
+			printf("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)\n",
+			       (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
+			       (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
+			printf("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)\n",
+			       (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
+			       (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
+			printf("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)\n",
+			       (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
+			       (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
+			break;
+		case DC_LOAD:
+			if (Buffer[Offset + 5] == 0x0) {
+				printf("0x%.2x - Output Number:\t%.2x (Voltage Adjust)\n",
+				       (Offset + 5), Buffer[Offset + 5]);
+			} else if (Buffer[Offset + 5] <= 0xF) {
+				printf("0x%.2x - Output Number:\t%.2x (Power Rail)\n",
+				       (Offset + 5), Buffer[Offset + 5]);
+			} else {
+				printf("ERROR: unsupported DC Load output number\n");
+				return -1;
+			}
+
+			printf("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)\n",
+			       (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
+			       (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
+			printf("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)\n",
+			       (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
+			       (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
+			printf("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)\n",
+			       (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
+			       (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
+			printf("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)\n",
+			       (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
+			       (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
+			printf("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)\n",
+			       (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
+			       (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
+			printf("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)\n",
+			       (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
+			       (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
+			break;
+		case OEM_D2:
 			if (Buffer[Offset + 8] == 0x11) {
 				printf("0x%.2x - Version Number:\t%.2x (SC Mac ID)\n",
 				       (Offset + 8), Buffer[Offset + 8]);
@@ -530,16 +625,42 @@ EEPROM_MultiRecord(char *Buffer)
 				       Buffer[Offset + 18], Buffer[Offset + 19],
 				       Buffer[Offset + 20]);
 			} else {
-				printf("ERROR: unsupported D3 version number\n");
+				printf("ERROR: unsupported D2 version number\n");
+				return -1;
 			}
-		}
 
-		if (Type == 0xD3) {
+			break;
+		case OEM_D3:
 			printf("0x%.2x - Memory Type:\t%s\n", (Offset + 8),
 			       &Buffer[Offset + 8]);
 			Length = strlen(&Buffer[Offset + 8]) + 1;
 			printf("0x%.2x - Voltage Supply:\t%s\n", (Offset + 8 + Length),
 			       &Buffer[Offset + 8 + Length]);
+			break;
+		case OEM_VITA_57_1:
+			printf("0x%.2x - Organizationally Unique Identifier:\t%.2x%.2x%.2x\n",
+			       (Offset + 5), Buffer[Offset + 5], Buffer[Offset + 6],
+			       Buffer[Offset + 7]);
+			printf("0x%.2x - Subtype Version:\t%.2x\n", (Offset + 8),
+			       Buffer[Offset + 8]);
+			printf("0x%.2x - Connector Type:\t%.2x\n", (Offset + 9),
+			       Buffer[Offset + 9]);
+			printf("0x%.2x - P1 Bank A Number Signals:\t%.2x\n", (Offset + 10),
+			       Buffer[Offset + 10]);
+			printf("0x%.2x - P1 Bank B Number Signals:\t%.2x\n", (Offset + 11),
+			       Buffer[Offset + 11]);
+			printf("0x%.2x - P2 Bank A Number Signals:\t%.2x\n", (Offset + 12),
+			       Buffer[Offset + 12]);
+			printf("0x%.2x - P2 Bank B Number Signals:\t%.2x\n", (Offset + 13),
+			       Buffer[Offset + 13]);
+			printf("0x%.2x - P1 GBT B Number Signals:\t%.2x\n", (Offset + 14),
+			       Buffer[Offset + 14]);
+			printf("0x%.2x - Max Clock for TCK:\t%.2x (%dMhz)\n", (Offset + 15),
+			       Buffer[Offset + 15], Buffer[Offset + 15]);
+			break;
+		default:
+			printf("ERROR: unsupported multirecord type\n");
+			return -1;
 		}
 
 		if (!Last_Record) {

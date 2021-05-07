@@ -785,12 +785,12 @@ typedef enum {
 FMCs_t FMCs = {
 	.Numbers = FMC_MAX,
 	.FMC[FMC_1] = {
-		.Name = "FMCP1",
+		.Name = "FMC1",
 		.I2C_Bus = "/dev/i2c-12",
 		.I2C_Address = 0x50,
 	},
 	.FMC[FMC_2] = {
-		.Name = "FMCP2",
+		.Name = "FMC2",
 		.I2C_Bus = "/dev/i2c-13",
 		.I2C_Address = 0x50,
 	},

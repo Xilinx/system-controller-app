@@ -257,6 +257,8 @@ main(int argc, char **argv)
 {
 	int Ret;
 
+	SC_OPENLOG("sc_app");
+	SC_INFO(__FILE__ ":%d:%s() start", __LINE__, __func__);
 	if (Create_Lockfile() != 0) {
 		return -1;
 	}
@@ -273,6 +275,7 @@ Unlock:
 		return -1;
 	}
 
+	SC_INFO(__FILE__ ":%d:%s() done", __LINE__, __func__);
 	return Ret;
 }
 
@@ -349,7 +352,7 @@ Create_Lockfile(void)
 	/* Verify the validity of pid recorded in lockfile */
 	FP = fopen(LOCKFILE, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to open lockfile\n");
+		SC_ERR("open %s failed: %m", LOCKFILE);
 		return -1;
 	}
 
@@ -365,14 +368,14 @@ Create_Lockfile(void)
 		goto LockFile;
 	} else {
 		/* Another instance of sc_app is running */
-		printf("ERROR: lockfile \"%s\" exists\n", LOCKFILE);
+		SC_ERR("lockfile %s exists", LOCKFILE);
 		return -1;
 	}
 
 LockFile:
 	FP = fopen(LOCKFILE, "w");
 	if (FP == NULL) {
-		printf("ERROR: failed to create lockfile\n");
+		SC_ERR("open/create %s failed: %m", LOCKFILE);
 		return -1;
 	}
 
@@ -413,13 +416,13 @@ Version_Ops(void)
 	printf("Version:\t%d.%d\n", Major, Minor);
 
 	if (uname(&UTS) != 0) {
-		printf("ERROR: failed to get OS information\n");
+		SC_ERR("get OS information: uname failed: %m");
 		return -1;
 	}
 
 	CP = strrchr(UTS.nodename, '-');
 	if (CP == NULL) {
-		printf("ERROR: failed to obtain BSP release\n");
+		SC_ERR("failed to obtain BSP release");
 		return -1;
 	}
 
@@ -463,7 +466,7 @@ BootMode_Ops(void)
 
 	/* Validate the bootmode target */
 	if (T_Flag == 0) {
-		printf("ERROR: no bootmode target\n");
+		SC_ERR("no bootmode target");
 		return -1;
 	}
 
@@ -476,7 +479,7 @@ BootMode_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid bootmode target\n");
+		SC_ERR("invalid bootmode target");
 		return -1;
 	}
 
@@ -485,7 +488,7 @@ BootMode_Ops(void)
 		/* Record the boot mode */
 		FP = fopen(BOOTMODEFILE, "w");
 		if (FP == NULL) {
-			printf("ERROR: failed to write boot_mode file\n");
+			SC_ERR("failed to write boot_mode file %s: open: %m", BOOTMODEFILE);
 			return -1;
 		}
 

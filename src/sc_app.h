@@ -7,6 +7,7 @@
 #ifndef SC_APP_H_
 #define SC_APP_H_
 
+#include <syslog.h>
 #include <sys/ioctl.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
@@ -22,6 +23,21 @@
 #define SILICONFILE	APPDIR"/silicon"
 #define CLOCKFILE	APPDIR"/clock"
 #define VOLTAGEFILE	APPDIR"/voltage"
+
+/*
+ * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code
+ * to be able to split us from other syslog messages. For example,
+ * to save the sc_app messages to /var/log/local3.log file add
+ * "local3.*  /var/log/local3.log" to /etc/syslog.conf
+ *
+ * Assumes system controller has FEATURE_SYSLOG_INFO
+ */
+#define SC_OPENLOG(ident) openlog(ident, LOG_PID, LOG_LOCAL3)
+#define SC_INFO(msg, ...) syslog(LOG_INFO, msg, ##__VA_ARGS__)
+#define SC_ERR(msg, ...) do { \
+		syslog(LOG_ERR, msg, ##__VA_ARGS__); \
+		fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
+	} while (0)
 
 /*
  * I2C Buses
@@ -276,7 +292,7 @@ struct Gpio_line_name {
 	Msgset[0].msgs = Msgs; \
 	Msgset[0].nmsgs = 2; \
 	if (ioctl((FD), I2C_RDWR, &Msgset) < 0) { \
-		printf("ERROR: unable to read from I2C device 0x%x\n", (Address)); \
+		SC_ERR("unable to read from I2C device 0x%x: %m", (Address)); \
 		(Return) = -1; \
 	} \
 }
@@ -284,11 +300,11 @@ struct Gpio_line_name {
 #define I2C_WRITE(FD, Address, Len, Out, Return) \
 { \
 	if (ioctl((FD), I2C_SLAVE_FORCE, (Address)) < 0) { \
-		printf("ERROR: unable to access I2C device 0x%x\n", (Address)); \
+		SC_ERR("unable to access I2C device 0x%x: %m", (Address)); \
 		(Return) = -1; \
 	} \
 	if ((Return) == 0 && write((FD), (Out), (Len)) != (Len)) { \
-		printf("ERROR: unable to write to I2C device 0x%x\n", (Address)); \
+		SC_ERR("unable to write to I2C device 0x%x: %m", (Address)); \
 		(Return) = -1; \
 	} \
 }

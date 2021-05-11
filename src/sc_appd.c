@@ -63,7 +63,7 @@ Is_Silicon_ES1(void)
 	if (access(SILICONFILE, F_OK) == 0) {
 		FP = fopen(SILICONFILE, "r");
 		if (FP == NULL) {
-			printf("ERROR: failed to read silicon file\n");
+			SC_ERR("failed to open silicon file: %m");
 			return -1;
 		}
 
@@ -100,7 +100,7 @@ Timer_Handler(int Signal, siginfo_t *Signal_Info, void *Arg)
 
 		/* Cancel the timer */
 		if (timer_settime(Timer_Id, 0, &Timer_Off, NULL) == -1) {
-			printf("ERROR: failed to set the timer\n");
+			SC_ERR("failed to set the timer: %m");
 		}
 
 		if (Is_Silicon_ES1() == 1) {
@@ -111,12 +111,12 @@ Timer_Handler(int Signal, siginfo_t *Signal_Info, void *Arg)
 	}
 
 	if (GPIO_Behavior != Watchdog) {
-		printf("ASSERT: invalid GPIO behavior!\n");
+		SC_ERR("invalid GPIO behavior");
 	}
 
 	/* Cancel the timer */
 	if (timer_settime(Timer_Id, 0, &Timer_Off, NULL) == -1) {
-		printf("ERROR: failed to set the timer\n");
+		SC_ERR("failed to set the timer: %m");
 	}
 
 	(void) (*Plat_Reset_Ops)();
@@ -134,7 +134,7 @@ Monitor_GPIO(struct gpiod_line *GPIO_Line)
 
 	FP = fopen(LOGFILE, "a");
 	if (FP == NULL) {
-		printf("ERROR: failed to create logfile\n");
+		SC_ERR("failed to create %s: %m", LOGFILE);
 		return -1;
 	}
 #endif /* DEBUG */
@@ -144,7 +144,7 @@ Monitor_GPIO(struct gpiod_line *GPIO_Line)
 
 	State = gpiod_line_event_read(GPIO_Line, &GPIO_Event);
 	if (State == -1) {
-		printf("ERROR: failed to read the last event notification\n");
+		SC_ERR("failed to read the last event notification");
 		return -1;
 	}
 
@@ -189,7 +189,7 @@ VCK190_GPIO(void)
 	}
 
 	if (Workaround_Op == NULL) {
-		printf("ERROR: failed to locate workaround function!\n");
+		SC_ERR("failed to locate workaround function!");
 		return -1;
 	}
 
@@ -197,7 +197,7 @@ VCK190_GPIO(void)
 	if (access(CONFIGFILE, F_OK) == 0) {
 		FP = fopen(CONFIGFILE, "r");
 		if (FP == NULL) {
-			printf("ERROR: failed to read config file\n");
+			SC_ERR("failed to read config file: %m");
 			return -1;
 		}
 
@@ -241,7 +241,7 @@ VCK190_GPIO(void)
 	Sig_Action.sa_sigaction = Timer_Handler;
 	sigemptyset(&Sig_Action.sa_mask);
 	if (sigaction(SIGRTMIN, &Sig_Action, NULL) == -1) {
-		printf("ERROR: failed to set sigaction");
+		SC_ERR("failed to set sigaction: %m");
 		return -1;
 	}
 
@@ -250,7 +250,7 @@ VCK190_GPIO(void)
 	Sig_Event.sigev_signo = SIGRTMIN;
 	Sig_Event.sigev_value.sival_ptr = &Timer_Id;
 	if (timer_create(CLOCK_REALTIME, &Sig_Event, &Timer_Id) == -1) {
-		printf("ERROR: failed to create timer");
+		SC_ERR("failed to create timer: %m");
 		return -1;
 	}
 
@@ -270,18 +270,18 @@ VCK190_GPIO(void)
 	/* Open the GPIO line for monitoring */
 	GPIO_Chip = gpiod_chip_open_by_name(GPIO_ChipName);
 	if (GPIO_Chip == NULL) {
-		printf("ERROR: failed to open gpio chip\n");
+		SC_ERR("failed to open gpio chip");
 		return -1;
 	}
 
 	GPIO_Line = gpiod_chip_get_line(GPIO_Chip, GPIO_Offset);
 	if (GPIO_Line == NULL) {
-		printf("ERROR: failed to get gpio line\n");
+		SC_ERR("failed to get gpio line");
 		return -1;
 	}
 
 	if (gpiod_line_request_both_edges_events(GPIO_Line, "sc_appd") == -1) {
-		printf("ERROR: failed to request event notification\n");
+		SC_ERR("failed to request event notification");
 		return -1;
 	}
 
@@ -292,7 +292,7 @@ VCK190_GPIO(void)
 	if (Is_Silicon_ES1() == 1) {
 		GPIO_State = gpiod_line_get_value(GPIO_Line);
 		if (GPIO_State == -1) {
-			printf("ERROR: failed to get current state of gpio line\n");
+			SC_ERR("failed to get current state of gpio line");
 			return -1;
 		}
 
@@ -305,7 +305,7 @@ VCK190_GPIO(void)
 		/* GPIO line 11 is connected to PMC MIO37 */
 		GPIO_State = Monitor_GPIO(GPIO_Line);
 		if (GPIO_State == -1) {
-			printf("ERROR: failed to monitor gpio line\n");
+			SC_ERR("failed to monitor gpio line");
 			return -1;
 		}
 #ifdef DEBUG
@@ -334,7 +334,7 @@ VCK190_GPIO(void)
 
 			/* Workaround behavior is determined in timer handler */
 			if (timer_settime(Timer_Id, 0, &Timer_Start, NULL) == -1) {
-				printf("ERROR: failed to set the timer\n");
+				SC_ERR("failed to set the timer: %m");
 			}
 
 			break;
@@ -345,7 +345,7 @@ VCK190_GPIO(void)
 			    (WDT_Edge == 1 && GPIO_State == 1) ||
 			    (WDT_Edge == 0 && GPIO_State == 0)) {
 				if (timer_settime(Timer_Id, 0, &Timer_Start, NULL) == -1) {
-					printf("ERROR: failed to set the timer\n");
+					SC_ERR("failed to set the timer: %m");
 				}
 			}
 
@@ -358,7 +358,7 @@ VCK190_GPIO(void)
 			break;
 
 		default:
-			printf("ERROR: invalid GPIO behavior!\n");
+			SC_ERR("invalid GPIO behavior!");
 		}
 	}
 
@@ -379,7 +379,7 @@ VCK190_Version(void)
 
 	FP = popen(Command, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to execute sc_app command\n");
+		SC_ERR("failed popen( %s ): %m");
 		return -1;
 	}
 
@@ -399,7 +399,7 @@ VCK190_Version(void)
 	if (Voltage < (0.78f - 0.04f)) {
 		FP = fopen(SILICONFILE, "w");
 		if (FP == NULL) {
-			printf("ERROR: failed to write silicon file\n");
+			SC_ERR("failed to write silicon file: %m");
 			return -1;
 		}
 
@@ -429,7 +429,7 @@ Set_Clocks(void)
 
 	FP = fopen(CLOCKFILE, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to read clock file\n");
+		SC_ERR("failed to read clock file: %m");
 		return -1;
 	}
 
@@ -445,7 +445,7 @@ Set_Clocks(void)
 
 		FD = open(Clock->Sysfs_Path, O_WRONLY);
 		if (FD < 0) {
-			printf("ERROR: failed to open clock device\n");
+			SC_ERR("failed to open clock device: %m");
 			(void) fclose(FP);
 			return -1;
 		}
@@ -454,7 +454,7 @@ Set_Clocks(void)
 		(void) sprintf(Value, "%u\n",
 		    (unsigned int)(strtod(Value, NULL) * 1000000));
 		if (write(FD, Value, strlen(Value)) != strlen(Value)) {
-			printf("ERROR: failed to set clock frequency %s\n", Value);
+			SC_ERR("failed to set clock frequency %s : %m", Value);
 			(void) close(FD);
 			(void) fclose(FP);
 			return -1;
@@ -486,7 +486,7 @@ Set_Voltages(void)
 
 	FP = fopen(VOLTAGEFILE, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to read voltage file\n");
+		SC_ERR("failed to read voltage file: %m");
 		return -1;
 	}
 
@@ -502,7 +502,7 @@ Set_Voltages(void)
 
 		Voltage = strtof(Value, NULL);
 		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-			printf("ERROR: failed to set voltage on regulator\n");
+			SC_ERR("failed to set voltage on regulator");
 			(void) fclose(FP);
 			return -1;
 		}
@@ -516,30 +516,32 @@ int
 main()
 {
 	char Board[STRLEN_MAX];
+	SC_OPENLOG("sc_appd");
+	SC_INFO(__FILE__ ":%d:%s() start", __LINE__, __func__);
 
 	/* If '.sc_app' directory doesn't exist, create it */
 	if (access(APPDIR, F_OK) == -1) {
 		if (mkdir(APPDIR, 0755) == -1) {
-			printf("ERROR: failed to create \'.sc_app\' directory\n");
+			SC_ERR("mkdir %s failed: %m", APPDIR);
 			return -1;
 		}
 	}
 
 	/* Detect FMC cards and auto adjust voltage */
 	if (Plat_FMCAutoAdjust() != 0) {
-		printf("ERROR: failed to auto adjust FMC cards\n");
+		SC_ERR("failed to auto adjust FMC cards");
 		return -1;
 	}
 
 	/* Set custom clock frequency */
 	if (Set_Clocks() != 0) {
-		printf("ERROR: failed to set clock frequency\n");
+		SC_ERR("failed to set clock frequency");
 		return -1;
 	}
 
 	/* Set custom regulator voltage */
 	if (Set_Voltages() != 0) {
-		printf("ERROR: failed to set regulator voltage\n");
+		SC_ERR("failed to set regulator voltage");
 		return -1;
 	}
 
@@ -547,13 +549,13 @@ main()
 	(void) remove(BOOTMODEFILE);
 
 	if (Plat_Board_Name(Board) == -1) {
-		printf("ERROR: failed to get board name\n");
+		SC_ERR("failed to get board name");
 		return -1;
 	}
 
 	if (strcmp(Board, "vck190") == 0) {
 		if (VCK190_Version() == -1) {
-			printf("ERROR: failed to determine silicon version\n");
+			SC_ERR("failed to determine silicon version");
 			return -1;
 		}
 		(void) VCK190_GPIO();

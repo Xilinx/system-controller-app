@@ -37,11 +37,11 @@
 		getioexp - get IO expander <target> of either 'all', 'input', or 'output'
 		setioexp - set IO expander <target> of either 'direction' or 'output' to <value>
 		restoreioexp - restore IO expander to default values
-		listSFP - list the supported SFP connectors
+		listSFP - list the plugged SFP connectors
 		getSFP - get the connector information of <target> SFP
 		getpwmSFP - get the power mode value of <target> SFP
 		setpwmSFP - set the power mode value of <target> SFP to <value>
-		listQSFP - list the supported QSFP connectors
+		listQSFP - list the plugged QSFP connectors
 		getQSFP - get the connector information of <target> QSFP
 		getpwmQSFP - get the power mode value of <target> QSFP
 		setpwmQSFP - set the power mode value of <target> QSFP to <value>

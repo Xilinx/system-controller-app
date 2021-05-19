@@ -125,11 +125,11 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	getioexp - get IO expander <target> of either 'all', 'input', or 'output'\n\
 	setioexp - set IO expander <target> of either 'direction' or 'output' to <value>\n\
 	restoreioexp - restore IO expander to default values\n\
-	listSFP - list the supported SFP connectors\n\
+	listSFP - list the plugged SFP connectors\n\
 	getSFP - get the connector information of <target> SFP\n\
 	getpwmSFP - get the power mode value of <target> SFP\n\
 	setpwmSFP - set the power mode value of <target> SFP to <value>\n\
-	listQSFP - list the supported QSFP connectors\n\
+	listQSFP - list the plugged QSFP connectors\n\
 	getQSFP - get the connector information of <target> QSFP\n\
 	getpwmQSFP - get the power mode value of <target> QSFP\n\
 	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
@@ -1585,6 +1585,42 @@ int IO_Exp_Ops(void)
 	return 0;
 }
 
+int SFP_List(void)
+{
+	SFP_t *SFP;
+	int FD;
+	char Buffer[STRLEN_MAX];
+
+	for (int i = 0; i < SFPs.Numbers; i++) {
+		SFP = &SFPs.SFP[i];
+		FD = open(SFP->I2C_Bus, O_RDWR);
+		if (FD < 0) {
+			SC_ERR("failed to access I2C bus %s: %m", SFP->I2C_Bus);
+			return -1;
+		}
+
+		if (ioctl(FD, I2C_SLAVE_FORCE, SFP->I2C_Address) < 0) {
+			SC_ERR("failed to configure I2C bus for access to "
+			       "device address 0x%x: %m", SFP->I2C_Address);
+			return -1;
+		}
+
+		/*
+		 * If the read operation fails, it indicates that there is
+		 * no SFP device plugged into the connector referenced by
+		 * the I2C device address.
+		 */
+		if (read(FD, Buffer, 1) != 1) {
+			(void) close(FD);
+			continue;
+		}
+
+		printf("%s\n", SFP->Name);
+	}
+
+	return 0;
+}
+
 /*
  * SFP Operations
  */
@@ -1599,10 +1635,7 @@ int SFP_Ops(void)
 	int Ret = 0;
 
 	if (Command.CmdId == LISTSFP) {
-		for (int i = 0; i < SFPs.Numbers; i++) {
-			printf("%s\n", SFPs.SFP[i].Name);
-		}
-		return 0;
+		return SFP_List();
 	}
 
 	/* Validate the SFP target */
@@ -1752,6 +1785,56 @@ int SFP_Ops(void)
 	return 0;
 }
 
+int QSFP_List(void)
+{
+	QSFP_t *QSFP;
+	int FD;
+	char Buffer[STRLEN_MAX];
+	int Ret = 0;
+
+	if (Plat_QSFP_Init() != 0) {
+		return -1;
+	}
+
+	for (int i = 0; i < QSFPs.Numbers; i++) {
+		QSFP = &QSFPs.QSFP[i];
+		FD = open(QSFP->I2C_Bus, O_RDWR);
+		if (FD < 0) {
+			SC_ERR("failed to access I2C bus %s: %m", QSFP->I2C_Bus);
+			Ret = -1;
+			goto Out;
+		}
+
+		if (ioctl(FD, I2C_SLAVE_FORCE, QSFP->I2C_Address) < 0) {
+			SC_ERR("failed to configure I2C bus for access to "
+			       "device address 0x%x: %m", QSFP->I2C_Address);
+			Ret = -1;
+			goto Out;
+		}
+
+		/*
+		 * If the read operation fails, it indicates that there is
+		 * no QSFP device plugged into the connector referenced by
+		 * the I2C device address.
+		 */
+		if (read(FD, Buffer, 1) != 1) {
+			(void) close(FD);
+			continue;
+		}
+
+		printf("%s\n", QSFP->Name);
+	}
+Out:
+	/*
+	 * The Plat_QSFP_Init() call may change the current boot mode to JTAG
+	 * to download a PDI.  Calling Plat_Reset_Ops() restores the current
+	 * boot mode.
+	 */
+	(void) Plat_Reset_Ops();
+	(void) close(FD);
+	return Ret;
+}
+
 /*
  * QSFP Operations
  */
@@ -1766,10 +1849,7 @@ int QSFP_Ops(void)
 	int Ret = 0;
 
 	if (Command.CmdId == LISTQSFP) {
-		for (int i = 0; i < QSFPs.Numbers; i++) {
-			printf("%s\n", QSFPs.QSFP[i].Name);
-		}
-		return 0;
+		return QSFP_List();
 	}
 
 	/* Validate the QSFP target */

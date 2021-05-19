@@ -19,7 +19,7 @@
 		setbootclock - set <target> to <value> frequency at boot time
 		restoreclock - restore <target> to default value
 		listvoltage - list the supported voltage targets
-		getvoltage - get the voltage of <target>
+		getvoltage - get the voltage of <target>, with optional <value> of 'all'
 		setvoltage - set <target> to <value> volts
 		setbootvoltage - set <target> to <value> volts at boot time
 		restorevoltage - restore <target> to default value

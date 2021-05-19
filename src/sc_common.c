@@ -102,6 +102,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 
 		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
 		*Voltage = Mantissa * pow(2, Exponent);
+		printf("Voltage(V):\t%.2f\n", *Voltage);
 		break;
 	case 1:
 		/* Disable VOUT */
@@ -113,7 +114,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 			return Ret;
 		}
 
-		/* Set Under-Voltage limits to 0 */
+		/* Set Undervoltage limits to 0 */
 		Out_Buffer[0] = PMBUS_VOUT_UV_FAULT_LIMIT;
 		Out_Buffer[1] = 0x0;
 		Out_Buffer[2] = 0x0;
@@ -130,7 +131,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 			return Ret;
 		}
 
-		/* Set Over-Voltage limits to 30% of VOUT */
+		/* Set Overvoltage limits to 30% of VOUT */
 		Over_Voltage_Limit = (*Voltage != 0) ? *Voltage : 0.1;
 		Over_Voltage_Limit += (Over_Voltage_Limit * 0.3);
 		Vout = round(Over_Voltage_Limit / pow(2, Exponent));
@@ -171,6 +172,63 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 			return Ret;
 		}
 
+		break;
+	case 2:
+		/* Get Overvoltage Fault Limit */
+		Out_Buffer[0] = PMBUS_VOUT_OV_FAULT_LIMIT;
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
+		*Voltage = Mantissa * pow(2, Exponent);
+		printf("Overvoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		       *Voltage, PMBUS_VOUT_OV_FAULT_LIMIT, Mantissa);
+
+		/* Get Overvoltage Warning Limit */
+		Out_Buffer[0] = PMBUS_VOUT_OV_WARN_LIMIT;
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
+		*Voltage = Mantissa * pow(2, Exponent);
+		printf("Overvoltage Warning Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		       *Voltage, PMBUS_VOUT_OV_WARN_LIMIT, Mantissa);
+
+		/* Get Undervoltage Warning Limit */
+		Out_Buffer[0] = PMBUS_VOUT_UV_WARN_LIMIT;
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
+		*Voltage = Mantissa * pow(2, Exponent);
+		printf("Undervoltage Warning Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		       *Voltage, PMBUS_VOUT_UV_WARN_LIMIT, Mantissa);
+
+		/* Get Undervoltage Fault Limit */
+		Out_Buffer[0] = PMBUS_VOUT_UV_FAULT_LIMIT;
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
+		*Voltage = Mantissa * pow(2, Exponent);
+		printf("Undervoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		       *Voltage, PMBUS_VOUT_UV_FAULT_LIMIT, Mantissa);
 		break;
 	default:
 		printf("ERROR: invalid regulator access\n");

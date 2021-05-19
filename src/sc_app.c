@@ -107,7 +107,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	setbootclock - set <target> to <value> frequency at boot time\n\
 	restoreclock - restore <target> to default value\n\
 	listvoltage - list the supported voltage targets\n\
-	getvoltage - get the voltage of <target>\n\
+	getvoltage - get the voltage of <target>, with optional <value> of 'all'\n\
 	setvoltage - set <target> to <value> volts\n\
 	setbootvoltage - set <target> to <value> volts at boot time\n\
 	restorevoltage - restore <target> to default value\n\
@@ -838,7 +838,15 @@ int Voltage_Ops(void)
 			return -1;
 		}
 
-		printf("Voltage(V):\t%.2f\n", Voltage);
+		if (V_Flag != 0) {
+			if (strcmp(Value_Arg, "all") != 0) {
+				SC_ERR("invalid value argument %s", Value_Arg);
+				return -1;
+			}
+
+			return Access_Regulator(Regulator, &Voltage, 2);
+		}
+
 		break;
 	case SETVOLTAGE:
 	case SETBOOTVOLTAGE:

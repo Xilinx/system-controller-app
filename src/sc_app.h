@@ -38,6 +38,10 @@
 		syslog(LOG_ERR, msg, ##__VA_ARGS__); \
 		fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
 	} while (0)
+#define SC_PRINT(msg, ...) do { \
+		syslog(LOG_INFO, msg, ##__VA_ARGS__); \
+		fprintf(stdout, msg "\n", ##__VA_ARGS__); \
+	} while (0)
 
 /*
  * Boot Modes
@@ -282,7 +286,7 @@ struct Gpio_line_name {
 	Msgset[0].msgs = Msgs; \
 	Msgset[0].nmsgs = 2; \
 	if (ioctl((FD), I2C_RDWR, &Msgset) < 0) { \
-		SC_ERR("unable to read from I2C device 0x%x: %m", (Address)); \
+		SC_ERR("unable to read from I2C device %#x: %m", (Address)); \
 		(Return) = -1; \
 	} \
 }
@@ -290,11 +294,11 @@ struct Gpio_line_name {
 #define I2C_WRITE(FD, Address, Len, Out, Return) \
 { \
 	if (ioctl((FD), I2C_SLAVE_FORCE, (Address)) < 0) { \
-		SC_ERR("unable to access I2C device 0x%x: %m", (Address)); \
+		SC_ERR("unable to access I2C device %#x: %m", (Address)); \
 		(Return) = -1; \
 	} \
 	if ((Return) == 0 && write((FD), (Out), (Len)) != (Len)) { \
-		SC_ERR("unable to write to I2C device 0x%x: %m", (Address)); \
+		SC_ERR("unable to write to I2C device %#x: %m", (Address)); \
 		(Return) = -1; \
 	} \
 }

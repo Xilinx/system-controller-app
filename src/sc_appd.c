@@ -64,7 +64,7 @@ Is_Silicon_ES1(void)
 	if (access(SILICONFILE, F_OK) == 0) {
 		FP = fopen(SILICONFILE, "r");
 		if (FP == NULL) {
-			SC_ERR("failed to open silicon file: %m");
+			SC_ERR("failed to open file %s: %m", SILICONFILE);
 			return -1;
 		}
 
@@ -198,7 +198,7 @@ VCK190_GPIO(void)
 	if (access(CONFIGFILE, F_OK) == 0) {
 		FP = fopen(CONFIGFILE, "r");
 		if (FP == NULL) {
-			SC_ERR("failed to read config file: %m");
+			SC_ERR("failed to read file %s: %m", CONFIGFILE);
 			return -1;
 		}
 
@@ -264,7 +264,7 @@ VCK190_GPIO(void)
 	/* Find the GPIO chip name that handles WDT line */
 	if (gpiod_ctxless_find_line(GPIOLINE, GPIO_ChipName, STRLEN_MAX,
 	    &GPIO_Offset) != 1) {
-		printf("ERROR: failed to find GPIO line.\n");
+		SC_ERR("failed to find GPIO line");
                 return -1;
         }
 
@@ -378,14 +378,16 @@ VCK190_Version(void)
 	/* Remove previous 'silicon' file, if any */
 	(void) remove(SILICONFILE);
 
+	SC_INFO("Command: %s", Command);
 	FP = popen(Command, "r");
 	if (FP == NULL) {
-		SC_ERR("failed popen( %s ): %m");
+		SC_ERR("failed to run %s: %m", Command);
 		return -1;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
+	SC_INFO("Output: %s", Output);
 	(void) strtok(Output, ":");
 	(void) strcpy(Output, strtok(NULL, "\n"));
 	Voltage = atof(Output);
@@ -400,7 +402,7 @@ VCK190_Version(void)
 	if (Voltage < (0.78f - 0.04f)) {
 		FP = fopen(SILICONFILE, "w");
 		if (FP == NULL) {
-			SC_ERR("failed to write silicon file: %m");
+			SC_ERR("failed to write to %s: %m", SILICONFILE);
 			return -1;
 		}
 
@@ -438,6 +440,7 @@ Set_Clocks(void)
 	}
 
 	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		SC_INFO("%s: %s", CLOCKFILE, Buffer);
 		(void) strtok(Buffer, ":");
 		(void) strcpy(Value, strtok(NULL, "\n"));
 		for (int i = 0; i < Clocks.Numbers; i++) {
@@ -457,7 +460,7 @@ Set_Clocks(void)
 
 		FD = open(Clock->Sysfs_Path, O_WRONLY);
 		if (FD < 0) {
-			SC_ERR("failed to open clock device: %m");
+			SC_ERR("failed to open %s: %m", Clock->Sysfs_Path);
 			(void) fclose(FP);
 			return -1;
 		}
@@ -466,7 +469,7 @@ Set_Clocks(void)
 		(void) sprintf(Value, "%u\n",
 		    (unsigned int)(strtod(Value, NULL) * 1000000));
 		if (write(FD, Value, strlen(Value)) != strlen(Value)) {
-			SC_ERR("failed to set clock frequency %s : %m", Value);
+			SC_ERR("failed to set clock frequency %s: %m", Value);
 			(void) close(FD);
 			(void) fclose(FP);
 			return -1;
@@ -498,11 +501,12 @@ Set_Voltages(void)
 
 	FP = fopen(VOLTAGEFILE, "r");
 	if (FP == NULL) {
-		SC_ERR("failed to read voltage file: %m");
+		SC_ERR("failed to read file %s: %m", VOLTAGEFILE);
 		return -1;
 	}
 
 	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		SC_INFO("%s: %s", VOLTAGEFILE, Buffer);
 		(void) strtok(Buffer, ":");
 		(void) strcpy(Value, strtok(NULL, "\n"));
 		for (int i = 0; i < Voltages.Numbers; i++) {
@@ -529,7 +533,7 @@ main()
 {
 	char Board[STRLEN_MAX];
 	SC_OPENLOG("sc_appd");
-	SC_INFO(__FILE__ ":%d:%s() start", __LINE__, __func__);
+	SC_INFO(">>> Begin");
 
 	/* If '.sc_app' directory doesn't exist, create it */
 	if (access(APPDIR, F_OK) == -1) {
@@ -573,5 +577,6 @@ main()
 		(void) VCK190_GPIO();
 	}
 
+	SC_INFO("<<< End(-1)");
 	return -1;
 }

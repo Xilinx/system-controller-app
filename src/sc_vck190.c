@@ -17,6 +17,7 @@
 #define BOARDNAME	"vck190"
 #define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"
 #define IDCODE_TCL	"idcode/idcode_check.tcl"
+#define QSFP_MODSEL_TCL	"qsfp_set_modsel/qsfp_download.tcl"
 
 int Plat_Board_Name(char *Name);
 int Plat_BootMode_Ops(int);
@@ -834,13 +835,13 @@ Workaround_Vccaux(void *Arg)
 
 	fd = open("/dev/i2c-3", O_RDWR);
 	if (fd < 0) {
-		printf("ERROR: cannot open the I2C device\n");
+		SC_ERR("cannot open the I2C device %s: %m", "/dev/i2c-3");
 		return -1;
 	}
 
 	// Select IRPS5401
 	if (ioctl(fd, I2C_SLAVE_FORCE, 0x47) < 0) {
-		printf("ERROR: unable to access IRPS5401 address\n");
+		SC_ERR("unable to access IRPS5401 address");
 		(void) close(fd);
 		return -1;
 	}
@@ -849,7 +850,7 @@ Workaround_Vccaux(void *Arg)
 	WriteBuffer[0] = 0x00;
 	WriteBuffer[1] = 0x03;
 	if (write(fd, WriteBuffer, 2) != 2) {
-		printf("ERROR: unable to select page for IRPS5401\n");
+		SC_ERR("unable to select page for IRPS5401");
 		(void) close(fd);
 		return -1;
 	}
@@ -858,7 +859,7 @@ Workaround_Vccaux(void *Arg)
 	WriteBuffer[0] = 0x01;
 	WriteBuffer[1] = (1 == *State) ? 0x80 : 0x00;
 	if (write(fd, WriteBuffer, 2) != 2) {
-		printf("ERROR: unable to change VOUT for IRPS5401\n");
+		SC_ERR("unable to change VOUT for IRPS5401");
 		(void) close(fd);
 		return -1;
 	}
@@ -871,7 +872,7 @@ int
 Plat_Board_Name(char *Board_Name)
 {
 	if (Board_Name == NULL) {
-		printf("ERROR: need a pre-allocated string array\n");
+		SC_ERR("need a pre-allocated string array");
 		return -1;
 	}
 
@@ -892,23 +893,25 @@ int
 Plat_BootMode_Ops(int Value)
 {
 	FILE *FP;
-	char Output[STRLEN_MAX];
+	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
 
 	(void) Plat_JTAG_Ops(1);
 	sprintf(System_Cmd, "%s; %s %s%s %x 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
 	    BOOTMODE_TCL, Value);
+	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to invoke xsdb\n");
+		SC_ERR("failed to invoke xsdb: %m");
 		return -1;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
+	SC_INFO("XSDB Output: %s", Output);
 	(void) Plat_JTAG_Ops(0);
 	if (strstr(Output, "no targets found") != NULL) {
-		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
+		SC_ERR("could not connect to Versal through jtag");
 		return -1;
 	}
 
@@ -920,38 +923,40 @@ Plat_Reset_Ops(void)
 {
 	FILE *FP;
 	int State;
-	char Buffer[SYSCMD_MAX];
+	char Buffer[SYSCMD_MAX] = { 0 };
+	BootMode_t *BootMode;
 
 	if (access(SILICONFILE, F_OK) == 0) {
 		FP = fopen(SILICONFILE, "r");
 		if (FP == NULL) {
-			printf("ERROR: failed to read silicon file\n");
+			SC_ERR("failed to read silicon file %s: %m", SILICONFILE);
 			return -1;
 		}
 
 		(void) fgets(Buffer, SYSCMD_MAX, FP);
 		(void) fclose(FP);
+		SC_INFO("%s: %s", SILICONFILE, Buffer);
 		if (strcmp(Buffer, "ES1\n") == 0) {
 			// Turn VCCINT_RAM off
 			State = 0;
 			if (Workaround_Vccaux(&State) != 0) {
-				printf("ERROR: failed to turn VCCINT_RAM off\n");
+				SC_ERR("failed to turn VCCINT_RAM off");
 				return -1;
 			}
 		}
 	}
 
-	// Assert POR
+	/* Assert POR */
 	if (GPIO_Set("SYSCTLR_POR_B_LS", 0) != 0) {
-		printf("ERROR: failed to assert power-on-reset\n");
+		SC_ERR("failed to assert power-on-reset");
 		return -1;
 	}
 
 	sleep(1);
 
-	// De-assert POR
+	/* De-assert POR */
 	if (GPIO_Set("SYSCTLR_POR_B_LS", 1) != 0) {
-		printf("ERROR: failed to de-assert power-on-reset\n");
+		SC_ERR("failed to de-assert power-on-reset");
 		return -1;
 	}
 
@@ -959,16 +964,18 @@ Plat_Reset_Ops(void)
 	if (access(BOOTMODEFILE, F_OK) == 0) {
 		FP = fopen(BOOTMODEFILE, "r");
 		if (FP == NULL) {
-			printf("ERROR: failed to read boot_mode file\n");
+			SC_ERR("failed to read boot_mode file %s: %m", BOOTMODEFILE);
 			return -1;
 		}
 
 		(void) fscanf(FP, "%s", Buffer);
 		(void) fclose(FP);
+		SC_INFO("%s: %s", BOOTMODEFILE, Buffer);
 		for (int i = 0; i < BootModes.Numbers; i++) {
-			if (strcmp(Buffer, (char *)BootModes.BootMode[i].Name) == 0) {
-				if (Plat_BootMode_Ops(BootModes.BootMode[i].Value) != 0) {
-					printf("ERROR: failed to set the boot mode\n");
+			BootMode = &BootModes.BootMode[i];
+			if (strcmp(Buffer, (char *)BootMode->Name) == 0) {
+				if (Plat_BootMode_Ops(BootMode->Value) != 0) {
+					SC_ERR("failed to set the boot mode");
 					return -1;
 				}
 
@@ -989,12 +996,12 @@ Plat_JTAG_Ops(int Select)
 	case 1:
 		/* Overwrite the default JTAG switch */
 		if (GPIO_Set("SYSCTLR_JTAG_S0", 0) != 0) {
-			printf("ERROR: failed to set JTAG 0\n");
+			SC_ERR("failed to set JTAG 0");
 			return -1;
 		}
 
 		if (GPIO_Set("SYSCTLR_JTAG_S1", 0) != 0) {
-			printf("ERROR: failed to set JTAG 1\n");
+			SC_ERR("failed to set JTAG 1");
 			return -1;
 		}
 
@@ -1006,18 +1013,18 @@ Plat_JTAG_Ops(int Select)
 		 * values.  The value of 'State' is ignored.
 		 */
 		if (GPIO_Get("SYSCTLR_JTAG_S0", &State) != 0) {
-			printf("ERROR: failed to release JTAG 0\n");
+			SC_ERR("failed to release JTAG 0");
 			return -1;
 		}
 
 		if (GPIO_Get("SYSCTLR_JTAG_S1", &State) != 0) {
-			printf("ERROR: failed to release JTAG 1\n");
+			SC_ERR("failed to release JTAG 1");
 			return -1;
 		}
 
 		break;
 	default:
-		printf("ERROR: invalid JTAG select option\n");
+		SC_ERR("invalid JTAG select option");
 		return -1;
 	}
 
@@ -1033,34 +1040,31 @@ Plat_XSDB_Ops(const char *TCL_File, char *Output, int Length)
 
 	(void) sprintf(System_Cmd, "%s%s", BIT_PATH, TCL_File);
 	if (access(System_Cmd, F_OK) != 0) {
-		printf("ERROR: failed to access file %s\n", System_Cmd);
+		SC_ERR("failed to access file %s: %m", System_Cmd);
 		return -1;
 	}
 
 	if (Output == NULL) {
-		printf("ERROR: unallocated output buffer\n");
+		SC_ERR("unallocated output buffer");
 		return -1;
 	}
 
 	(void) Plat_JTAG_Ops(1);
 	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD,
 		       BIT_PATH, TCL_File);
+	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
-		strcpy(Output, "ERROR: failed to invoke xsdb\n");
+		SC_ERR("failed to invoke xsdb");
 		Ret = -1;
 		goto Out;
 	}
 
 	(void) fgets(Output, Length, FP);
 	(void) pclose(FP);
+	SC_INFO("XSDB Output: %s", Output);
 	if (strstr(Output, "no targets found") != NULL) {
-		strcpy(Output, "ERROR: incorrect setting for JTAG switch (SW3)\n");
-		Ret = -1;
-		goto Out;
-	}
-
-	if (strstr(Output, "ERROR:") != NULL) {
+		SC_ERR("could not connect to Versal through jtag");
 		Ret = -1;
 	}
 
@@ -1072,7 +1076,7 @@ Out:
 int
 Plat_IDCODE_Ops(char *Output, int Length)
 {
-	return (Plat_XSDB_Ops(IDCODE_TCL, Output, Length));
+	return Plat_XSDB_Ops(IDCODE_TCL, Output, Length);
 }
 
 /*
@@ -1086,9 +1090,10 @@ Plat_Temperature_Ops(void)
 	char Command[] = "/usr/bin/sensors ff0b0000ethernetffffffff00-mdio-0";
 	double Temperature;
 
+	SC_INFO("Command: %s", Command);
 	FP = popen(Command, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to execute sensors command\n");
+		SC_ERR("failed to execute sensors command %s: %m", Command);
 		return -1;
 	}
 
@@ -1098,15 +1103,16 @@ Plat_Temperature_Ops(void)
 	}
 
 	pclose(FP);
+	SC_INFO("Output: %s", Output);
 	if (strstr(Output, "temp1:") == NULL) {
-		printf("ERROR: failed to get board temperature\n");
+		SC_ERR("failed to get board temperature");
 		return -1;
 	}
 
 	(void) strtok(Output, ":");
 	(void) strcpy(Output, strtok(NULL, "C"));
 	Temperature = atof(Output);
-	printf("Temperature(C):\t%.1f\n", Temperature);
+	SC_PRINT("Temperature(C):\t%.1f", Temperature);
 
 	return 0;
 }
@@ -1192,23 +1198,25 @@ int
 Plat_QSFP_Init(void)
 {
 	FILE *FP;
-	char Output[STRLEN_MAX];
+	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
 
 	(void) Plat_JTAG_Ops(1);
 	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    "qsfp_set_modsel/qsfp_download.tcl");
+	    QSFP_MODSEL_TCL);
+	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to invoke xsdb\n");
+		SC_ERR("failed to invoke xsdb: %m");
 		return -1;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
+	SC_INFO("XSDB Output: %s", Output);
 	(void) Plat_JTAG_Ops(0);
 	if (strstr(Output, "no targets found") != NULL) {
-		printf("ERROR: incorrect setting for JTAG switch (SW3)\n");
+		SC_ERR("could not connect to Versal through jtag");
 		return -1;
 	}
 
@@ -1232,9 +1240,11 @@ Plat_FMCAutoAdjust(void)
 	float Min_Combined, Max_Combined;
 
 	if (Access_IO_Exp(&IO_Exp, 0, 0x0, &Value) != 0) {
-		printf("ERROR: failed to read input of IO Expander\n");
+		SC_ERR("failed to read input of IO Expander");
 		return -1;
 	}
+
+	SC_INFO("IO Expander input: %#x", Value);
 
 	/* If bit[0] and bit[2] are 0, then FMC1 is connected */
 	if ((~Value & 0x5) == 0x5) {
@@ -1255,14 +1265,14 @@ Plat_FMCAutoAdjust(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: no regulator exists for VADJ_FMC\n");
+		SC_ERR("no regulator exists for VADJ_FMC");
 		return -1;
 	}
 
 	if (FMC1 == 1) {
 		FMC = &FMCs.FMC[FMC_1];
 		if (FMC_Vadj_Range(FMC, &Min_Voltage_1, &Max_Voltage_1) != 0) {
-			printf("ERROR: failed to get Voltage Adjust range for FMC1\n");
+			SC_ERR("failed to get Voltage Adjust range for FMC1");
 			return -1;
 		}
 	}
@@ -1270,7 +1280,7 @@ Plat_FMCAutoAdjust(void)
 	if (FMC2 == 1) {
 		FMC = &FMCs.FMC[FMC_2];
 		if (FMC_Vadj_Range(FMC, &Min_Voltage_2, &Max_Voltage_2) != 0) {
-			printf("ERROR: failed to get Voltage Adjust range for FMC2\n");
+			SC_ERR("failed to get Voltage Adjust range for FMC2");
 			return -1;
 		}
 	}
@@ -1289,6 +1299,9 @@ Plat_FMCAutoAdjust(void)
 		Max_Combined = 1.5;
 	}
 
+	SC_INFO("Combined Min: %.2f, Combined Max: %.2f",
+		Min_Combined, Max_Combined);
+
 	/*
 	 * Start with satisfying the lower target voltage and then see
 	 * if it does also satisfy the higher voltage.
@@ -1302,7 +1315,7 @@ Plat_FMCAutoAdjust(void)
 	}
 
 	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-		printf("ERROR: failed to set voltage of VADJ_FMC regulator\n");
+		SC_ERR("failed to set voltage of VADJ_FMC regulator");
 		return -1;
 	}
 

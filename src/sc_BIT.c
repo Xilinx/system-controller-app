@@ -56,7 +56,7 @@ BITs_t BITs = {
 		.Plat_BIT_Op = XSDB_BIT,
 	},
 	.BIT[BIT_EBM_EEPROM_CHECK] = {
-		.Name = "EBM EEPROM Check",
+		.Name = "X-EBM EEPROM Check",
 		.Plat_BIT_Op = EBM_EEPROM_Check,
 	},
 	.BIT[BIT_DIMM_EEPROM_CHECK] = {
@@ -86,11 +86,13 @@ Clocks_Check(void *Arg)
 			continue;
 		}
 
+		SC_INFO("Clock: %s", Clocks.Clock[i].Name);
 		FD = open(Clocks.Clock[i].Sysfs_Path, O_RDONLY);
 		ReadBuffer[0] = '\0';
 		if (read(FD, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {
-			printf("ERROR: failed to open the clock\n");
-			printf("%s: FAIL\n", BIT_p->Name);
+			SC_ERR("failed to access clock %s",
+			       Clocks.Clock[i].Name);
+			SC_PRINT("%s: FAIL", BIT_p->Name);
 			(void) close(FD);
 			return -1;
 		}
@@ -101,14 +103,14 @@ Clocks_Check(void *Arg)
 		Lower = Clocks.Clock[i].Default_Freq - Delta;
 		Upper = Clocks.Clock[i].Default_Freq + Delta;
 		if (Freq < Lower || Freq > Upper) {
-			printf("%s: BIT failed for clock \'%s\'\n", BIT_p->Name,
+			SC_ERR("%s: BIT failed for clock %s", BIT_p->Name,
 			    Clocks.Clock[i].Name);
-			printf("%s: FAIL\n", BIT_p->Name);
+			SC_PRINT("%s: FAIL", BIT_p->Name);
 			return 0;
 		}
 	}
 
-	printf("%s: PASS\n", BIT_p->Name);
+	SC_PRINT("%s: PASS", BIT_p->Name);
 	return 0;
 }
 
@@ -119,13 +121,12 @@ int
 XSDB_BIT(void *Arg)
 {
 	BIT_t *BIT_p = Arg;
-	char Output[STRLEN_MAX];
+	char Output[STRLEN_MAX] = { 0 };
 
 	if (Plat_XSDB_Ops(BIT_p->TCL_File, Output, STRLEN_MAX) != 0) {
-		printf("%s", Output);
-		printf("%s: FAIL\n", BIT_p->Name);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 	} else {
-		printf("%s: PASS\n", BIT_p->Name);
+		SC_PRINT("%s: PASS", BIT_p->Name);
 	}
 
 	return 0;
@@ -142,20 +143,21 @@ EBM_EEPROM_Check(void *Arg)
 
 	FD = open(Daughter_Card.I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open I2C bus\n");
-		printf("%s: FAIL\n", BIT_p->Name);
+		SC_ERR("unable to open I2C bus %s: %m", Daughter_Card.I2C_Bus);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 		return -1;
 	}
 
 	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card.I2C_Address) < 0) {
-		printf("ERROR: unable to access EEPROM device\n");
-		printf("%s: FAIL\n", BIT_p->Name);
+		SC_ERR("unable to access EEPROM device %#x",
+		       Daughter_Card.I2C_Address);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 		(void) close(FD);
 		return -1;
 	}
 
 	(void) close(FD);
-	printf("%s: PASS\n", BIT_p->Name);
+	SC_PRINT("%s: PASS", BIT_p->Name);
 	return 0;
 }
 
@@ -174,37 +176,38 @@ DIMM_EEPROM_Check(void *Arg)
 
 	FD = open(Dimm1.I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open I2C bus\n");
-		printf("%s: FAIL\n", BIT_p->Name);
+		SC_ERR("unable to open I2C bus %s: %m", Dimm1.I2C_Bus);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 		return -1;
 	}
 
 	if (ioctl(FD, I2C_SLAVE_FORCE, Dimm1.Spd.Bus_addr) < 0) {
-		printf("ERROR: unable to access EEPROM device\n");
-		printf("%s: FAIL\n", BIT_p->Name);
+		SC_ERR("unable to access EEPROM device %#x: %m",
+		       Dimm1.Spd.Bus_addr);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 		(void) close(FD);
 		return -1;
 	}
 
-	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x2;	// Byte 2: DRAM Device Type
 	I2C_READ(FD, Dimm1.Spd.Bus_addr, 1, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
-		printf("%s: FAIL\n", BIT_p->Name);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 		(void) close(FD);
 		return Ret;
 	}
 
 	if (In_Buffer[0] != 0xc) {
-		printf("ERROR: DIMM is not DDR4\n");
-		printf("%s: FAIL\n", BIT_p->Name);
+		SC_ERR("DIMM is not DDR4");
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 		(void) close(FD);
 		return -1;
 	}
 
 	(void) close(FD);
-	printf("%s: PASS\n", BIT_p->Name);
+	SC_PRINT("%s: PASS", BIT_p->Name);
 	return 0;
 }
 
@@ -221,22 +224,23 @@ Voltages_Check(void *Arg)
 
 	for (int i = 0; i < Voltages.Numbers; i++) {
 		Regulator = &Voltages.Voltage[i];
+		SC_INFO("Voltage: %s", Regulator->Name);
 		if (Access_Regulator(Regulator, &Voltage, 0) != 0) {
-			printf("ERROR: failed to get voltage for %s\n",
+			SC_ERR("failed to get voltage for %s",
 			    Regulator->Name);
-			printf("%s: FAIL\n", BIT_p->Name);
+			SC_PRINT("%s: FAIL", BIT_p->Name);
 			return -1;
 		}
 
 		if ((Voltage < Regulator->Minimum_Volt) ||
 		    (Voltage > Regulator->Maximum_Volt)) {
-			printf("ERROR: voltage for %s is out-of-range\n",
+			SC_ERR("voltage for %s is out-of-range",
 			   Regulator->Name);
-			printf("%s: FAIL\n", BIT_p->Name);
+			SC_PRINT("%s: FAIL", BIT_p->Name);
 			return -1;
 		}
 	}
 
-	printf("%s: PASS\n", BIT_p->Name);
+	SC_PRINT("%s: PASS", BIT_p->Name);
 	return 0;
 }

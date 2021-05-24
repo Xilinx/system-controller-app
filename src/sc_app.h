@@ -12,10 +12,9 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
-#define STRLEN_MAX	64
 #define ITEMS_MAX	20
+#define STRLEN_MAX	64
 #define SYSCMD_MAX	1024
-#define MUX_MAX		4
 
 #define APPDIR		"/home/root/.sc_app"
 #define LOCKFILE	APPDIR"/lock"
@@ -23,6 +22,7 @@
 #define SILICONFILE	APPDIR"/silicon"
 #define CLOCKFILE	APPDIR"/clock"
 #define VOLTAGEFILE	APPDIR"/voltage"
+#define IDT8A34001FILE	APPDIR"/8A34001"
 
 /*
  * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code
@@ -38,24 +38,6 @@
 		syslog(LOG_ERR, msg, ##__VA_ARGS__); \
 		fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
 	} while (0)
-
-/*
- * I2C Buses
- */
-typedef struct {
-	char	Name[STRLEN_MAX];
-} I2C_Bus_t;
-
-typedef struct I2C_Buses {
-	int	Numbers;
-	I2C_Bus_t	I2C_Bus[ITEMS_MAX];
-} I2C_Buses_t;
-
-typedef struct {
-	int	Mux_Levels;
-	int	Bus_Id;
-	int	Mux_Route[MUX_MAX][2];
-} I2C_Route_t;
 
 /*
  * Boot Modes
@@ -75,8 +57,8 @@ typedef struct BootModes {
  * Clocks
  */
 typedef enum {
-	Oscillator,
-	I2C,
+	Si570,
+	IDT_8A34001,
 } Clock_Type;
 
 typedef struct {
@@ -85,8 +67,9 @@ typedef struct {
 	double	Upper_Freq;
 	double	Lower_Freq;
 	Clock_Type	Type;
+	void	*Type_Data;
 	char	Sysfs_Path[SYSCMD_MAX];
-	I2C_Route_t	I2C_Route;
+	char	I2C_Bus[STRLEN_MAX];
 	int	I2C_Address;
 } Clock_t;
 
@@ -94,6 +77,13 @@ typedef struct Clocks {
 	int	Numbers;
 	Clock_t	Clock[ITEMS_MAX];
 } Clocks_t;
+
+typedef struct {
+	int	Number_Label;
+	char	*Display_Label[SYSCMD_MAX];
+	char	*Internal_Label[SYSCMD_MAX];
+	int	(*Chip_Reset)(void);
+} IDT_8A34001_Data_t;
 
 /*
  * INA226

@@ -82,6 +82,10 @@ Clocks_Check(void *Arg)
 	double Freq, Lower, Upper, Delta;
 
 	for (int i = 0; i < Clocks.Numbers; i++) {
+		if (Clocks.Clock[i].Type == IDT_8A34001) {
+			continue;
+		}
+
 		FD = open(Clocks.Clock[i].Sysfs_Path, O_RDONLY);
 		ReadBuffer[0] = '\0';
 		if (read(FD, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {

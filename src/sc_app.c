@@ -41,7 +41,6 @@
 
 
 
-extern I2C_Buses_t I2C_Buses;
 extern BootModes_t BootModes;
 extern Clocks_t Clocks;
 extern Ina226s_t Ina226s;
@@ -84,11 +83,14 @@ extern int Plat_IDCODE_Ops(char *, int);
 extern int Plat_Temperature_Ops(void);
 extern int Plat_QSFP_Init(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
-extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *, unsigned int *);
+extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int GPIO_Get(char *, int *);
 extern int EEPROM_Common(char *);
 extern int EEPROM_Board(char *, int);
 extern int EEPROM_MultiRecord(char *);
+extern int Get_IDT_8A34001(Clock_t *);
+extern int Set_IDT_8A34001(Clock_t *, char *, int);
+extern int Restore_IDT_8A34001(Clock_t *);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -245,7 +247,7 @@ static Command_t Commands[] = {
 
 char Command_Arg[STRLEN_MAX];
 char Target_Arg[STRLEN_MAX];
-char Value_Arg[STRLEN_MAX];
+char Value_Arg[SYSCMD_MAX];
 int C_Flag, T_Flag, V_Flag;
 static Command_t Command;
 
@@ -719,6 +721,10 @@ Clock_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETCLOCK:
+		if (Clock->Type == IDT_8A34001) {
+			return Get_IDT_8A34001(Clock);
+		}
+
 		(void) sprintf(System_Cmd, "cat %s", Clock->Sysfs_Path);
 		FP = popen(System_Cmd, "r");
 		if (FP == NULL) {
@@ -739,6 +745,14 @@ Clock_Ops(void)
 		if (V_Flag == 0) {
 			printf("ERROR: no clock frequency\n");
 			return -1;
+		}
+
+		if (Clock->Type == IDT_8A34001) {
+			if (Command.CmdId == SETCLOCK) {
+				return Set_IDT_8A34001(Clock, Value_Arg, 0);
+			} else {
+				return Set_IDT_8A34001(Clock, Value_Arg, 1);
+			}
 		}
 
 		Frequency = strtod(Value_Arg, NULL);
@@ -776,14 +790,18 @@ Clock_Ops(void)
 
 		break;
 	case RESTORECLOCK:
+		if (Clock->Type == IDT_8A34001) {
+			return Restore_IDT_8A34001(Clock);
+		}
+
 		Frequency = Clock->Default_Freq;
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
 		system(System_Cmd);
 
 		/* Remove any custom boot frequency */
-		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
-		    Clock->Name, CLOCKFILE);
+		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; "
+			       "sync", Clock->Name, CLOCKFILE);
 		system(System_Cmd);
 		break;
 	default:
@@ -1458,24 +1476,24 @@ int IO_Exp_Ops(void)
 		}
 
 		if (strcmp(Target_Arg, "all") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 0, 0x0, NULL,
-			    (unsigned int *)&Value) != 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x0,
+					  (unsigned int *)&Value) != 0) {
 				printf("ERROR: failed to read input\n");
 				return -1;
 			}
 
 			printf("Input GPIO:\t0x%x\n", Value);
 
-			if (Access_IO_Exp(&IO_Exp, 0, 0x2, NULL,
-			    (unsigned int *)&Value) != 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x2,
+					  (unsigned int *)&Value) != 0) {
 				printf("ERROR: failed to read output\n");
 				return -1;
 			}
 
 			printf("Output GPIO:\t0x%x\n", Value);
 
-			if (Access_IO_Exp(&IO_Exp, 0, 0x6, NULL,
-			    (unsigned int *)&Value) != 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x6,
+					  (unsigned int *)&Value) != 0) {
 				printf("ERROR: failed to read direction\n");
 				return -1;
 			}
@@ -1483,8 +1501,8 @@ int IO_Exp_Ops(void)
 			printf("Direction:\t0x%x\n", Value);
 
 		} else if (strcmp(Target_Arg, "input") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 0, 0x0, NULL,
-			    (unsigned int *)&Value) != 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x0,
+					  (unsigned int *)&Value) != 0) {
 				printf("ERROR: failed to read input\n");
 				return -1;
 			}
@@ -1497,8 +1515,8 @@ int IO_Exp_Ops(void)
 			}
 
 		} else if (strcmp(Target_Arg, "output") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 0, 0x2, NULL,
-			    (unsigned int *)&Value) != 0) {
+			if (Access_IO_Exp(&IO_Exp, 0, 0x2,
+					  (unsigned int *)&Value) != 0) {
 				printf("ERROR: failed to read output\n");
 				return -1;
 			}
@@ -1532,15 +1550,15 @@ int IO_Exp_Ops(void)
 
 		Value = strtol(Value_Arg, NULL, 16);
 		if (strcmp(Target_Arg, "direction") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 1, 0x6, (unsigned int *)&Value,
-			    NULL) != 0) {
+			if (Access_IO_Exp(&IO_Exp, 1, 0x6,
+					  (unsigned int *)&Value) != 0) {
 				printf("ERROR: failed to set direction\n");
 				return -1;
 			}
 
 		} else if (strcmp(Target_Arg, "output") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 1, 0x2, (unsigned int *)&Value,
-			    NULL) != 0) {
+			if (Access_IO_Exp(&IO_Exp, 1, 0x2,
+					  (unsigned int *)&Value) != 0) {
 				printf("ERROR: failed to set output\n");
 				return -1;
 			}
@@ -1562,15 +1580,15 @@ int IO_Exp_Ops(void)
 			}
 		}
 
-		if (Access_IO_Exp(&IO_Exp, 1, 0x6, (unsigned int *)&Value,
-		    NULL) != 0) {
+		if (Access_IO_Exp(&IO_Exp, 1, 0x6,
+				  (unsigned int *)&Value) != 0) {
 			printf("ERROR: failed to set direction\n");
 			return -1;
 		}
 
 		Value = ~Value;
-		if (Access_IO_Exp(&IO_Exp, 1, 0x2, (unsigned int *)&Value,
-		    NULL) != 0) {
+		if (Access_IO_Exp(&IO_Exp, 1, 0x2,
+				  (unsigned int *)&Value) != 0) {
 			printf("ERROR: failed to set output\n");
 			return -1;
 		}

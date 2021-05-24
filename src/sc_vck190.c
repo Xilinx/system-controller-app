@@ -26,31 +26,13 @@ int Plat_IDCODE_Ops(char *, int);
 int Plat_XSDB_Ops(const char *, char *, int);
 int Plat_Temperature_Ops(void);
 int Plat_FMCAutoAdjust(void);
+int Plat_IDT_8A34001_Reset(void);
 int Workaround_Vccaux(void *Arg);
 extern int Access_Regulator(Voltage_t *, float *, int);
-extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *, unsigned int *);
+extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int FMC_Vadj_Range(FMC_t *, float *, float *);
 extern int GPIO_Get(char *, int *);
 extern int GPIO_Set(char *, int);
-
-/*
- * I2C Buses
- */
-typedef enum {
-	I2C_BUS_0,
-	I2C_BUS_1,
-	I2C_BUS_MAX,
-} I2C_Bus_Index;
-
-I2C_Buses_t I2C_Buses = {
-	.Numbers = I2C_BUS_MAX,
-	.I2C_Bus[I2C_BUS_0] = {
-		.Name = "i2c-0",		// Name of the bus referenced by application
-	},
-	.I2C_Bus[I2C_BUS_1] = {
-		.Name = "i2c-1",
-	},
-};
 
 /*
  * Boot Modes
@@ -125,9 +107,45 @@ BootModes_t BootModes = {
 /*
  * Clocks
  */
+IDT_8A34001_Data_t IDT_8A34001_Data = {
+	.Number_Label = 14,
+	.Display_Label = { "CIN 1 From Bank 200 GTY_REF", \
+			   "CIN 2 From Bank 706", \
+			   "Q0 to CIN 0", \
+			   "Q1 to Bank 200 GTY_REF", \
+			   "Q2 to Bank 201, 204-206 GTY_REF", \
+			   "Q3 to FMC2 REFCLK", \
+			   "Q4 to FMC2 SYNC", \
+			   "Q5 to J328", \
+			   "Q6 to NC", \
+			   "Q7 to NC", \
+			   "Q8 to NC", \
+			   "Q9 to NC", \
+			   "Q10 to NC", \
+			   "Q11 to NC", \
+	},
+	.Internal_Label = { "IN1_Frequency", \
+			    "IN2_Frequency", \
+			    "OUT0DesiredFrequency", \
+			    "OUT1DesiredFrequency", \
+			    "OUT2DesiredFrequency", \
+			    "OUT3DesiredFrequency", \
+			    "OUT4DesiredFrequency", \
+			    "OUT5DesiredFrequency", \
+			    "OUT6DesiredFrequency", \
+			    "OUT7DesiredFrequency", \
+			    "OUT8DesiredFrequency", \
+			    "OUT9DesiredFrequency", \
+			    "OUT10DesiredFrequency", \
+			    "OUT11DesiredFrequency", \
+	},
+	.Chip_Reset = Plat_IDT_8A34001_Reset,
+};
+
 typedef enum {
 	SI570_ZSFP,
 	SI570_USER1_FMC,
+	IDT_8A34001_FMC2,
 	SI570_REF,
 	SI570_DIMM1,
 	SI570_LPDDR4_CLK1,
@@ -140,87 +158,79 @@ Clocks_t Clocks = {
 	.Numbers = CLOCK_MAX,
 	.Clock[SI570_ZSFP] = {
 		.Name = "zSFP Si570",		// Name of the device referenced by application
-		.Type = Oscillator,		// Clock generators accessible through sysfs
+		.Type = Si570,			// Clock generators accessible through sysfs
 		.Sysfs_Path = "/sys/devices/platform/si570_zsfp_clk/set_rate",
 		.Default_Freq = 156.25,		// Factory default frequency in MHz
 		.Upper_Freq = 810.0,		// Upper-bound frequency in MHz
 		.Lower_Freq = 10.0,		// Lower-bound frequency in MHz
-		.I2C_Route.Bus_Id = I2C_BUS_0,	// Main I2C bus connected to the device
-		.I2C_Route.Mux_Levels = 1,	// Number of muxes in route to the device
-		.I2C_Route.Mux_Route = {{0x74, 0x20}}, // <I2C address, channel select> pair for each mux
-		.I2C_Address = 0x5d,		// I2C address of the device
+		.I2C_Bus = "/dev/i2c-8",	// I2C bus address behind the mux
+		.I2C_Address = 0x5d,		// I2C device address
 	},
 	.Clock[SI570_USER1_FMC] = {
-		.Name = "User1 FMC1 Si570",
-		.Type = Oscillator,
+		.Name = "User1 FMC2 Si570",
+		.Type = Si570,
 		.Sysfs_Path = "/sys/devices/platform/si570_user1_clk/set_rate",
 		.Default_Freq = 100.0,
 		.Upper_Freq = 1250.0,
 		.Lower_Freq = 10.0,
-		.I2C_Route.Bus_Id = I2C_BUS_0,
-		.I2C_Route.Mux_Levels = 1,
-		.I2C_Route.Mux_Route = {{0x74, 0x40}},
+		.I2C_Bus = "/dev/i2c-9",
 		.I2C_Address = 0x5f,
 	},
-	/* Missing 8A34001 FMC1 */
+	.Clock[IDT_8A34001_FMC2] = {
+		.Name = "8A34001 FMC2",
+		.Type = IDT_8A34001,
+		.Type_Data = &IDT_8A34001_Data,
+		.I2C_Bus = "/dev/i2c-18",
+		.I2C_Address = 0x5b,
+	},
 	.Clock[SI570_REF] = {
 		.Name = "Versal Sys Clk Si570",
-		.Type = Oscillator,
+		.Type = Si570,
 		.Sysfs_Path = "/sys/devices/platform/ref_clk/set_rate",
 		.Default_Freq = 33.333,
 		.Upper_Freq = 160.0,
 		.Lower_Freq = 10.0,
-		.I2C_Route.Bus_Id = I2C_BUS_1,
-		.I2C_Route.Mux_Levels = 1,
-		.I2C_Route.Mux_Route = {{0x74, 0x01}},
+		.I2C_Bus = "/dev/i2c-11",
 		.I2C_Address = 0x5d,
 	},
 	.Clock[SI570_DIMM1] = {
 		.Name = "Dimm1 Si570",
-		.Type = Oscillator,
+		.Type = Si570,
 		.Sysfs_Path = "/sys/devices/platform/si570_ddrdimm1_clk/set_rate",
 		.Default_Freq = 200.0,
 		.Upper_Freq = 810.0,
 		.Lower_Freq = 10.0,
-		.I2C_Route.Bus_Id = I2C_BUS_1,
-		.I2C_Route.Mux_Levels = 1,
-		.I2C_Route.Mux_Route = {{0x74, 0x08}},
+		.I2C_Bus = "/dev/i2c-14",
 		.I2C_Address = 0x60,
 	},
 	.Clock[SI570_LPDDR4_CLK1] = {
 		.Name = "LPDDR4 CLK1 Si570",
-		.Type = Oscillator,
+		.Type = Si570,
 		.Sysfs_Path = "/sys/devices/platform/si570_lpddr4_clk1/set_rate",
 		.Default_Freq = 200.0,
 		.Upper_Freq = 810.0,
 		.Lower_Freq = 10.0,
-		.I2C_Route.Bus_Id = I2C_BUS_1,
-		.I2C_Route.Mux_Levels = 1,
-		.I2C_Route.Mux_Route = {{0x74, 0x20}},
+		.I2C_Bus = "/dev/i2c-16",
 		.I2C_Address = 0x60,
 	},
 	.Clock[SI570_LPDDR4_CLK2] = {
 		.Name = "LPDDR4 CLK2 Si570",
-		.Type = Oscillator,
+		.Type = Si570,
 		.Sysfs_Path = "/sys/devices/platform/si570_lpddr4_clk2/set_rate",
 		.Default_Freq = 200.0,
 		.Upper_Freq = 810.0,
 		.Lower_Freq = 10.0,
-		.I2C_Route.Bus_Id = I2C_BUS_1,
-		.I2C_Route.Mux_Levels = 1,
-		.I2C_Route.Mux_Route = {{0x74, 0x10}},
+		.I2C_Bus = "/dev/i2c-15",
 		.I2C_Address = 0x60,
 	},
 	.Clock[SI570_HSPD] = {
 		.Name = "HSPD Si570",
-		.Type = Oscillator,
+		.Type = Si570,
 		.Sysfs_Path = "/sys/devices/platform/si570_hsdp_clk/set_rate",
 		.Default_Freq = 156.25,
 		.Upper_Freq = 810.0,
 		.Lower_Freq = 10.0,
-		.I2C_Route.Bus_Id = I2C_BUS_1,
-		.I2C_Route.Mux_Levels = 1,
-		.I2C_Route.Mux_Route = {{0x74, 0x40}},
+		.I2C_Bus = "/dev/i2c-17",
 		.I2C_Address = 0x5d,
 	},
 };
@@ -1221,7 +1231,7 @@ Plat_FMCAutoAdjust(void)
 	float Max_Voltage_2 = 0;
 	float Min_Combined, Max_Combined;
 
-	if (Access_IO_Exp(&IO_Exp, 0, 0x0, NULL, &Value) != 0) {
+	if (Access_IO_Exp(&IO_Exp, 0, 0x0, &Value) != 0) {
 		printf("ERROR: failed to read input of IO Expander\n");
 		return -1;
 	}
@@ -1293,6 +1303,33 @@ Plat_FMCAutoAdjust(void)
 
 	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
 		printf("ERROR: failed to set voltage of VADJ_FMC regulator\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+Plat_IDT_8A34001_Reset(void)
+{
+	unsigned int Value;
+
+	/*
+	 * The '8A34001_EXP_RST_B' line is controlled by bit 5 of register
+	 * offset 3.  The output register pair (offsets 2 & 3) are written
+	 * at once.
+	 */
+	Value = 0x0;	// Assert reset - active low
+	if (Access_IO_Exp(&IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to assert reset of 8A34001 chip");
+		return -1;
+	}
+
+	sleep (1);
+
+	Value = 0x20;	// De-assert reset
+	if (Access_IO_Exp(&IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to de-assert reset of 8A34001 chip");
 		return -1;
 	}
 

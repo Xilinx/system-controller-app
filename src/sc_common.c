@@ -5,8 +5,10 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <string.h>
 #include <time.h>
 #include <math.h>
@@ -247,13 +249,12 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
  *      IO_Exp: Pointer to IO expander structure.
  *      Op:     0 for read operation, 1 for write operation.
  *      Offset: 0x2 output register offset, 0x6 direction register offset.
- *      *Out:   Pointer to output value to be written to device.
+ *      *Data:  Pointer to output value to be written to the device.
  * Output -
- *      *In:    Pointer to input value read from the device.
+ *      *Data:  Pointer to input value read from the device.
  */
 int
-Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
-    unsigned int *In)
+Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 {
 	int FD;
 	char In_Buffer[STRLEN_MAX];
@@ -268,7 +269,7 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
 
 	(void) memset(Out_Buffer, 0, STRLEN_MAX);
 	(void) memset(In_Buffer, 0, STRLEN_MAX);
-	if (Op == 0) {
+	if (Op == 0) {	// Read operation
 		Out_Buffer[0] = Offset;
 		I2C_READ(FD, IO_Exp->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -276,12 +277,12 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Out,
 			return Ret;
 		}
 
-		*In = ((In_Buffer[0] << 8) | In_Buffer[1]);
+		*Data = ((In_Buffer[0] << 8) | In_Buffer[1]);
 
-	} else if (Op == 1) {
+	} else if (Op == 1) {	// Write operation
 		Out_Buffer[0] = Offset;
-		Out_Buffer[1] = ((*Out >> 8) & 0xFF);
-		Out_Buffer[2] = (*Out & 0xFF);
+		Out_Buffer[1] = ((*Data >> 8) & 0xFF);
+		Out_Buffer[2] = (*Data & 0xFF);
 		I2C_WRITE(FD, IO_Exp->I2C_Address, 3, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -730,4 +731,307 @@ EEPROM_MultiRecord(char *Buffer)
 			printf("\n");
 		}
 	} while (!Last_Record);
+}
+
+static int
+Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File)
+{
+	char *CP1 = NULL;
+	char *CP2 = NULL;
+	int Begin = 0;
+	int Length = strlen(Clock_Files);
+
+	for (int i = 0; i < Length; i++) {
+		if (isspace(Clock_Files[i]) != 0) {
+			Begin = 0;
+			Clock_Files[i] = '\0';
+		} else {
+			if (Begin == 0) {
+				if (CP1 == NULL) {
+					CP1 = &Clock_Files[i];
+				} else {
+					CP2 = &Clock_Files[i];
+				}
+
+				Begin = 1;
+			}
+		}
+	}
+
+	if ((CP1 == NULL) || (CP2 == NULL)) {
+		SC_ERR("two clock files are required");
+		return -1;
+	}
+
+	if (TCS_File != NULL) {
+		(void) sprintf(TCS_File, "%s/clock_files/%s", BIT_PATH, CP1);
+		if (strstr(TCS_File, ".tcs") == NULL) {
+			SC_ERR("argument %s is not a .tcs file", CP1);
+			return -1;
+		}
+
+		if (access(TCS_File, F_OK) != 0) {
+			SC_ERR("file %s doesn't exist: %m", TCS_File);
+			return -1;
+		}
+	}
+
+	if (TXT_File != NULL) {
+		(void) sprintf(TXT_File, "%s/clock_files/%s", BIT_PATH, CP2);
+		if (strstr(TXT_File, ".txt") == NULL) {
+			SC_ERR("argument %s is not a .txt file", CP2);
+			return -1;
+		}
+
+		if (access(TXT_File, F_OK) != 0) {
+			SC_ERR("file %s doesn't exist: %m", TXT_File);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int
+Get_IDT_8A34001(Clock_t *Clock)
+{
+	FILE *FP;
+	char Buffer[SYSCMD_MAX];
+	char Label[STRLEN_MAX];
+	char Frequency[STRLEN_MAX];
+	IDT_8A34001_Data_t *Clock_Data;
+	char TCS_File[SYSCMD_MAX];
+
+	if (Clock->Type_Data == NULL) {
+		SC_ERR("no data is available for 8A34001 clock");
+		return -1;
+	}
+
+	Clock_Data = (IDT_8A34001_Data_t *)Clock->Type_Data;
+
+	/*
+	 * If there is no '8A34001' file, that means the chip has not
+	 * been set since boot time.
+	 */
+	if (access(IDT8A34001FILE, F_OK) != 0) {
+		for (int i = 0; i < Clock_Data->Number_Label; i++) {
+			printf("%s:\t0 MHz/PPS\n", Clock_Data->Display_Label[i]);
+		}
+
+		return 0;
+	}
+
+	FP = fopen(IDT8A34001FILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read file %s: %m", IDT8A34001FILE);
+		return -1;
+	}
+
+	(void) fgets(Buffer, SYSCMD_MAX, FP);
+	(void) fclose(FP);
+	if (Check_Clock_Files(Buffer, TCS_File, NULL) != 0) {
+		return -1;
+	}
+
+	FP = fopen(TCS_File, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to open %s: %m", TCS_File);
+		return -1;
+	}
+
+	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		if ((strstr(Buffer, "_Frequency:") == NULL) &&
+		    (strstr(Buffer, "DesiredFrequency:") == NULL)) {
+			continue;
+		}
+
+		(void) strcpy(Label, strtok(Buffer, ":"));
+		(void) strcpy(Frequency, strtok(NULL, "|"));
+		for (int i = 0; i < Clock_Data->Number_Label; i++) {
+			if (strcmp(Label, Clock_Data->Internal_Label[i]) == 0) {
+				if ((strcmp(Frequency, " ") != 0) &&
+				    !((strstr(Frequency, "MHz") != NULL) ||
+				     (strstr(Frequency, "PPS") != NULL))) {
+					printf("%s:\t%sMHz\n", Clock_Data->Display_Label[i], 
+					       Frequency);
+				} else {
+					printf("%s:\t%s\n", Clock_Data->Display_Label[i],
+					       Frequency);
+				}
+
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int
+Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
+{
+	FILE *FP;
+	int FD;
+	char Buffer[SYSCMD_MAX];
+	int Size, Offset;
+	char Data_String[SYSCMD_MAX];
+	int Data[SYSCMD_MAX];
+	char TXT_File[SYSCMD_MAX];
+	char *Walk;
+	int Nibble_1, Nibble_2;
+	int j;
+	int Ret = 0;
+
+	(void) strcpy(Buffer, Clock_Files);
+	if (Check_Clock_Files(Buffer, NULL, TXT_File) != 0) {
+		return -1;
+	}
+
+	FD = open(Clock->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		SC_ERR("unable to open 8A34001 clock chip: %m");
+		return -1;
+	}
+
+	(void) memset(Buffer, 0, SYSCMD_MAX);
+	/* Set the IDT 8A340001 chip to 2 byte addressing mode */
+	Buffer[0] = 0xFF;
+	Buffer[1] = 0xFD;
+	Buffer[2] = 0x0;
+	Buffer[3] = 0x10;
+	Buffer[4] = 0x20;
+	I2C_WRITE(FD, Clock->I2C_Address, 5, Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	FP = fopen(TXT_File, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to open %s: %m", TXT_File);
+		return -1;
+	}
+
+	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		if (strstr(Buffer, "Size:") == NULL) {
+			continue;
+		}
+
+		/* Replace '0x' and ',' with ' ' */
+		Walk = Buffer;
+		for (int i = 0; i < strlen(Buffer); i++) {
+			if (*Walk == 'x') {
+				*(Walk - 1) = *Walk = ' ';
+			}
+
+			if (*Walk == ',') {
+				*Walk = ' ';
+			}
+
+			Walk++;
+		}
+
+		(void) strtok(Buffer, ":");
+		(void) sscanf(strtok(NULL, ":"), "%x", &Size);
+		(void) sscanf(strtok(NULL, ":"), "%x", &Offset);
+		(void) strcpy(Data_String, strtok(NULL, "\n"));
+
+		j = 0;
+		Data[j++] = Offset;
+		Walk = Data_String;
+		while (*Walk != '\0') {
+			/* Skip the leading white spaces */
+			if (isspace(*Walk) != 0) {
+				Walk++;
+				continue;
+			}
+
+			/* Convert 0-9, a-f, and A-F char to int */
+			if (*Walk >= 'a') {
+				Nibble_1 = (*Walk - 0x57);
+			} else if (*Walk >= 'A') {
+				Nibble_1 = (*Walk - 0x37);
+			} else if (*Walk >= '0') {
+				Nibble_1 = (*Walk - 0x30);
+			}
+
+			if (*(Walk + 1) >= 'a') {
+				Nibble_2 = (*(Walk + 1) - 0x57);
+			} else if (*(Walk + 1) >= 'A') {
+				Nibble_2 = (*(Walk + 1) - 0x37);
+			} else if (*(Walk + 1) >= '0') {
+				Nibble_2 = (*(Walk + 1) - 0x30);
+			}
+
+			Data[j++] = (Nibble_1 << 4) | Nibble_2;
+			Walk += 2;
+		}
+
+		I2C_WRITE(FD, Clock->I2C_Address, (Size + 1), Data, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+	}
+
+	(void) fclose(FP);
+
+	/*
+	 * Create the '8A34001' file indicating that the chip has been
+	 * set.  The file is removed when 'restore' command is called
+	 * or when the system boots.
+	 */
+	(void) sprintf(Buffer, "echo '%s' > %s; sync", Clock_Files,
+		       IDT8A34001FILE);
+	system(Buffer);
+
+	/* Update the 'clock' file for the case of setboot mode */
+	if (Mode == 1) {
+		/* Remove the old entry, if any */
+		(void) sprintf(Buffer, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
+			       Clock->Name, CLOCKFILE);
+		system(Buffer);
+
+		(void) sprintf(Buffer, "%s:\t%s\n", Clock->Name, Clock_Files);
+		FP = fopen(CLOCKFILE, "a");
+		if (FP == NULL) {
+			SC_ERR("failed to append clock file: %m");
+			return -1;
+		}
+
+		(void) fprintf(FP, "%s", Buffer);
+		(void) fflush(FP);
+		(void) fsync(fileno(FP));
+		(void) fclose(FP);
+	}
+
+	return 0;
+}
+
+int
+Restore_IDT_8A34001(Clock_t *Clock)
+{
+	char Buffer[SYSCMD_MAX];
+	IDT_8A34001_Data_t *Clock_Data;
+
+	if (Clock->Type_Data == NULL) {
+		SC_ERR("no data is available for 8A34001 clock");
+		return -1;
+	}
+
+	Clock_Data = (IDT_8A34001_Data_t *)Clock->Type_Data;
+	if (Clock_Data->Chip_Reset() != 0) {
+		return -1;
+	}
+
+	/* Remove the '8A34001' file, if any */
+	(void) sprintf(Buffer, "rm %s 2> /dev/NULL; sync", IDT8A34001FILE);
+	system(Buffer);
+
+	/* Remove the previous entry from 'clock' file, if any */
+	(void) sprintf(Buffer, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; sync",
+		       Clock->Name, CLOCKFILE);
+	system(Buffer);
+
+	return 0;
 }

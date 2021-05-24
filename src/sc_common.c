@@ -49,7 +49,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 
 	FD = open(Regulator->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open the voltage regulator\n");
+		SC_ERR("unable to access the I2C bus %s: %m", Regulator->I2C_Bus);
 		return -1;
 	}
 
@@ -57,6 +57,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	if (Regulator->Page_Select != -1) {
 		Out_Buffer[0] = 0x0;
 		Out_Buffer[1] = Regulator->Page_Select;
+		SC_INFO("Write to select page: 0x%x%x", Out_Buffer[0],
+			Out_Buffer[1]);
 		I2C_WRITE(FD, Regulator->I2C_Address, 2, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -85,6 +87,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 			return Ret;
 		}
 
+		SC_INFO("VOUT_MODE: %#x", In_Buffer[0]);
 		Exponent = In_Buffer[0] - (sizeof(int) * 8);
 	} else {
 		/* For IR38164, use exponent value -8 */
@@ -103,8 +106,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		}
 
 		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
+		SC_INFO("Mantissa: %#x", Mantissa);
 		*Voltage = Mantissa * pow(2, Exponent);
-		printf("Voltage(V):\t%.2f\n", *Voltage);
 		break;
 	case 1:
 		/* Disable VOUT */
@@ -120,6 +123,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		Out_Buffer[0] = PMBUS_VOUT_UV_FAULT_LIMIT;
 		Out_Buffer[1] = 0x0;
 		Out_Buffer[2] = 0x0;
+		SC_INFO("Undervoltage Fault Limit: %#x %#x %#x", Out_Buffer[0],
+			Out_Buffer[1], Out_Buffer[2]);
 		I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -127,6 +132,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		}
 
 		Out_Buffer[0] = PMBUS_VOUT_UV_WARN_LIMIT;
+		SC_INFO("Undervoltage Warning Limit: %#x %#x %#x", Out_Buffer[0],
+			Out_Buffer[1], Out_Buffer[2]);
 		I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -140,6 +147,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		Out_Buffer[0] = PMBUS_VOUT_OV_FAULT_LIMIT;
 		Out_Buffer[1] = Vout & 0xFF;
 		Out_Buffer[2] = Vout >> 8;
+		SC_INFO("Overvoltage Fault Limit: %#x %#x %#x", Out_Buffer[0],
+			Out_Buffer[1], Out_Buffer[2]);
 		I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -147,6 +156,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		}
 
 		Out_Buffer[0] = PMBUS_VOUT_OV_WARN_LIMIT;
+		SC_INFO("Overvoltage Warning Limit: %#x %#x %#x", Out_Buffer[0],
+			Out_Buffer[1], Out_Buffer[2]);
 		I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -158,6 +169,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		Out_Buffer[0] = PMBUS_VOUT_COMMAND;
 		Out_Buffer[1] = Vout & 0xFF;
 		Out_Buffer[2] = Vout >> 8;
+		SC_INFO("VOUT_COMMAND: %#x %#x %#x", Out_Buffer[0],
+			Out_Buffer[1], Out_Buffer[2]);
 		I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -168,6 +181,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = PMBUS_OPERATION;
 		Out_Buffer[1] = 0x80;
+		SC_INFO("OPERATION: %#x %#x", Out_Buffer[0], Out_Buffer[1]);
 		I2C_WRITE(FD, Regulator->I2C_Address, 2, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -187,6 +201,8 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 
 		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
 		*Voltage = Mantissa * pow(2, Exponent);
+		SC_INFO("Overvoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)",
+		       *Voltage, PMBUS_VOUT_OV_FAULT_LIMIT, Mantissa);
 		printf("Overvoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
 		       *Voltage, PMBUS_VOUT_OV_FAULT_LIMIT, Mantissa);
 
@@ -201,7 +217,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 
 		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
 		*Voltage = Mantissa * pow(2, Exponent);
-		printf("Overvoltage Warning Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		SC_PRINT("Overvoltage Warning Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)",
 		       *Voltage, PMBUS_VOUT_OV_WARN_LIMIT, Mantissa);
 
 		/* Get Undervoltage Warning Limit */
@@ -215,7 +231,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 
 		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
 		*Voltage = Mantissa * pow(2, Exponent);
-		printf("Undervoltage Warning Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		SC_PRINT("Undervoltage Warning Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)",
 		       *Voltage, PMBUS_VOUT_UV_WARN_LIMIT, Mantissa);
 
 		/* Get Undervoltage Fault Limit */
@@ -229,11 +245,11 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 
 		Mantissa = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
 		*Voltage = Mantissa * pow(2, Exponent);
-		printf("Undervoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		SC_PRINT("Undervoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)",
 		       *Voltage, PMBUS_VOUT_UV_FAULT_LIMIT, Mantissa);
 		break;
 	default:
-		printf("ERROR: invalid regulator access\n");
+		SC_ERR("invalid regulator access");
 		(void) close(FD);
 		return -1;
 	}
@@ -263,7 +279,7 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 
 	FD = open(IO_Exp->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open IO expander\n");
+		SC_ERR("unable to access I2C bus %s: %m", IO_Exp->I2C_Bus);
 		return -1;
 	}
 
@@ -277,12 +293,16 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 			return Ret;
 		}
 
+		SC_INFO("Read (%#x): %#x %#x", Offset, In_Buffer[0],
+			In_Buffer[1]);
 		*Data = ((In_Buffer[0] << 8) | In_Buffer[1]);
 
 	} else if (Op == 1) {	// Write operation
 		Out_Buffer[0] = Offset;
 		Out_Buffer[1] = ((*Data >> 8) & 0xFF);
 		Out_Buffer[2] = (*Data & 0xFF);
+		SC_INFO("Write (%#x): %#x %#x", Offset, Out_Buffer[1],
+			Out_Buffer[2]);
 		I2C_WRITE(FD, IO_Exp->I2C_Address, 3, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -290,7 +310,7 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 		}
 
 	} else {
-		printf("ERROR: invalid access operation\n");
+		SC_ERR("invalid access operation");
 		(void) close(FD);
 		return -1;
 	}
@@ -312,7 +332,7 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 	/* Read FMC's EEPROM */
 	FD = open(FMC->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open FMC EEPROM\n");
+		SC_ERR("unable to access I2C bus %s: %m", FMC->I2C_Bus);
 		return -1;
 	}
 
@@ -363,6 +383,9 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 		*Min_Voltage = *Max_Voltage = 0;
 	}
 
+	SC_INFO("Min Voltage: %.2f, Max Voltage: %.2f", *Min_Voltage,
+		*Max_Voltage);
+
 	return 0;
 }
 
@@ -378,22 +401,23 @@ GPIO_Get(char *Label, int *State)
 
 	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
 	    &Line_Offset) != 1) {
-		printf("ERROR: failed to find GPIO line %s\n", Label);
+		SC_ERR("failed to find GPIO line %s", Label);
 		return -1;
 	}
 
 	(void) sprintf(Buffer, "gpioget %s %d 2>&1", Chip_Name, Line_Offset);
+	SC_INFO("Command: %s", Buffer);
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to get the state of GPIO line %s\n",
-		       Label);
+		SC_ERR("failed to get the state of GPIO line %s", Label);
 		return -1;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
+	SC_INFO("Output: %s", Output);
 	if ((strcmp(Output, "0\n") != 0) && (strcmp(Output, "1\n") != 0)) {
-		printf("ERROR: %s", Output);
+		SC_ERR("invalid output %s", Output);
 		return -1;
 	}
 
@@ -413,22 +437,24 @@ GPIO_Set(char *Label, int State)
 
 	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
 	    &Line_Offset) != 1) {
-		printf("ERROR: failed to find GPIO line.\n");
+		SC_ERR("failed to find GPIO line");
 		return -1;
 	}
 
 	(void) sprintf(Buffer, "gpioset %s %d=%d 2>&1", Chip_Name, Line_Offset,
 		       State);
+	SC_INFO("Command: %s", Buffer);
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to set GPIO line\n");
+		SC_ERR("failed to set GPIO line\n");
 		return -1;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
+	SC_INFO("Output: %s", Output);
 	if (Output[0] != '\0') {
-		printf("ERROR: %s", Output);
+		SC_ERR("invalid output %s", Output);
 		return -1;
 	}
 
@@ -438,13 +464,14 @@ GPIO_Set(char *Label, int State)
 int
 EEPROM_Common(char *Buffer)
 {
-	printf("0x00 - Version:\t%.2x\n", Buffer[0x0]);
-	printf("0x01 - Internal User Area:\t%.2x\n", Buffer[0x1]);
-	printf("0x02 - Chassis Info Area:\t%.2x\n", Buffer[0x2]);
-	printf("0x03 - Board Area:\t%.2x\n", Buffer[0x3]);
-	printf("0x04 - Product Info Area:\t%.2x\n", Buffer[0x4]);
-	printf("0x05 - Multi Record Area:\t%.2x\n", Buffer[0x5]);
-	printf("0x06 - Pad and Check sum:\t%.2x %.2x\n", Buffer[0x6], Buffer[0x7]);
+	SC_PRINT("0x00 - Version:\t%.2x", Buffer[0x0]);
+	SC_PRINT("0x01 - Internal User Area:\t%.2x", Buffer[0x1]);
+	SC_PRINT("0x02 - Chassis Info Area:\t%.2x", Buffer[0x2]);
+	SC_PRINT("0x03 - Board Area:\t%.2x", Buffer[0x3]);
+	SC_PRINT("0x04 - Product Info Area:\t%.2x", Buffer[0x4]);
+	SC_PRINT("0x05 - Multi Record Area:\t%.2x", Buffer[0x5]);
+	SC_PRINT("0x06 - Pad and Check sum:\t%.2x %.2x", Buffer[0x6],
+		 Buffer[0x7]);
 	return 0;
 }
 
@@ -456,9 +483,9 @@ EEPROM_Board(char *Buffer, int PCIe)
 	time_t Time;
 	int Offset, Length;
 
-	printf("0x08 - Version:\t%.2x\n", Buffer[0x8]);
-	printf("0x09 - Length:\t%.2x\n", Buffer[0x9]);
-	printf("0x0A - Language Code:\t%.2x\n", Buffer[0xA]);
+	SC_PRINT("0x08 - Version:\t%.2x", Buffer[0x8]);
+	SC_PRINT("0x09 - Length:\t%.2x", Buffer[0x9]);
+	SC_PRINT("0x0A - Language Code:\t%.2x", Buffer[0xA]);
 
 	/* Base build date for manufacturing is 1/1/1996 */
 	BuildDate.tm_year = 96;
@@ -467,40 +494,41 @@ EEPROM_Board(char *Buffer, int PCIe)
 			    Buffer[0xB]);
 	Time = mktime(&BuildDate);
 	if (Time == -1) {
-		printf("ERROR: invalid manufacturing date\n");
+		SC_ERR("invalid manufacturing date");
 		return -1;
 	}
 
+	SC_INFO("0x0B - Manufacturing Date:\t%s", ctime(&Time));
 	printf("0x0B - Manufacturing Date:\t%s", ctime(&Time));
 	Offset = 0xE;
 	Length = (Buffer[Offset] & 0x3F);
 	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
-	printf("0x%.2x - Manufacturer:\t%s\n", (Offset + 1), Buf);
+	SC_PRINT("0x%.2x - Manufacturer:\t%s", (Offset + 1), Buf);
 	Offset = Offset + Length + 1;
 	Length = (Buffer[Offset] & 0x3F);
 	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
-	printf("0x%.2x - Product Name:\t%s\n", (Offset + 1), Buf);
+	SC_PRINT("0x%.2x - Product Name:\t%s", (Offset + 1), Buf);
 	Offset = Offset + Length + 1;
 	Length = (Buffer[Offset] & 0x3F);
 	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
-	printf("0x%.2x - Serial Number:\t%s\n", (Offset + 1), Buf);
+	SC_PRINT("0x%.2x - Serial Number:\t%s", (Offset + 1), Buf);
 	Offset = Offset + Length + 1;
 	Length = (Buffer[Offset] & 0x3F);
 	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
-	printf("0x%.2x - Part Number:\t%s\n", (Offset + 1), Buf);
+	SC_PRINT("0x%.2x - Part Number:\t%s", (Offset + 1), Buf);
 	Offset = Offset + Length + 1;
 	Length = (Buffer[Offset] & 0x3F);
 	if (Length == 1) {
-		printf("0x%.2x - FRU ID:\t%.2x\n", Offset, Buffer[Offset + 1]);
+		SC_PRINT("0x%.2x - FRU ID:\t%.2x", Offset, Buffer[Offset + 1]);
 	} else {
 		snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
-		printf("0x%.2x - FRU ID:\t%s\n", (Offset + 1), Buf);
+		SC_PRINT("0x%.2x - FRU ID:\t%s", (Offset + 1), Buf);
 		Offset = Offset + Length + 1;
 		if (Buffer[Offset] != 0xC1) {
-			printf("ERROR: End-of-Record was not found\n");
+			SC_ERR("End-of-Record was not found");
 			return -1;
 		} else {
-			printf("0x%.2x - EoR:\t%.2x\n", Offset, Buffer[Offset]);
+			SC_PRINT("0x%.2x - EoR:\t%.2x", Offset, Buffer[Offset]);
 			return 0;
 		}
 	}
@@ -508,20 +536,24 @@ EEPROM_Board(char *Buffer, int PCIe)
 	Offset = Offset + Length + 1;
 	Length = (Buffer[Offset] & 0x3F);
 	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
-	printf("0x%.2x - Revision:\t%s\n", (Offset + 1), Buf);
+	SC_PRINT("0x%.2x - Revision:\t%s", (Offset + 1), Buf);
 	Offset = Offset + Length + 1;
 	if (PCIe == 1) {
 		Length = (Buffer[Offset] & 0x3F);
+		SC_INFO("0x%.2x - PCIe Info:\t", (Offset + 1));
 		printf("0x%.2x - PCIe Info:\t", (Offset + 1));
 		for (int i = 0; i < Length; i++) {
+			SC_INFO("%.2x", Buffer[Offset + i + 1]);
 			printf("%.2x", Buffer[Offset + i + 1]);
 		}
 
 		printf("\n");
 		Offset = Offset + Length + 1;
 		Length = (Buffer[Offset] & 0x3F);
+		SC_INFO("0x%.2x - UUID:\t", (Offset + 1));
 		printf("0x%.2x - UUID:\t", (Offset + 1));
 		for (int i = 0; i < Length; i++) {
+			SC_INFO("%.2x", Buffer[Offset + i + 1]);
 			printf("%.2x", Buffer[Offset + i + 1]);
 			if (i == 3 || i == 5 || i == 7 || i == 9) {
 				printf("-");
@@ -530,10 +562,10 @@ EEPROM_Board(char *Buffer, int PCIe)
 
 		printf("\n");
 		Offset = Offset + Length + 1;
-		printf("0x%.2x - EoR and Check sum:\t%.2x %.2x\n", Offset,
+		SC_PRINT("0x%.2x - EoR and Check sum:\t%.2x %.2x", Offset,
 		       Buffer[Offset], Buffer[Offset + 1]);
 	} else {
-		printf("0x%.2x - EoR, Pad, Check sum:\t%.2x %.2x%.2x %.2x\n",
+		SC_PRINT("0x%.2x - EoR, Pad, Check sum:\t%.2x %.2x%.2x %.2x",
 		       Offset, Buffer[Offset], Buffer[Offset + 1],
 		       Buffer[Offset + 2], Buffer[Offset + 3]);
 	}
@@ -575,150 +607,150 @@ EEPROM_MultiRecord(char *Buffer)
 		Last_Record = Buffer[Offset + 1] & 0x80;
 		switch (Type) {
 		case DC_OUTPUT:
-			printf("0x%.2x - Record Type:\t%.2x (DC Output)\n", Offset, Type);
+			SC_PRINT("0x%.2x - Record Type:\t%.2x (DC Output)", Offset, Type);
 			break;
 		case DC_LOAD:
-			printf("0x%.2x - Record Type:\t%.2x (DC Load)\n", Offset, Type);
+			SC_PRINT("0x%.2x - Record Type:\t%.2x (DC Load)", Offset, Type);
 			break;
 		case OEM_D2:
-			printf("0x%.2x - Record Type:\t%.2x (Mac ID)\n", Offset, Type);
+			SC_PRINT("0x%.2x - Record Type:\t%.2x (Mac ID)", Offset, Type);
 			break;
 		case OEM_D3:
-			printf("0x%.2x - Record Type:\t%.2x (Memory)\n", Offset, Type);
+			SC_PRINT("0x%.2x - Record Type:\t%.2x (Memory)", Offset, Type);
 			break;
 		case OEM_VITA_57_1:
-			printf("0x%.2x - Record Type:\t%.2x (Vita 57.1)\n", Offset, Type);
+			SC_PRINT("0x%.2x - Record Type:\t%.2x (Vita 57.1)", Offset, Type);
 			break;
 		default:
-			printf("ERROR: unsupported multirecord type\n");
+			SC_ERR("unsupported multirecord type");
 			return -1;
 		}
 
-		printf("0x%.2x - Record Format:\t%.2x\n", (Offset + 1),
+		SC_PRINT("0x%.2x - Record Format:\t%.2x", (Offset + 1),
 		       Buffer[Offset + 1]);
-		printf("0x%.2x - Length:\t%.2x\n", (Offset + 2),
+		SC_PRINT("0x%.2x - Length:\t%.2x", (Offset + 2),
 		       Buffer[Offset + 2]);
-		printf("0x%.2x - Record Check sum:\t%.2x\n", (Offset + 3),
+		SC_PRINT("0x%.2x - Record Check sum:\t%.2x", (Offset + 3),
 		       Buffer[Offset + 3]);
-		printf("0x%.2x - Header Check sum:\t%.2x\n", (Offset + 4),
+		SC_PRINT("0x%.2x - Header Check sum:\t%.2x", (Offset + 4),
 		       Buffer[Offset + 4]);
 		if (Type == OEM_D2 || Type == OEM_D3) {
-			printf("0x%.2x - Xilinx IANA ID:\t%.2x%.2x%.2x\n", (Offset + 5),
+			SC_PRINT("0x%.2x - Xilinx IANA ID:\t%.2x%.2x%.2x", (Offset + 5),
 			       Buffer[Offset + 5], Buffer[Offset + 6], Buffer[Offset + 7]);
 		}
 
 		switch (Type) {
 		case DC_OUTPUT:
-			printf("0x%.2x - Output Number:\t%.2x (Power Rail)\n",
+			SC_PRINT("0x%.2x - Output Number:\t%.2x (Power Rail)",
 			       (Offset + 5), Buffer[Offset + 5]);
-			printf("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)\n",
+			SC_PRINT("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)",
 			       (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
 			       (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
-			printf("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)\n",
+			SC_PRINT("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)",
 			       (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
 			       (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
-			printf("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)\n",
+			SC_PRINT("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)",
 			       (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
 			       (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
-			printf("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)\n",
+			SC_PRINT("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)",
 			       (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
 			       (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
-			printf("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)\n",
+			SC_PRINT("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)",
 			       (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
 			       (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
-			printf("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)\n",
+			SC_PRINT("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)",
 			       (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
 			       (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
 			break;
 		case DC_LOAD:
 			if (Buffer[Offset + 5] == 0x0) {
-				printf("0x%.2x - Output Number:\t%.2x (Voltage Adjust)\n",
+				SC_PRINT("0x%.2x - Output Number:\t%.2x (Voltage Adjust)",
 				       (Offset + 5), Buffer[Offset + 5]);
 			} else if (Buffer[Offset + 5] <= 0xF) {
-				printf("0x%.2x - Output Number:\t%.2x (Power Rail)\n",
+				SC_PRINT("0x%.2x - Output Number:\t%.2x (Power Rail)",
 				       (Offset + 5), Buffer[Offset + 5]);
 			} else {
-				printf("ERROR: unsupported DC Load output number\n");
+				SC_ERR("unsupported DC Load output number");
 				return -1;
 			}
 
-			printf("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)\n",
+			SC_PRINT("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)",
 			       (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
 			       (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
-			printf("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)\n",
+			SC_PRINT("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)",
 			       (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
 			       (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
-			printf("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)\n",
+			SC_PRINT("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)",
 			       (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
 			       (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
-			printf("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)\n",
+			SC_PRINT("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)",
 			       (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
 			       (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
-			printf("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)\n",
+			SC_PRINT("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)",
 			       (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
 			       (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
-			printf("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)\n",
+			SC_PRINT("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)",
 			       (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
 			       (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
 			break;
 		case OEM_D2:
 			if (Buffer[Offset + 8] == 0x11) {
-				printf("0x%.2x - Version Number:\t%.2x (SC Mac ID)\n",
+				SC_PRINT("0x%.2x - Version Number:\t%.2x (SC Mac ID)",
 				       (Offset + 8), Buffer[Offset + 8]);
-				printf("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+				SC_PRINT("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
 				       (Offset + 9), Buffer[Offset + 9],
 				       Buffer[Offset + 10], Buffer[Offset + 11],
 				       Buffer[Offset + 12], Buffer[Offset + 13],
 				       Buffer[Offset + 14]);
 			} else if (Buffer[Offset + 8] == 0x31) {
-				printf("0x%.2x - Version Number:\t%.2x (Veral Mac ID)\n",
+				SC_PRINT("0x%.2x - Version Number:\t%.2x (Veral Mac ID)",
 				       (Offset + 8), Buffer[Offset + 8]);
-				printf("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+				SC_PRINT("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
 				       (Offset + 9), Buffer[Offset + 9],
 				       Buffer[Offset + 10], Buffer[Offset + 11],
 				       Buffer[Offset + 12], Buffer[Offset + 13],
 				       Buffer[Offset + 14]);
-				printf("0x%.2x - Mac ID 1:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+				SC_PRINT("0x%.2x - Mac ID 1:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
 				       (Offset + 15), Buffer[Offset + 15],
 				       Buffer[Offset + 16], Buffer[Offset + 17],
 				       Buffer[Offset + 18], Buffer[Offset + 19],
 				       Buffer[Offset + 20]);
 			} else {
-				printf("ERROR: unsupported D2 version number\n");
+				SC_ERR("unsupported D2 version number");
 				return -1;
 			}
 
 			break;
 		case OEM_D3:
-			printf("0x%.2x - Memory Type:\t%s\n", (Offset + 8),
+			SC_PRINT("0x%.2x - Memory Type:\t%s", (Offset + 8),
 			       &Buffer[Offset + 8]);
 			Length = strlen(&Buffer[Offset + 8]) + 1;
-			printf("0x%.2x - Voltage Supply:\t%s\n", (Offset + 8 + Length),
+			SC_PRINT("0x%.2x - Voltage Supply:\t%s", (Offset + 8 + Length),
 			       &Buffer[Offset + 8 + Length]);
 			break;
 		case OEM_VITA_57_1:
-			printf("0x%.2x - Organizationally Unique Identifier:\t%.2x%.2x%.2x\n",
+			SC_PRINT("0x%.2x - Organizationally Unique Identifier:\t%.2x%.2x%.2x",
 			       (Offset + 5), Buffer[Offset + 5], Buffer[Offset + 6],
 			       Buffer[Offset + 7]);
-			printf("0x%.2x - Subtype Version:\t%.2x\n", (Offset + 8),
+			SC_PRINT("0x%.2x - Subtype Version:\t%.2x", (Offset + 8),
 			       Buffer[Offset + 8]);
-			printf("0x%.2x - Connector Type:\t%.2x\n", (Offset + 9),
+			SC_PRINT("0x%.2x - Connector Type:\t%.2x", (Offset + 9),
 			       Buffer[Offset + 9]);
-			printf("0x%.2x - P1 Bank A Number Signals:\t%.2x\n", (Offset + 10),
+			SC_PRINT("0x%.2x - P1 Bank A Number Signals:\t%.2x", (Offset + 10),
 			       Buffer[Offset + 10]);
-			printf("0x%.2x - P1 Bank B Number Signals:\t%.2x\n", (Offset + 11),
+			SC_PRINT("0x%.2x - P1 Bank B Number Signals:\t%.2x", (Offset + 11),
 			       Buffer[Offset + 11]);
-			printf("0x%.2x - P2 Bank A Number Signals:\t%.2x\n", (Offset + 12),
+			SC_PRINT("0x%.2x - P2 Bank A Number Signals:\t%.2x", (Offset + 12),
 			       Buffer[Offset + 12]);
-			printf("0x%.2x - P2 Bank B Number Signals:\t%.2x\n", (Offset + 13),
+			SC_PRINT("0x%.2x - P2 Bank B Number Signals:\t%.2x", (Offset + 13),
 			       Buffer[Offset + 13]);
-			printf("0x%.2x - P1 GBT B Number Signals:\t%.2x\n", (Offset + 14),
+			SC_PRINT("0x%.2x - P1 GBT B Number Signals:\t%.2x", (Offset + 14),
 			       Buffer[Offset + 14]);
-			printf("0x%.2x - Max Clock for TCK:\t%.2x (%dMhz)\n", (Offset + 15),
+			SC_PRINT("0x%.2x - Max Clock for TCK:\t%.2x (%dMhz)", (Offset + 15),
 			       Buffer[Offset + 15], Buffer[Offset + 15]);
 			break;
 		default:
-			printf("ERROR: unsupported multirecord type\n");
+			SC_ERR("unsupported multirecord type");
 			return -1;
 		}
 
@@ -728,9 +760,11 @@ EEPROM_MultiRecord(char *Buffer)
 			 * header in this record plus length of data in offset 0x2.
 			 */
 			Offset += (5 + Buffer[Offset + 2]);
-			printf("\n");
+			SC_PRINT(" ");
 		}
 	} while (!Last_Record);
+
+	return 0;
 }
 
 static int
@@ -815,7 +849,7 @@ Get_IDT_8A34001(Clock_t *Clock)
 	 */
 	if (access(IDT8A34001FILE, F_OK) != 0) {
 		for (int i = 0; i < Clock_Data->Number_Label; i++) {
-			printf("%s:\t0 MHz/PPS\n", Clock_Data->Display_Label[i]);
+			SC_PRINT("%s:\t0 MHz/PPS", Clock_Data->Display_Label[i]);
 		}
 
 		return 0;
@@ -852,10 +886,10 @@ Get_IDT_8A34001(Clock_t *Clock)
 				if ((strcmp(Frequency, " ") != 0) &&
 				    !((strstr(Frequency, "MHz") != NULL) ||
 				     (strstr(Frequency, "PPS") != NULL))) {
-					printf("%s:\t%sMHz\n", Clock_Data->Display_Label[i], 
+					SC_PRINT("%s:\t%sMHz", Clock_Data->Display_Label[i],
 					       Frequency);
 				} else {
-					printf("%s:\t%s\n", Clock_Data->Display_Label[i],
+					SC_PRINT("%s:\t%s", Clock_Data->Display_Label[i],
 					       Frequency);
 				}
 
@@ -889,7 +923,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 
 	FD = open(Clock->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		SC_ERR("unable to open 8A34001 clock chip: %m");
+		SC_ERR("unable to access I2C bus %s: %m", Clock->I2C_Bus);
 		return -1;
 	}
 
@@ -908,7 +942,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 
 	FP = fopen(TXT_File, "r");
 	if (FP == NULL) {
-		SC_ERR("failed to open %s: %m", TXT_File);
+		SC_ERR("failed to open file %s: %m", TXT_File);
 		return -1;
 	}
 
@@ -983,6 +1017,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	 */
 	(void) sprintf(Buffer, "echo '%s' > %s; sync", Clock_Files,
 		       IDT8A34001FILE);
+	SC_INFO("Command: %s", Buffer);
 	system(Buffer);
 
 	/* Update the 'clock' file for the case of setboot mode */
@@ -990,6 +1025,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 		/* Remove the old entry, if any */
 		(void) sprintf(Buffer, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
 			       Clock->Name, CLOCKFILE);
+		SC_INFO("Command: %s", Buffer);
 		system(Buffer);
 
 		(void) sprintf(Buffer, "%s:\t%s\n", Clock->Name, Clock_Files);
@@ -999,6 +1035,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 			return -1;
 		}
 
+		SC_INFO("Append: %s", Buffer);
 		(void) fprintf(FP, "%s", Buffer);
 		(void) fflush(FP);
 		(void) fsync(fileno(FP));
@@ -1026,11 +1063,13 @@ Restore_IDT_8A34001(Clock_t *Clock)
 
 	/* Remove the '8A34001' file, if any */
 	(void) sprintf(Buffer, "rm %s 2> /dev/NULL; sync", IDT8A34001FILE);
+	SC_INFO("Command: %s", Buffer);
 	system(Buffer);
 
 	/* Remove the previous entry from 'clock' file, if any */
 	(void) sprintf(Buffer, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; sync",
 		       Clock->Name, CLOCKFILE);
+	SC_INFO("Command: %s", Buffer);
 	system(Buffer);
 
 	return 0;

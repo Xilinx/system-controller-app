@@ -39,8 +39,6 @@
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
 
-
-
 extern BootModes_t BootModes;
 extern Clocks_t Clocks;
 extern Ina226s_t Ina226s;
@@ -257,16 +255,22 @@ static Command_t Command;
 int
 main(int argc, char **argv)
 {
-	int Ret;
+	char Buffer[SYSCMD_MAX] = { 0 };
+	int Ret = -1;
 
-	SC_OPENLOG("sc_app");
-	SC_INFO(__FILE__ ":%d:%s() start", __LINE__, __func__);
-	if (Create_Lockfile() != 0) {
-		return -1;
+	for (int i = 0; (i < argc && strlen(Buffer) < SYSCMD_MAX); i++) {
+		(void) strncat(Buffer, argv[i], (SYSCMD_MAX - strlen(Buffer)));
+		(void) strncat(Buffer, " ", (SYSCMD_MAX - strlen(Buffer)));
 	}
 
-	Ret = Parse_Options(argc, argv);
-	if (Ret != 0) {
+	SC_OPENLOG("sc_app");
+	SC_INFO(">>> Begin: %s", Buffer);
+
+	if (Create_Lockfile() != 0) {
+		goto Out;
+	}
+
+	if (Parse_Options(argc, argv) != 0) {
 		goto Unlock;
 	}
 
@@ -274,10 +278,11 @@ main(int argc, char **argv)
 
 Unlock:
 	if (Destroy_Lockfile() != 0) {
-		return -1;
+		Ret = -1;
 	}
 
-	SC_INFO(__FILE__ ":%d:%s() done", __LINE__, __func__);
+Out:
+	SC_INFO("<<< End(%d): %s", Ret, Buffer);
 	return Ret;
 }
 
@@ -295,7 +300,7 @@ Parse_Options(int argc, char **argv)
 		Options++;
 		switch (c) {
 		case 'h':
-			printf("%s\n", Usage);
+			SC_PRINT("%s", Usage);
 			return 1;
 			break;
 		case 'c':
@@ -311,17 +316,17 @@ Parse_Options(int argc, char **argv)
 			strcpy(Value_Arg, optarg);
 			break;
 		case '?':
-			printf("ERROR: invalid argument\n");
-			printf("%s\n", Usage);
+			SC_ERR("invalid argument");
+			SC_PRINT("%s", Usage);
 			return -1;
 		default:
-			printf("%s\n", Usage);
+			SC_PRINT("%s", Usage);
 			return -1;
 		}
 	}
 
 	if (Options == 0) {
-		printf("%s\n", Usage);
+		SC_PRINT("%s", Usage);
 		return -1;
 	}
 
@@ -332,7 +337,7 @@ Parse_Options(int argc, char **argv)
 		}
 	}
 
-	printf("ERROR: invalid command\n");
+	SC_ERR("invalid command");
 	return -1;
 }
 
@@ -415,7 +420,7 @@ Version_Ops(void)
 		Minor = MINOR;
 	}
 
-	printf("Version:\t%d.%d\n", Major, Minor);
+	SC_PRINT("Version:\t%d.%d", Major, Minor);
 
 	if (uname(&UTS) != 0) {
 		SC_ERR("get OS information: uname failed: %m");
@@ -440,10 +445,11 @@ Version_Ops(void)
 		}
 	}
 
-	printf("Linux:\t\t%s (%sCompatible)\n", UTS.release,
+	SC_PRINT("Linux:\t\t%s (%sCompatible)", UTS.release,
 	    (Linux_Compatible) ? "" : "Not ");
-	printf("BSP:\t\t%s (%sCompatible)\n", BSP_Version,
+	SC_PRINT("BSP:\t\t%s (%sCompatible)", BSP_Version,
 	    (BSP_Compatible) ? "" : "Not ");
+
 	return 0;
 }
 
@@ -460,9 +466,10 @@ BootMode_Ops(void)
 
 	if (Command.CmdId == LISTBOOTMODE) {
 		for (int i = 0; i < BootModes.Numbers; i++) {
-			printf("%s\t0x%x\n", BootModes.BootMode[i].Name,
+			SC_PRINT("%s\t0x%x", BootModes.BootMode[i].Name,
 			    BootModes.BootMode[i].Value);
 		}
+
 		return 0;
 	}
 
@@ -490,16 +497,17 @@ BootMode_Ops(void)
 		/* Record the boot mode */
 		FP = fopen(BOOTMODEFILE, "w");
 		if (FP == NULL) {
-			SC_ERR("failed to write boot_mode file %s: open: %m", BOOTMODEFILE);
+			SC_ERR("failed to open boot_mode file %s: %m", BOOTMODEFILE);
 			return -1;
 		}
 
 		(void) sprintf(Buffer, "%s\n", BootMode->Name);
+		SC_INFO("Boot Mode: %s", Buffer);
 		(void) fputs(Buffer, FP);
 		(void) fclose(FP);
 		break;
 	default:
-		printf("ERROR: invalid bootmode command\n");
+		SC_ERR("invalid bootmode command");
 		break;
 	}
 
@@ -550,7 +558,7 @@ EEPROM_Ops(void)
 
 	if (Command.CmdId == GETEEPROM) {
 		if (T_Flag == 0) {
-			printf("ERROR: no geteeprom target\n");
+			SC_ERR("no geteeprom target");
 			return -1;
 		}
 
@@ -563,34 +571,36 @@ EEPROM_Ops(void)
 		} else if (strcmp(Target_Arg, "multirecord") == 0) {
 			Target = EEPROM_MULTIRECORD;
 		} else {
-			printf("ERROR: invalid geteeprom target\n");
+			SC_ERR("invalid geteeprom target");
 			return -1;
 		}
 	}
 
 	FD = open(OnBoard_EEPROM.I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open onboard EEPROM\n");
+		SC_ERR("unable to access I2C bus %s: %m", OnBoard_EEPROM.I2C_Bus);
 		return -1;
 	}
 
 	if (ioctl(FD, I2C_SLAVE_FORCE, OnBoard_EEPROM.I2C_Address) < 0) {
-		printf("ERROR: unable to access onboard EEPROM\n");
+		SC_ERR("unable to access onboard EEPROM address %#x",
+		       OnBoard_EEPROM.I2C_Address);
 		(void) close(FD);
 		return -1;
 	}
 
 	Out_Buffer[0] = 0x0;
 	Out_Buffer[1] = 0x0;
+	SC_INFO("Write offset address 0x%.2x%.2x", Out_Buffer[0], Out_Buffer[1]);
 	if (write(FD, Out_Buffer, 2) != 2) {
-		printf("ERROR: unable to set register address of onboard EEPROM\n");
+		SC_ERR("unable to set the offset address on onboard EEPROM");
 		(void) close(FD);
 		return -1;
 	}
 
 	(void) memset(In_Buffer, 0, SYSCMD_MAX);
 	if (read(FD, In_Buffer, 256) != 256) {
-		printf("ERROR: unable to read onboard EEPROM\n");
+		SC_ERR("unable to read onboard EEPROM");
 		(void) close(FD);
 		return -1;
 	}
@@ -598,55 +608,58 @@ EEPROM_Ops(void)
 	(void) close(FD);
 	switch (Target) {
 	case EEPROM_SUMMARY:
-		printf("Language: %d\n", In_Buffer[0xA]);
+		SC_PRINT("Language: %d", In_Buffer[0xA]);
 		if (Plat_IDCODE_Ops(Buffer, STRLEN_MAX) != 0) {
-			printf("ERROR: failed to get silicon revision\n");
+			SC_ERR("failed to get silicon revision");
 			return -1;
 		}
 
 		(void) strtok(Buffer, " ");
 		(void) strcpy(Buffer, strtok(NULL, "\n"));
-		printf("Silicon Revision: %s\n", Buffer);
+		SC_PRINT("Silicon Revision: %s", Buffer);
 
 		/* Base build date for manufacturing is 1/1/1996 */
+		SC_INFO("Manufacturing date: [0xD] = %#x, [0xC] = %#x, [0xB] = %#x",
+		        In_Buffer[0xD], In_Buffer[0xC], In_Buffer[0xB]);
 		BuildDate.tm_year = 96;
 		BuildDate.tm_mday = 1;
 		BuildDate.tm_min = (In_Buffer[0xD] << 16 | In_Buffer[0xC] << 8 |
 				    In_Buffer[0xB]);
 		Time = mktime(&BuildDate);
 		if (Time == -1) {
-			printf("ERROR: invalid manufacturing date\n");
+			SC_ERR("invalid manufacturing date");
 			return -1;
 		}
 
+		SC_INFO("Manufacturing Date: %s", ctime(&Time));
 		printf("Manufacturing Date: %s", ctime(&Time));
 		Offset = 0xE;
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
-		printf("Manufacturer: %s\n", Buffer);
+		SC_PRINT("Manufacturer: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
-		printf("Product Name: %s\n", Buffer);
+		SC_PRINT("Product Name: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
-		printf("Board Serial Number: %s\n", Buffer);
+		SC_PRINT("Board Serial Number: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
-		printf("Board Part Number: %s\n", Buffer);
+		SC_PRINT("Board Part Number: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		/* Skip FRU File ID */
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
-		printf("Board Revision: %s\n", Buffer);
-		printf("MAC Address 0: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+		SC_PRINT("Board Revision: %s", Buffer);
+		SC_PRINT("MAC Address 0: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
 		       In_Buffer[0x80], In_Buffer[0x81], In_Buffer[0x82],
 		       In_Buffer[0x83], In_Buffer[0x84], In_Buffer[0x85]);
-		printf("MAC Address 1: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+		SC_PRINT("MAC Address 1: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
 		       In_Buffer[0x86], In_Buffer[0x87], In_Buffer[0x88],
 		       In_Buffer[0x89], In_Buffer[0x8A], In_Buffer[0x8B]);
 		break;
@@ -654,25 +667,13 @@ EEPROM_Ops(void)
 		EEPROM_Print_All(In_Buffer, 256, 16);
 		break;
 	case EEPROM_COMMON:
-		if (EEPROM_Common(In_Buffer) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_Common(In_Buffer);
 	case EEPROM_BOARD:
-		if (EEPROM_Board(In_Buffer, 1) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_Board(In_Buffer, 1);
 	case EEPROM_MULTIRECORD:
-		if (EEPROM_MultiRecord(In_Buffer) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_MultiRecord(In_Buffer);
 	default:
-		printf("ERROR: invalid geteeprom target\n");
+		SC_ERR("invalid geteeprom target");
 		return -1;
 	}
 
@@ -695,14 +696,15 @@ Clock_Ops(void)
 
 	if (Command.CmdId == LISTCLOCK) {
 		for (int i = 0; i < Clocks.Numbers; i++) {
-			printf("%s\n", Clocks.Clock[i].Name);
+			SC_PRINT("%s", Clocks.Clock[i].Name);
 		}
+
 		return 0;
 	}
 
 	/* Validate the clock target */
 	if (T_Flag == 0) {
-		printf("ERROR: no clock target\n");
+		SC_ERR("no clock target");
 		return -1;
 	}
 
@@ -715,7 +717,7 @@ Clock_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid clock target\n");
+		SC_ERR("invalid clock target");
 		return -1;
 	}
 
@@ -728,22 +730,24 @@ Clock_Ops(void)
 		(void) sprintf(System_Cmd, "cat %s", Clock->Sysfs_Path);
 		FP = popen(System_Cmd, "r");
 		if (FP == NULL) {
-			printf("ERROR: failed to access sysfs path\n");
+			SC_ERR("failed to access sysfs path %s: %m",
+			       Clock->Sysfs_Path);
 			return -1;
 		}
 
 		(void) fgets(Output, sizeof(Output), FP);
 		(void) pclose(FP);
+		SC_INFO("%s: %s", Clock->Sysfs_Path, Output);
 		Frequency = strtod(Output, NULL) / 1000000.0;	// In MHz
 		/* Print out 3-digit after decimal point without rounding */
-		printf("Frequency(MHz):\t%.3f\n",
+		SC_PRINT("Frequency(MHz):\t%.3f",
 		   ((signed long)(Frequency * 1000) * 0.001f));
 		break;
 	case SETCLOCK:
 	case SETBOOTCLOCK:
 		/* Validate the frequency */
 		if (V_Flag == 0) {
-			printf("ERROR: no clock frequency\n");
+			SC_ERR("no value is provided for clock");
 			return -1;
 		}
 
@@ -759,29 +763,32 @@ Clock_Ops(void)
 		Upper = Clock->Upper_Freq;
 		Lower = Clock->Lower_Freq;
 		if (Frequency > Upper || Frequency < Lower) {
-			printf("ERROR: valid frequency range is %.3f MHz - %.3f MHz\n",
+			SC_ERR("valid frequency range is %.3f MHz - %.3f MHz",
 			    Lower, Upper);
 			return -1;
 		}
 
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
+		SC_INFO("Command: %s", System_Cmd);
 		system(System_Cmd);
 
 		if (Command.CmdId == SETBOOTCLOCK) {
 			/* Remove the old value, if any */
 			(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
 			    Clock->Name, CLOCKFILE);
+			SC_INFO("Command: %s", System_Cmd);
 			system(System_Cmd);
 
 			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Clock->Name,
 			    Frequency);
 			FP = fopen(CLOCKFILE, "a");
 			if (FP == NULL) {
-				printf("ERROR: failed to append clock file\n");
+				SC_ERR("failed to append clock file %s: %m", CLOCKFILE);
 				return -1;
 			}
 
+			SC_INFO("Write clock: %s", System_Cmd);
 			(void) fprintf(FP, "%s", System_Cmd);
 			(void) fflush(FP);
 			(void) fsync(fileno(FP));
@@ -797,15 +804,17 @@ Clock_Ops(void)
 		Frequency = Clock->Default_Freq;
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
+		SC_INFO("Command: %s", System_Cmd);
 		system(System_Cmd);
 
 		/* Remove any custom boot frequency */
 		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; "
 			       "sync", Clock->Name, CLOCKFILE);
+		SC_INFO("Command: %s", System_Cmd);
 		system(System_Cmd);
 		break;
 	default:
-		printf("ERROR: invalid clock command\n");
+		SC_ERR("invalid clock command");
 		return -1;
 	}
 
@@ -825,14 +834,15 @@ int Voltage_Ops(void)
 
 	if (Command.CmdId == LISTVOLTAGE) {
 		for (int i = 0; i < Voltages.Numbers; i++) {
-			printf("%s\n", Voltages.Voltage[i].Name);
+			SC_PRINT("%s", Voltages.Voltage[i].Name);
 		}
+
 		return 0;
 	}
 
 	/* Validate the voltage target */
 	if (T_Flag == 0) {
-		printf("ERROR: no voltage target\n");
+		SC_ERR("no voltage target");
 		return -1;
 	}
 
@@ -845,16 +855,18 @@ int Voltage_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid voltage target\n");
+		SC_ERR("invalid voltage target");
 		return -1;
 	}
 
 	switch (Command.CmdId) {
 	case GETVOLTAGE:
 		if (Access_Regulator(Regulator, &Voltage, 0) != 0) {
-			printf("ERROR: failed to get voltage from regulator\n");
+			SC_ERR("failed to get voltage from regulator");
 			return -1;
 		}
+
+		SC_PRINT("Voltage(V):\t%.2f", Voltage);
 
 		if (V_Flag != 0) {
 			if (strcmp(Value_Arg, "all") != 0) {
@@ -869,13 +881,13 @@ int Voltage_Ops(void)
 	case SETVOLTAGE:
 	case SETBOOTVOLTAGE:
 		if (V_Flag == 0) {
-			printf("ERROR: no voltage value\n");
+			SC_ERR("no voltage value");
 			return -1;
 		}
 
 		Voltage = strtof(Value_Arg, NULL);
 		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-			printf("ERROR: failed to set voltage on regulator\n");
+			SC_ERR("failed to set voltage on regulator");
 			return -1;
 		}
 
@@ -883,16 +895,19 @@ int Voltage_Ops(void)
 			/* Remove the old value, if any */
 			(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
 			    Regulator->Name, VOLTAGEFILE);
+			SC_INFO("Command: %s", System_Cmd);
 			system(System_Cmd);
 
 			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Regulator->Name,
 			    Voltage);
 			FP = fopen(VOLTAGEFILE, "a");
 			if (FP == NULL) {
-				printf("ERROR: failed to append voltage file\n");
+				SC_ERR("failed to append voltage file %s: %m",
+				       VOLTAGEFILE);
 				return -1;
 			}
 
+			SC_INFO("Append: %s", System_Cmd);
 			(void) fprintf(FP, "%s", System_Cmd);
 			(void) fflush(FP);
 			(void) fsync(fileno(FP));
@@ -903,17 +918,18 @@ int Voltage_Ops(void)
 	case RESTOREVOLTAGE:
 		Voltage = Regulator->Typical_Volt;
 		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-			printf("ERROR: failed to set voltage on regulator\n");
+			SC_ERR("failed to set voltage on regulator");
 			return -1;
 		}
 
 		/* Remove any custom boot voltage */
-		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
-		    Regulator->Name, VOLTAGEFILE);
+		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; "
+			       "sync", Regulator->Name, VOLTAGEFILE);
+		SC_INFO("Command: %s", System_Cmd);
 		system(System_Cmd);
 		break;
 	default:
-		printf("ERROR: invalid voltage command\n");
+		SC_ERR("invalid voltage command");
 		break;
 	}
 
@@ -930,12 +946,12 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 
 	FD = open(Ina226->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open INA226 sensor\n");
+		SC_ERR("unable to access I2C bus %s: %m", Ina226->I2C_Bus);
 		return -1;
 	}
 
-	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x1;	// Shunt Voltage Register(01h)
 	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
@@ -943,6 +959,8 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 		return Ret;
 	}
 
+	SC_INFO("Shunt Voltage Register(01h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
 	Shunt_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
 	/* Ignore negative reading */
 	if (Shunt_Voltage >= 0x8000) {
@@ -953,8 +971,8 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 	*Current = (Shunt_Voltage / (float)Ina226->Shunt_Resistor);
 	*Current *= Ina226->Phase_Multiplier;
 
-	(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-	(void *) memset(In_Buffer, 0, STRLEN_MAX);
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x2;	// Bus Voltage Register(02h)
 	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
@@ -962,6 +980,8 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 		return Ret;
 	}
 
+	SC_INFO("Bus Voltage Register(02h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
 	*Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
 	*Voltage *= 1.25;	// 1.25 mV per bit
 	*Voltage /= 1000;
@@ -984,14 +1004,15 @@ int Power_Ops(void)
 
 	if (Command.CmdId == LISTPOWER) {
 		for (int i = 0; i < Ina226s.Numbers; i++) {
-			printf("%s\n", Ina226s.Ina226[i].Name);
+			SC_PRINT("%s", Ina226s.Ina226[i].Name);
 		}
+
 		return 0;
 	}
 
 	/* Validate the power target */
 	if (T_Flag == 0) {
-		printf("ERROR: no power target\n");
+		SC_ERR("no power target");
 		return -1;
 	}
 
@@ -1004,24 +1025,24 @@ int Power_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid power target\n");
+		SC_ERR("invalid power target");
 		return -1;
 	}
 
 	switch (Command.CmdId) {
 	case GETPOWER:
 		if (Read_Sensor(Ina226, &Voltage, &Current, &Power) == -1) {
-			printf("ERROR: failed to get power\n");
+			SC_ERR("failed to get power");
 			return -1;
 		}
 
-		printf("Voltage(V):\t%.4f\n", Voltage);
-		printf("Current(A):\t%.4f\n", Current);
-		printf("Power(W):\t%.4f\n", Power);
+		SC_PRINT("Voltage(V):\t%.4f", Voltage);
+		SC_PRINT("Current(A):\t%.4f", Current);
+		SC_PRINT("Power(W):\t%.4f", Power);
 		break;
 
 	default:
-		printf("ERROR: invalid power command\n");
+		SC_ERR("invalid power command");
 		break;
 	}
 
@@ -1043,14 +1064,15 @@ int Power_Domain_Ops(void)
 
 	if (Command.CmdId == LISTPOWERDOMAIN) {
 		for (int i = 0; i < Power_Domains.Numbers; i++) {
-			printf("%s\n", Power_Domains.Power_Domain[i].Name);
+			SC_PRINT("%s", Power_Domains.Power_Domain[i].Name);
 		}
+
 		return 0;
 	}
 
 	/* Validate the power domain target */
 	if (T_Flag == 0) {
-		printf("ERROR: no power domain target\n");
+		SC_ERR("no power domain target");
 		return -1;
 	}
 
@@ -1063,7 +1085,7 @@ int Power_Domain_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid power domain target\n");
+		SC_ERR("invalid power domain target");
 		return -1;
 	}
 
@@ -1072,18 +1094,18 @@ int Power_Domain_Ops(void)
 		for (int i = 0; i < Power_Domain->Numbers; i++) {
 			Ina226 = &Ina226s.Ina226[Power_Domain->Rails[i]];
 			if (Read_Sensor(Ina226, &Voltage, &Current, &Power) == -1) {
-				printf("ERROR: failed to get total power\n");
+				SC_ERR("failed to get total power");
 				return -1;
 			}
 
 			Total_Power += Power;
 		}
 
-		printf("Power(W):\t%.4f\n", Total_Power);
+		SC_PRINT("Power(W):\t%.4f", Total_Power);
 		break;
 
 	default:
-		printf("ERROR: invalid power domain command\n");
+		SC_ERR("invalid power domain command");
 		break;
 	}
 
@@ -1101,14 +1123,15 @@ int Workaround_Ops(void)
 
 	if (Command.CmdId == LISTWORKAROUND) {
 		for (int i = 0; i < Workarounds.Numbers; i++) {
-			printf("%s\n", Workarounds.Workaround[i].Name);
+			SC_PRINT("%s", Workarounds.Workaround[i].Name);
 		}
+
 		return 0;
 	}
 
 	/* Validate the workaround target */
 	if (T_Flag == 0) {
-		printf("ERROR: no workaround target\n");
+		SC_ERR("no workaround target");
 		return -1;
 	}
 
@@ -1120,13 +1143,13 @@ int Workaround_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid workaround target\n");
+		SC_ERR("invalid workaround target");
 		return -1;
 	}
 
 	/* Does the workaround need argument? */
 	if (Workarounds.Workaround[Target_Index].Arg_Needed == 1 && V_Flag == 0) {
-		printf("ERROR: no workaround value\n");
+		SC_ERR("no workaround value");
 		return -1;
 	}
 
@@ -1135,7 +1158,7 @@ int Workaround_Ops(void)
 	} else {
 		Value = atol(Value_Arg);
 		if (Value != 0 && Value != 1) {
-			printf("ERROR: invalid value\n");
+			SC_ERR("invalid value");
 			return -1;
 		}
 
@@ -1143,7 +1166,7 @@ int Workaround_Ops(void)
 	}
 
 	if (Return == -1) {
-		printf("ERROR: failed to apply workaround\n");
+		SC_ERR("failed to apply workaround");
 		return -1;
 	}
 
@@ -1156,18 +1179,18 @@ int Workaround_Ops(void)
 int BIT_Ops(void)
 {
 	int Target_Index = -1;
-	int Return = -1;
 
 	if (Command.CmdId == LISTBIT) {
 		for (int i = 0; i < BITs.Numbers; i++) {
-			printf("%s\n", BITs.BIT[i].Name);
+			SC_PRINT("%s", BITs.BIT[i].Name);
 		}
+
 		return 0;
 	}
 
 	/* Validate the BIT target */
 	if (T_Flag == 0) {
-		printf("ERROR: no BIT target\n");
+		SC_ERR("no BIT target");
 		return -1;
 	}
 
@@ -1179,13 +1202,11 @@ int BIT_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid BIT target\n");
+		SC_ERR("invalid BIT target");
 		return -1;
 	}
 
-	Return = (*BITs.BIT[Target_Index].Plat_BIT_Op)(&BITs.BIT[Target_Index]);
-
-	return Return;
+	return (*BITs.BIT[Target_Index].Plat_BIT_Op)(&BITs.BIT[Target_Index]);
 }
 
 /*
@@ -1221,21 +1242,14 @@ int DDRi2c_read(int fd, __u8 *Buf, struct i2c_info *Iic)
 	int Ret = 0;
 
 	if (ioctl(fd, I2C_SLAVE_FORCE, Iic->Bus_addr) < 0) {
-		perror(Dimm1.I2C_Bus);
+		SC_ERR("failed to configure I2C bus to access device %#x: %m",
+		       Iic->Bus_addr);
 		return -1;
 	}
+
 	I2C_READ(fd, Iic->Bus_addr, Iic->Read_len, &Iic->Reg_addr, Buf, Ret);
 	return Ret;
 }
-
-#ifdef DEBUG
-void showbuf(const char *b, unsigned int sz)
-{
-	for (int j = 0; j < sz; j++)
-		printf("%c%02x", (0xf & j) ? ' ' : '\n', b[j]);
-	putchar('\n');
-}
-#endif
 
 /*
  * DDRSPD is the EEPROM on a DIMM card. First 16 bytes indicate type.
@@ -1246,6 +1260,8 @@ void showbuf(const char *b, unsigned int sz)
  */
 int DIMM_spd(int fd)
 {
+	char Buf_1[STRLEN_MAX];
+	char Buf_2[SYSCMD_MAX] = { 0 };
 	union spd_ddr Spd_buf = {.a64 = {0, 0}};
 	struct spd_ddr4 *p = &Spd_buf.ddr4;
 	__u8 Sz256;
@@ -1253,28 +1269,33 @@ int DIMM_spd(int fd)
 
 	Ret = DDRi2c_read(fd, Spd_buf.b, &Dimm1.Spd);
 	if (Ret < 0) {
-		perror(Dimm1.I2C_Bus);
+		SC_ERR("failed to read DDR SPD");
 		return Ret;
 	}
 
 	Sz256 = 0xf & p->spd_mem_size;
-	printf("DDR4 SDRAM?\t%s\n",
-		((p->spd_mem_type == 0xc) ? "Yes" : "No"));
+	SC_PRINT("DDR4 SDRAM?\t%s", ((p->spd_mem_type == 0xc) ? "Yes" : "No"));
 	if (Sz256 > 1) {
-		printf("Size(Gb):\t%u\n", (1 << (Sz256 - 2)));
+		SC_PRINT("Size(Gb):\t%u", (1 << (Sz256 - 2)));
 	} else {
-		printf("Size(Mb):\t%s\n", (Sz256 ? "512" : "0"));
+		SC_PRINT("Size(Mb):\t%s", (Sz256 ? "512" : "0"));
 	}
-	printf("Temp. Sensor?\t%s\n",
-		((0x80 & p->spd_tsensor) ? "Yes" : "No"));
-#ifdef DEBUG
-	showbuf(Spd_buf.b, sizeof(Spd_buf.b));
-	printf("spd_bytes, revision = %u, %u\n", p->spd_bytes, p->spd_rev);
-	printf("spd_mem_type = %u\n", p->spd_mem_type);
-	printf("spd_mod_type = %u\n", 0xf & p->spd_mod_type);
-	printf("spd_mem_size = %u or %u MB\n", Sz256, Sz256 ? (256 << Sz256) : 0);
-	printf("spd_tsensor  = %c\n", (0x80 & p->spd_tsensor) ? 'Y' : 'N');
-#endif
+
+	SC_PRINT("Temp. Sensor?\t%s", ((0x80 & p->spd_tsensor) ? "Yes" : "No"));
+
+	for (int j = 0; j < sizeof(Spd_buf.b); j++) {
+		(void) sprintf(Buf_1, "%c%02x", (0xf & j) ? ' ' : '\n',
+			       Spd_buf.b[j]);
+		(void) strcat(Buf_2, Buf_1);
+	}
+
+	SC_INFO("%s", Buf_2);
+	SC_INFO("spd_bytes, revision = %u, %u", p->spd_bytes, p->spd_rev);
+	SC_INFO("spd_mem_type = %u", p->spd_mem_type);
+	SC_INFO("spd_mod_type = %u", 0xf & p->spd_mod_type);
+	SC_INFO("spd_mem_size = %u or %u MB", Sz256, Sz256 ? (256 << Sz256) : 0);
+	SC_INFO("spd_tsensor  = %c", (0x80 & p->spd_tsensor) ? 'Y' : 'N');
+
 	return Ret;
 }
 
@@ -1292,23 +1313,9 @@ int DIMM_temperature(int fd)
 	Ret = DDRi2c_read(fd, (void *)&Tbuf, &Dimm1.Therm);
 	if (Ret == 0) {
 		__s16 t = (Tbuf << 8 | Tbuf >> 8) << 3;
-		printf("Temperature(C):\t%.2f\n", (.125 * t / 16));
+		SC_PRINT("Temperature(C):\t%.2f", (.125 * t / 16));
 	}
-	return Ret;
-}
 
-int target_match(const char *str)
-{
-	return strcmp(Target_Arg, str) == 0;
-}
-
-int valid_ddr_target(void)
-{
-	int Ret = !T_Flag || target_match("spd") || target_match("temp");
-
-	if (!Ret)
-		fprintf(stderr, "%sERROR: no %s target for ddr command\n",
-			Usage, Target_Arg);
 	return Ret;
 }
 
@@ -1318,26 +1325,31 @@ int valid_ddr_target(void)
  */
 int DDR_Ops(void)
 {
-	int fd, Ret = 0;
+	int FD, Ret = 0;
 
-	if (!valid_ddr_target())
-		return -1;
-
-	fd = open(Dimm1.I2C_Bus, O_RDWR);
-	if (fd < 0) {
-		perror(Dimm1.I2C_Bus);
+	if (T_Flag == 0) {
+		SC_ERR("no target is provided");
 		return -1;
 	}
 
-	// Skip if SPD only, else show Temperature
-	if (Target_Arg[0] != 's')
-		Ret = DIMM_temperature(fd);
+	if (strcmp(Target_Arg, "spd") != 0 && strcmp(Target_Arg, "temp") != 0) {
+		SC_ERR("%s is not a valid target", Target_Arg);
+		return -1;
+	}
 
-	// Skip if Temperature only, else show SPD
-	if (Target_Arg[0] != 't')
-		Ret = DIMM_spd(fd);
+	FD = open(Dimm1.I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		SC_ERR("failed to open I2C bus %s: %m", Dimm1.I2C_Bus);
+		return -1;
+	}
 
-	(void) close(fd);
+	if (Target_Arg[0] == 't') {
+		Ret = DIMM_temperature(FD);
+	} else {
+		Ret = DIMM_spd(FD);
+	}
+
+	(void) close(FD);
 	return Ret;
 }
 
@@ -1346,11 +1358,11 @@ static int Gpio_get1(const struct Gpio_line_name *p)
 	int State;
 
 	if (GPIO_Get((char *)p->Internal_Name, &State) != 0) {
-		printf("ERROR: failed to get GPIO line %s\n", p->Display_Name);
+		SC_ERR("failed to get GPIO line %s", p->Display_Name);
 		return -1;
 	}
 
-	printf("%s (line %2d):\t%d\n", p->Display_Name, p->Line, State);
+	SC_PRINT("%s (line %2d):\t%d", p->Display_Name, p->Line, State);
 	return 0;
 }
 
@@ -1365,7 +1377,7 @@ static int Gpio_get_all(void)
 	(void) strcpy(Buffer, "/usr/bin/gpioinfo");
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
-		printf("ERROR: failed to get GPIO info\n");
+		SC_ERR("failed to run command %s: %m", Buffer);
 		return -1;
 	}
 
@@ -1380,18 +1392,18 @@ static int Gpio_get_all(void)
 		(void) strcpy(Label, strtok(NULL, " :\""));
 		(void) strcpy(Usage, strtok(NULL, " :\""));
 		if (strcmp(Usage, "unused") != 0) {
-			printf("%s (line %d):\tbusy, used by %s\n", Label,
+			SC_PRINT("%s (line %d):\tbusy, used by %s", Label,
 			       Line, Usage);
 			continue;
 		}
 
 		if (GPIO_Get(Label, &State) != 0) {
-			printf("ERROR: failed to get GPIO line %s\n", Label);
+			SC_ERR("failed to get GPIO line %s", Label);
 			(void) pclose(FP);
 			return -1;
 		}
 
-		printf("%s (line %d):\t%d\n", Label, Line, State);
+		SC_PRINT("%s (line %d):\t%d", Label, Line, State);
 	}
 
 	(void) pclose(FP);
@@ -1403,9 +1415,9 @@ static int Gpio_get(void)
 	int i, Total = Plat_Gpio_target_size();
 	long Tval = strtol(Target_Arg, NULL, 0);
 
-	if (!strcmp("all", Target_Arg)) {
+	if (strcmp(Target_Arg, "all") == 0) {
 		if (Gpio_get_all() != 0) {
-			printf("ERROR: failed to get all GPIO lines\n");
+			SC_ERR("failed to get all GPIO lines");
 			return -1;
 		};
 
@@ -1424,8 +1436,7 @@ static int Gpio_get(void)
 		}
 	}
 
-	fprintf(stderr, "ERROR: no %s target for %s command\n", Target_Arg,
-		Command.CmdStr);
+	SC_ERR("no valid target");
 	return -1;
 }
 
@@ -1434,13 +1445,13 @@ static void Gpio_list(void)
 	int i, Total = Plat_Gpio_target_size();
 
 	for (i = 0; i < Total; i++) {
-		puts(Gpio_target[i].Display_Name);
+		SC_PRINT("%s", Gpio_target[i].Display_Name);
 	}
 }
 
 /*
  * GPIO_Ops lists the supported gpio lines
- * "-c getgpio -t n" - get the state of gpio line "n"
+ * "-c getgpio -t <label>" - get the state of gpio line <label>
  */
 int GPIO_Ops(void)
 {
@@ -1463,7 +1474,7 @@ int IO_Exp_Ops(void)
 	unsigned long int Value;
 
 	if (strcmp(IO_Exp.Name, "TCA6416A") != 0) {
-		printf("ERROR: unsupported IO expander chip\n");
+		SC_ERR("unsupported IO expander chip");
 		return -1;
 	}
 
@@ -1471,45 +1482,45 @@ int IO_Exp_Ops(void)
 	case GETIOEXP:
 		/* A target argument is required */
 		if (T_Flag == 0) {
-			printf("ERROR: no IO expander target\n");
+			SC_ERR("no IO expander target");
 			return -1;
 		}
 
 		if (strcmp(Target_Arg, "all") == 0) {
 			if (Access_IO_Exp(&IO_Exp, 0, 0x0,
 					  (unsigned int *)&Value) != 0) {
-				printf("ERROR: failed to read input\n");
+				SC_ERR("failed to read input");
 				return -1;
 			}
 
-			printf("Input GPIO:\t0x%x\n", Value);
+			SC_PRINT("Input GPIO:\t%#x", Value);
 
 			if (Access_IO_Exp(&IO_Exp, 0, 0x2,
 					  (unsigned int *)&Value) != 0) {
-				printf("ERROR: failed to read output\n");
+				SC_ERR("failed to read output");
 				return -1;
 			}
 
-			printf("Output GPIO:\t0x%x\n", Value);
+			SC_PRINT("Output GPIO:\t%#x", Value);
 
 			if (Access_IO_Exp(&IO_Exp, 0, 0x6,
 					  (unsigned int *)&Value) != 0) {
-				printf("ERROR: failed to read direction\n");
+				SC_ERR("failed to read direction");
 				return -1;
 			}
 
-			printf("Direction:\t0x%x\n", Value);
+			SC_PRINT("Direction:\t%#x", Value);
 
 		} else if (strcmp(Target_Arg, "input") == 0) {
 			if (Access_IO_Exp(&IO_Exp, 0, 0x0,
 					  (unsigned int *)&Value) != 0) {
-				printf("ERROR: failed to read input\n");
+				SC_ERR("failed to read input");
 				return -1;
 			}
 
 			for (int i = 0; i < IO_Exp.Numbers; i++) {
 				if (IO_Exp.Directions[i] == 1) {
-					printf("%s:\t%d\n", IO_Exp.Labels[i],
+					SC_PRINT("%s:\t%d", IO_Exp.Labels[i],
 					    ((Value >> (IO_Exp.Numbers - i - 1)) & 1));
 				}
 			}
@@ -1517,19 +1528,19 @@ int IO_Exp_Ops(void)
 		} else if (strcmp(Target_Arg, "output") == 0) {
 			if (Access_IO_Exp(&IO_Exp, 0, 0x2,
 					  (unsigned int *)&Value) != 0) {
-				printf("ERROR: failed to read output\n");
+				SC_ERR("failed to read output");
 				return -1;
 			}
 
 			for (int i = 0; i < IO_Exp.Numbers; i++) {
 				if (IO_Exp.Directions[i] == 0) {
-					printf("%s:\t%d\n", IO_Exp.Labels[i],
+					SC_PRINT("%s:\t%d", IO_Exp.Labels[i],
 					    ((Value >> (IO_Exp.Numbers - i - 1)) & 1));
 				}
 			}
 
 		} else {
-			printf("ERROR: invalid getioexp target\n");
+			SC_ERR("invalid getioexp target");
 			return -1;
 		}
 
@@ -1538,13 +1549,13 @@ int IO_Exp_Ops(void)
 	case SETIOEXP:
 		/* A target argument is required */
 		if (T_Flag == 0) {
-			printf("ERROR: no IO expander target\n");
+			SC_ERR("no IO expander target");
 			return -1;
 		}
 
 		/* Validate the value argument */
 		if (V_Flag == 0) {
-			printf("ERROR: no IO expander value\n");
+			SC_ERR("no IO expander value");
 			return -1;
 		}
 
@@ -1552,19 +1563,19 @@ int IO_Exp_Ops(void)
 		if (strcmp(Target_Arg, "direction") == 0) {
 			if (Access_IO_Exp(&IO_Exp, 1, 0x6,
 					  (unsigned int *)&Value) != 0) {
-				printf("ERROR: failed to set direction\n");
+				SC_ERR("failed to set direction");
 				return -1;
 			}
 
 		} else if (strcmp(Target_Arg, "output") == 0) {
 			if (Access_IO_Exp(&IO_Exp, 1, 0x2,
 					  (unsigned int *)&Value) != 0) {
-				printf("ERROR: failed to set output\n");
+				SC_ERR("failed to set output");
 				return -1;
 			}
 
 		} else {
-			printf("ERROR: invalid setioexp target\n");
+			SC_ERR("invalid setioexp target");
 			return -1;
 		}
 
@@ -1582,21 +1593,21 @@ int IO_Exp_Ops(void)
 
 		if (Access_IO_Exp(&IO_Exp, 1, 0x6,
 				  (unsigned int *)&Value) != 0) {
-			printf("ERROR: failed to set direction\n");
+			SC_ERR("failed to set direction");
 			return -1;
 		}
 
 		Value = ~Value;
 		if (Access_IO_Exp(&IO_Exp, 1, 0x2,
 				  (unsigned int *)&Value) != 0) {
-			printf("ERROR: failed to set output\n");
+			SC_ERR("failed to set output");
 			return -1;
 		}
 
 		break;
 
 	default:
-		printf("ERROR: invalid IO expander command\n");
+		SC_ERR("invalid IO expander command");
 		return -1;
 	}
 
@@ -1619,7 +1630,7 @@ int SFP_List(void)
 
 		if (ioctl(FD, I2C_SLAVE_FORCE, SFP->I2C_Address) < 0) {
 			SC_ERR("failed to configure I2C bus for access to "
-			       "device address 0x%x: %m", SFP->I2C_Address);
+			       "device address %#x: %m", SFP->I2C_Address);
 			return -1;
 		}
 
@@ -1633,7 +1644,7 @@ int SFP_List(void)
 			continue;
 		}
 
-		printf("%s\n", SFP->Name);
+		SC_PRINT("%s", SFP->Name);
 	}
 
 	return 0;
@@ -1658,7 +1669,7 @@ int SFP_Ops(void)
 
 	/* Validate the SFP target */
 	if (T_Flag == 0) {
-		printf("ERROR: no SFP target\n");
+		SC_ERR("no SFP target");
 		return -1;
 	}
 
@@ -1671,20 +1682,20 @@ int SFP_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid SFP target\n");
+		SC_ERR("invalid SFP target");
 		return -1;
 	}
 
 	FD = open(SFP->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open SFP connector\n");
+		SC_ERR("unable to access I2C bus %s: %m", SFP->I2C_Bus);
 		return -1;
 	}
 
 	switch (Command.CmdId) {
 	case GETSFP:
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x14;	// 0x14-0x23: SFP Vendor Name
 		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1692,10 +1703,10 @@ int SFP_Ops(void)
 			return Ret;
 		}
 
-		printf("Manufacturer:\t%s\n", In_Buffer);
+		SC_PRINT("Manufacturer:\t%s", In_Buffer);
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x44;	// 0x44-0x53: Serial Number
 		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1703,10 +1714,10 @@ int SFP_Ops(void)
 			return Ret;
 		}
 
-		printf("Serial Number:\t%s\n", In_Buffer);
+		SC_PRINT("Serial Number:\t%s", In_Buffer);
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x60;	// 0x60-0x61: Temperature Monitor
 		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1717,10 +1728,10 @@ int SFP_Ops(void)
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		Value = (Value & 0x7FFF) - (Value & 0x8000);
 		/* Each bit of low byte is equivalent to 1/256 celsius */
-		printf("Internal Temperature(C):\t%.3f\n", ((float)Value / 256));
+		SC_PRINT("Internal Temperature(C):\t%.3f", ((float)Value / 256));
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x62;	// 0x62-0x63: Voltage Sense
 		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1730,10 +1741,10 @@ int SFP_Ops(void)
 
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		/* Each bit is 100 uV */
-		printf("Supply Voltage(V):\t%.2f\n", ((float)Value * 0.0001));
+		SC_PRINT("Supply Voltage(V):\t%.2f", ((float)Value * 0.0001));
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x70;	// 0x70-0x71: Alarm
 		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1741,12 +1752,12 @@ int SFP_Ops(void)
 			return Ret;
 		}
 
-		printf("Alarm:\t%x\n", (In_Buffer[0] << 8) | In_Buffer[1]);
+		SC_PRINT("Alarm:\t%x", (In_Buffer[0] << 8) | In_Buffer[1]);
 		break;
 
 	case GETPWMSFP:
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x80;	// 0x80-0x81: PWM1 & PWM2 Controller
 		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1754,27 +1765,29 @@ int SFP_Ops(void)
 			return Ret;
 		}
 
-		printf("Power Mode(0-2W):\t%x\n", (In_Buffer[0] << 8) | In_Buffer[1]);
+		SC_PRINT("Power Mode(0-2W):\t%x", (In_Buffer[0] << 8) | In_Buffer[1]);
 		break;
 
 	case SETPWMSFP:
 		/* Validate the value */
 		if (V_Flag == 0) {
-			printf("ERROR: no PWM value\n");
+			SC_ERR("no PWM value");
 			(void) close(FD);
 			return -1;
 		}
 
 		Value = strtol(Value_Arg, NULL, 16);
 		if (Value > 0xFF) {
-			printf("ERROR: invalid PWM value\n");
+			SC_ERR("invalid PWM value");
 			(void) close(FD);
 			return -1;
 		}
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x80;	// 0x80: PWM1 Controller
 		Out_Buffer[1] = (Value & 0xFF);
+		SC_INFO("Write PWM1 Controller(0x80): 0x%x%x", Out_Buffer[0],
+			Out_Buffer[1]);
 		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -1785,6 +1798,8 @@ int SFP_Ops(void)
 		sleep(1);
 		Out_Buffer[0] = 0x81;	// 0x81: PWM2 Controller
 		Out_Buffer[1] = (Value & 0xFF);
+		SC_INFO("Write PWM2 Controller(0x81): 0x%x%x", Out_Buffer[0],
+			Out_Buffer[1]);
 		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -1794,7 +1809,7 @@ int SFP_Ops(void)
 		break;
 
 	default:
-		printf("ERROR: invalid SFP command\n");
+		SC_ERR("invalid SFP command");
 		(void) close(FD);
 		return -1;
 	}
@@ -1825,7 +1840,7 @@ int QSFP_List(void)
 
 		if (ioctl(FD, I2C_SLAVE_FORCE, QSFP->I2C_Address) < 0) {
 			SC_ERR("failed to configure I2C bus for access to "
-			       "device address 0x%x: %m", QSFP->I2C_Address);
+			       "device address %#x: %m", QSFP->I2C_Address);
 			Ret = -1;
 			goto Out;
 		}
@@ -1840,7 +1855,7 @@ int QSFP_List(void)
 			continue;
 		}
 
-		printf("%s\n", QSFP->Name);
+		SC_PRINT("%s", QSFP->Name);
 	}
 Out:
 	/*
@@ -1872,7 +1887,7 @@ int QSFP_Ops(void)
 
 	/* Validate the QSFP target */
 	if (T_Flag == 0) {
-		printf("ERROR: no QSFP target\n");
+		SC_ERR("no QSFP target");
 		return -1;
 	}
 
@@ -1885,7 +1900,7 @@ int QSFP_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid QSFP target\n");
+		SC_ERR("invalid QSFP target");
 		return -1;
 	}
 
@@ -1895,45 +1910,45 @@ int QSFP_Ops(void)
 
 	FD = open(QSFP->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open QSFP connector\n");
+		SC_ERR("unable to access I2C bus %s: %m", QSFP->I2C_Bus);
 		Ret = -1;
 		goto Out;
 	}
 
 	switch (Command.CmdId) {
 	case GETQSFP:
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x94;	// 0x94-0xA3: QSFP Vendor Name
 		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Manufacturer:\t%s\n", In_Buffer);
+		SC_PRINT("Manufacturer:\t%s", In_Buffer);
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
 		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Part Number:\t%s\n", In_Buffer);
+		SC_PRINT("Part Number:\t%s", In_Buffer);
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
 		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Serial Number:\t%s\n", In_Buffer);
+		SC_PRINT("Serial Number:\t%s", In_Buffer);
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature Monitor
 		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1941,12 +1956,13 @@ int QSFP_Ops(void)
 		}
 
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
+		SC_INFO("Temperature Monitor(0x16-0x17): %#x", Value);
 		Value = (Value & 0x7FFF) - (Value & 0x8000);
 		/* Each bit of low byte is equivalent to 1/256 celsius */
-		printf("Internal Temperature(C):\t%.3f\n", ((float)Value / 256));
+		SC_PRINT("Internal Temperature(C):\t%.3f", ((float)Value / 256));
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
 		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
@@ -1955,73 +1971,75 @@ int QSFP_Ops(void)
 
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		/* Each bit is 100 uV */
-		printf("Supply Voltage(V):\t%.2f\n", ((float)Value * 0.0001));
+		SC_PRINT("Supply Voltage(V):\t%.2f", ((float)Value * 0.0001));
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x3;	// 0x3-0x4: Alarms
 		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Alarms (Bytes 3-4):\t%x\n", (In_Buffer[0] << 8) |
+		SC_PRINT("Alarms (Bytes 3-4):\t%x", (In_Buffer[0] << 8) |
 		    In_Buffer[1]);
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x6;	// 0x6-0x7: Alarms
 		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Alarms (Bytes 6-7):\t%x\n", (In_Buffer[0] << 8) |
+		SC_PRINT("Alarms (Bytes 6-7):\t%x", (In_Buffer[0] << 8) |
 		    In_Buffer[1]);
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x9;	// 0x9-0xC: Alarms
 		I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Alarms (Bytes 9-12):\t%x\n", ((In_Buffer[0] << 24) |
+		SC_PRINT("Alarms (Bytes 9-12):\t%x", ((In_Buffer[0] << 24) |
 		    (In_Buffer[1] << 16) | (In_Buffer[2] << 8) | In_Buffer[3]));
 		break;
 
 	case GETPWMQSFP:
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
 		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Register 98, bit7 +2.5w, bit6 +1.5w, bits5-0 up to 1.0w:\t%x\n",
+		SC_PRINT("Register 98, bit7 +2.5w, bit6 +1.5w, bits5-0 up to 1.0w:\t%x",
 		    In_Buffer[0]);
 		break;
 
 	case SETPWMQSFP:
 		/* Validate the value */
 		if (V_Flag == 0) {
-			printf("ERROR: no PWM value\n");
+			SC_ERR("no PWM value");
 			Ret = -1;
 			goto Out;
 		}
 
 		Value = strtol(Value_Arg, NULL, 16);
 		if (Value > 0xFF) {
-			printf("ERROR: invalid PWM value\n");
+			SC_ERR("invalid PWM value");
 			Ret = -1;
 			goto Out;
 		}
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
 		Out_Buffer[1] = (Value & 0xFF);
+		SC_INFO("Write PWM Controller(0x62): 0x%x%x", Out_Buffer[0],
+			Out_Buffer[1]);
 		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
@@ -2030,36 +2048,38 @@ int QSFP_Ops(void)
 		break;
 
 	case GETPWMOQSFP:
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void *) memset(In_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
 		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
 
-		printf("Register 93, 0 = use LPMode pin, 1 = hi pwr, 3 = low pwr:\t%x\n",
+		SC_PRINT("Register 93, 0 = use LPMode pin, 1 = hi pwr, 3 = low pwr:\t%x",
 		    In_Buffer[0]);
 		break;
 
 	case SETPWMOQSFP:
 		/* Validate the value */
 		if (V_Flag == 0) {
-			printf("ERROR: no PWM Override value\n");
+			SC_ERR("no PWM Override value");
 			Ret = -1;
 			goto Out;
 		}
 
 		Value = strtol(Value_Arg, NULL, 16);
 		if (Value != 0x0 && Value != 0x1 && Value != 0x3) {
-			printf("ERROR: valid PWM Override value: 0x0, 0x1, or 0x3\n");
+			SC_ERR("valid PWM Override value: 0x0, 0x1, or 0x3");
 			Ret = -1;
 			goto Out;
 		}
 
-		(void *) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
 		Out_Buffer[1] = (Value & 0x3);
+		SC_INFO("Write Low Power Mode Override(0x5D): 0x%x%x", Out_Buffer[0],
+			Out_Buffer[1]);
 		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
@@ -2068,7 +2088,7 @@ int QSFP_Ops(void)
 		break;
 
 	default:
-		printf("ERROR: invalid QSFP command\n");
+		SC_ERR("invalid QSFP command");
 		Ret = -1;
 	}
 
@@ -2097,7 +2117,7 @@ int EBM_Ops(void)
 
 	/* Validate the EBM target */
 	if (T_Flag == 0) {
-		printf("ERROR: no EBM target\n");
+		SC_ERR("no EBM target");
 		return -1;
 	}
 
@@ -2110,13 +2130,13 @@ int EBM_Ops(void)
 	} else if (strcmp(Target_Arg, "multirecord") == 0) {
 		Target = EEPROM_MULTIRECORD;
 	} else {
-		printf("ERROR: invalid EBM target\n");
+		SC_ERR("invalid EBM target");
 		return -1;
 	}
 
 	FD = open(Daughter_Card.I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open EBM card\n");
+		SC_ERR("unable to access I2C bus %s: %m", Daughter_Card.I2C_Bus);
 		return -1;
 	}
 
@@ -2135,25 +2155,13 @@ int EBM_Ops(void)
 		EEPROM_Print_All(In_Buffer, 256, 16);
 		break;
 	case EEPROM_COMMON:
-		if (EEPROM_Common(In_Buffer) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_Common(In_Buffer);
 	case EEPROM_BOARD:
-		if (EEPROM_Board(In_Buffer, 0) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_Board(In_Buffer, 0);
 	case EEPROM_MULTIRECORD:
-		if (EEPROM_MultiRecord(In_Buffer) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_MultiRecord(In_Buffer);
 	default:
-		printf("ERROR: invalid EBM target\n");
+		SC_ERR("invalid EBM target");
 		return -1;
 	}
 
@@ -2174,13 +2182,12 @@ int FMC_List(void)
 		FMC = &FMCs.FMC[i];
 		FD = open(FMC->I2C_Bus, O_RDWR);
 		if (FD < 0) {
-			printf("ERROR: unable to open I2C bus %s\n",
-			       FMC->I2C_Bus);
+			SC_ERR("unable to access I2C bus %s: %m", FMC->I2C_Bus);
 			return -1;
 		}
 
 		if (ioctl(FD, I2C_SLAVE_FORCE, FMC->I2C_Address) < 0) {
-			printf("ERROR: unable to configure I2C for address 0x%x\n",
+			SC_ERR("unable to access I2C device address %#x",
 			       FMC->I2C_Address);
 			(void) close(FD);
 			return -1;
@@ -2213,12 +2220,13 @@ int FMC_List(void)
 		Offset = 0xE;
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		SC_INFO("%s - %s ", FMC->Name, Buffer);
 		printf("%s - %s ", FMC->Name, Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
-		printf("%s\n", Buffer);
-        }
+		SC_PRINT("%s", Buffer);
+	}
 
 	return 0;
 }
@@ -2241,7 +2249,7 @@ int FMC_Ops(void)
 	}
 
 	if (T_Flag == 0) {
-		printf("ERROR: no FMC target\n");
+		SC_ERR("no FMC target");
 		return -1;
 	}
 
@@ -2255,12 +2263,12 @@ int FMC_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		printf("ERROR: invalid FMC target\n");
+		SC_ERR("invalid FMC target");
 		return -1;
 	}
 
 	if (V_Flag == 0) {
-		printf("ERROR: no FMC value\n");
+		SC_ERR("no FMC value");
 		return -1;
 	}
 
@@ -2273,13 +2281,13 @@ int FMC_Ops(void)
 	} else if (strcmp(Value_Arg, "multirecord") == 0) {
 		Area = EEPROM_MULTIRECORD;
 	} else {
-		printf("ERROR: invalid FMC value\n");
+		SC_ERR("invalid FMC value");
 		return -1;
 	}
 
 	FD = open(FMC->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		printf("ERROR: unable to open FMC\n");
+		SC_ERR("unable to access I2C bus %s: %m", FMC->I2C_Bus);
 		return -1;
 	}
 
@@ -2298,25 +2306,13 @@ int FMC_Ops(void)
 		EEPROM_Print_All(In_Buffer, 256, 16);
 		break;
 	case EEPROM_COMMON:
-		if (EEPROM_Common(In_Buffer) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_Common(In_Buffer);
 	case EEPROM_BOARD:
-		if (EEPROM_Board(In_Buffer, 0) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_Board(In_Buffer, 0);
 	case EEPROM_MULTIRECORD:
-		if (EEPROM_MultiRecord(In_Buffer) != 0) {
-			return -1;
-		}
-
-		break;
+		return EEPROM_MultiRecord(In_Buffer);
 	default:
-		printf("ERROR: invalid FMC value\n");
+		SC_ERR("invalid FMC value");
 		return -1;
 	}
 

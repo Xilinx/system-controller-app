@@ -53,6 +53,7 @@ extern int Plat_Board_Name(char *);
 extern int Plat_Reset_Ops(void);
 extern int Plat_FMCAutoAdjust(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
+extern int Set_IDT_8A34001(Clock_t *, char *, int);
 
 static int
 Is_Silicon_ES1(void)
@@ -420,7 +421,10 @@ Set_Clocks(void)
 	int FD;
 	Clock_t *Clock;
 	char Buffer[SYSCMD_MAX];
-	char Value[STRLEN_MAX];
+	char Value[SYSCMD_MAX];
+
+	/* Remove '8A34001' file, if there is one */
+	(void) remove(IDT8A34001FILE);
 
 	/* If there is no clock file, there is nothing to do */
 	if (access(CLOCKFILE, F_OK) != 0) {
@@ -441,6 +445,14 @@ Set_Clocks(void)
 				Clock = &Clocks.Clock[i];
 				break;
 			}
+		}
+
+		if (Clock->Type == IDT_8A34001) {
+			if (Set_IDT_8A34001(Clock, Value, 0) != 0) {
+				return -1;
+			}
+
+			continue;
 		}
 
 		FD = open(Clock->Sysfs_Path, O_WRONLY);

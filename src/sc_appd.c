@@ -180,6 +180,7 @@ VCK190_GPIO(void)
 	unsigned int GPIO_Offset;
 	time_t Now;
 	double MSeconds;
+	int WDT_Enable = 0;
 	
 	/* Find the vccaux workaround function */
 	for (int i = 0; i < Workarounds.Numbers; i++) {
@@ -194,47 +195,66 @@ VCK190_GPIO(void)
 		return -1;
 	}
 
+	/* WDT feature is enabled only if there is 'config' file */
+	if (access(CONFIGFILE, F_OK) != 0) {
+		return 0;
+	}
+
 	/* Check for any custom configurable variables */
-	if (access(CONFIGFILE, F_OK) == 0) {
-		FP = fopen(CONFIGFILE, "r");
-		if (FP == NULL) {
-			SC_ERR("failed to read file %s: %m", CONFIGFILE);
-			return -1;
-		}
+	FP = fopen(CONFIGFILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read file %s: %m", CONFIGFILE);
+		return -1;
+	}
 
-		while (fgets(Buffer, SYSCMD_MAX, FP)) {
-			if (strstr(Buffer, "WDT_Timeout:") != NULL) {
-				(void) strtok(Buffer, ":");
-				if (strcmp(Buffer, "WDT_Timeout") != 0) {
-					continue;
-				}
-
-				(void) strcpy(Config_Token, strtok(NULL, "\n"));
-				WDT_Timeout = atoi(Config_Token);
+	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		if (strstr(Buffer, "WDT_Enable:") != NULL) {
+			(void) strtok(Buffer, ":");
+			if (strcmp(Buffer, "WDT_Enable") != 0) {
+				continue;
 			}
 
-			if (strstr(Buffer, "WDT_Edge:") != NULL) {
-				(void) strtok(Buffer, ":");
-				if (strcmp(Buffer, "WDT_Edge") != 0) {
-					continue;
-				}
-
-				(void) strcpy(Config_Token, strtok(NULL, "\n"));
-				WDT_Edge = atoi(Config_Token);
-			}
-
-			if (strstr(Buffer, "Training_Interval:") != NULL) {
-				(void) strtok(Buffer, ":");
-				if (strcmp(Buffer, "Training_Interval") != 0) {
-					continue;
-				}
-
-				(void) strcpy(Config_Token, strtok(NULL, "\n"));
-				Training_Interval = atoi(Config_Token);
+			(void) strcpy(Config_Token, strtok(NULL, "\n"));
+			if (atoi(Config_Token) == 1) {
+				WDT_Enable = 1;
 			}
 		}
 
-		fclose(FP);
+		if (strstr(Buffer, "WDT_Timeout:") != NULL) {
+			(void) strtok(Buffer, ":");
+			if (strcmp(Buffer, "WDT_Timeout") != 0) {
+				continue;
+			}
+
+			(void) strcpy(Config_Token, strtok(NULL, "\n"));
+			WDT_Timeout = atoi(Config_Token);
+		}
+
+		if (strstr(Buffer, "WDT_Edge:") != NULL) {
+			(void) strtok(Buffer, ":");
+			if (strcmp(Buffer, "WDT_Edge") != 0) {
+				continue;
+			}
+
+			(void) strcpy(Config_Token, strtok(NULL, "\n"));
+			WDT_Edge = atoi(Config_Token);
+		}
+
+		if (strstr(Buffer, "Training_Interval:") != NULL) {
+			(void) strtok(Buffer, ":");
+			if (strcmp(Buffer, "Training_Interval") != 0) {
+				continue;
+			}
+
+			(void) strcpy(Config_Token, strtok(NULL, "\n"));
+			Training_Interval = atoi(Config_Token);
+		}
+	}
+
+	fclose(FP);
+
+	if (WDT_Enable == 0) {
+		return 0;
 	}
 
 	/* Initialize the real timer signal */
@@ -265,8 +285,8 @@ VCK190_GPIO(void)
 	if (gpiod_ctxless_find_line(GPIOLINE, GPIO_ChipName, STRLEN_MAX,
 	    &GPIO_Offset) != 1) {
 		SC_ERR("failed to find GPIO line");
-                return -1;
-        }
+		return -1;
+	}
 
 	/* Open the GPIO line for monitoring */
 	GPIO_Chip = gpiod_chip_open_by_name(GPIO_ChipName);
@@ -532,6 +552,8 @@ int
 main()
 {
 	char Board[STRLEN_MAX];
+	int Ret = -1;
+
 	SC_OPENLOG("sc_appd");
 	SC_INFO(">>> Begin");
 
@@ -539,26 +561,26 @@ main()
 	if (access(APPDIR, F_OK) == -1) {
 		if (mkdir(APPDIR, 0755) == -1) {
 			SC_ERR("mkdir %s failed: %m", APPDIR);
-			return -1;
+			goto Out;
 		}
 	}
 
 	/* Detect FMC cards and auto adjust voltage */
 	if (Plat_FMCAutoAdjust() != 0) {
 		SC_ERR("failed to auto adjust FMC cards");
-		return -1;
+		goto Out;
 	}
 
 	/* Set custom clock frequency */
 	if (Set_Clocks() != 0) {
 		SC_ERR("failed to set clock frequency");
-		return -1;
+		goto Out;
 	}
 
 	/* Set custom regulator voltage */
 	if (Set_Voltages() != 0) {
 		SC_ERR("failed to set regulator voltage");
-		return -1;
+		goto Out;
 	}
 
 	/* No pre-set boot mode is supported */
@@ -566,17 +588,19 @@ main()
 
 	if (Plat_Board_Name(Board) == -1) {
 		SC_ERR("failed to get board name");
-		return -1;
+		goto Out;
 	}
 
 	if (strcmp(Board, "vck190") == 0) {
 		if (VCK190_Version() == -1) {
 			SC_ERR("failed to determine silicon version");
-			return -1;
+			goto Out;
 		}
-		(void) VCK190_GPIO();
+
+		Ret = VCK190_GPIO();
 	}
 
-	SC_INFO("<<< End(-1)");
-	return -1;
+Out:
+	SC_INFO("<<< End(%d)", Ret);
+	return Ret;
 }

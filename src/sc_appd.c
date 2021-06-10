@@ -21,6 +21,7 @@
 #endif /* DEBUG */
 
 #define GPIOLINE	"ZU4_TRIGGER"
+#define VADJ_FMC_RETRIES	5
 
 /*
  * Default configurable variables.  They can be modified in 'config' file.
@@ -512,7 +513,8 @@ Set_Voltages(void)
 	Voltage_t *Regulator;
 	char Buffer[SYSCMD_MAX];
 	char Value[STRLEN_MAX];
-	float Voltage;
+	float Voltage, Current_Voltage;
+	int Retries;
 
 	/* If there is no voltage file, there is nothing to do */
 	if (access(VOLTAGEFILE, F_OK) != 0) {
@@ -533,6 +535,30 @@ Set_Voltages(void)
 			if (strcmp(Buffer, (char *)Voltages.Voltage[i].Name) == 0) {
 				Regulator = &Voltages.Voltage[i];
 				break;
+			}
+		}
+
+		/*
+		 * XXX - This is a special handling of 'VADJ_FMC' custom setting.
+		 * As long as Board Framework is in the picture, we will wait
+		 * until it is done with its Auto Vadj before we change the
+		 * voltage to a custom setting.  We will wait an finite amount
+		 * of time for that opertion to complete.
+		 */
+		if (strcmp(Regulator->Name, "VADJ_FMC") == 0) {
+			Retries = VADJ_FMC_RETRIES;
+			Current_Voltage = 0;
+			while (Current_Voltage < 1.0 && Retries > 0) {
+				if (Access_Regulator(Regulator, &Current_Voltage, 0) != 0) {
+					SC_ERR("failed to get voltage of VADJ_FMC regulator");
+					(void) fclose(FP);
+					return -1;
+				}
+
+				SC_INFO("Current_Voltage: %f, Retries: %d", Current_Voltage,
+					Retries);
+				sleep(1);
+				Retries--;
 			}
 		}
 
@@ -566,10 +592,13 @@ main()
 	}
 
 	/* Detect FMC cards and auto adjust voltage */
+	/* XXX - Currently it is done by Board Framework */
+#ifdef FMC_AUTO_VADJ
 	if (Plat_FMCAutoAdjust() != 0) {
 		SC_ERR("failed to auto adjust FMC cards");
 		goto Out;
 	}
+#endif
 
 	/* Set custom clock frequency */
 	if (Set_Clocks() != 0) {

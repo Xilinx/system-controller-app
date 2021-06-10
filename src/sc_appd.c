@@ -392,26 +392,25 @@ int
 VCK190_Version(void)
 {
 	FILE *FP;
+	Voltage_t *Regulator;
 	float Voltage;
-	char Output[STRLEN_MAX];
-	char Command[] = "/usr/bin/sc_app -c getvoltage -t VCC_RAM";
 
 	/* Remove previous 'silicon' file, if any */
 	(void) remove(SILICONFILE);
 
-	SC_INFO("Command: %s", Command);
-	FP = popen(Command, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to run %s: %m", Command);
+	for (int i = 0; i < Voltages.Numbers; i++) {
+		if (strcmp((char *)Voltages.Voltage[i].Name, "VCC_RAM") == 0) {
+			Regulator = &Voltages.Voltage[i];
+			break;
+		}
+	}
+
+	if (Access_Regulator(Regulator, &Voltage, 0) != 0) {
+		SC_ERR("failed to get VCC_RAM voltage");
 		return -1;
 	}
 
-	(void) fgets(Output, sizeof(Output), FP);
-	(void) pclose(FP);
-	SC_INFO("Output: %s", Output);
-	(void) strtok(Output, ":");
-	(void) strcpy(Output, strtok(NULL, "\n"));
-	Voltage = atof(Output);
+	SC_INFO("VCC_RAM is %.2f", Voltage);
 
 	/*
 	 * The VCC_RAM regulator is programmed to be off at board power on

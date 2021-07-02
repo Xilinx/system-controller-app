@@ -17,6 +17,8 @@
 
 extern Plat_Devs_t VCK190_Devs;
 extern Plat_Ops_t VCK190_Ops;
+extern Plat_Devs_t VPK120_Devs;
+extern Plat_Ops_t VPK120_Ops;
 
 Plat_Devs_t *Plat_Devs;
 Plat_Ops_t *Plat_Ops;
@@ -27,6 +29,7 @@ Plat_Ops_t *Plat_Ops;
 typedef enum {
 	BOARD_VCK190,
 	BOARD_VMK180,
+	BOARD_VPK120,
 	BOARD_MAX,
 } Board_Index;
 
@@ -41,6 +44,11 @@ Boards_t Boards = {
 		.Name = "VMK180",
 		.Devs = &VCK190_Devs,
 		.Ops = &VCK190_Ops,
+	},
+	.Board_Info[BOARD_VPK120] = {
+		.Name = "VPK120",
+		.Devs = &VPK120_Devs,
+		.Ops = &VPK120_Ops,
 	},
 };
 

@@ -12,7 +12,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
-#define ITEMS_MAX	20
+#define ITEMS_MAX	50
 #define STRLEN_MAX	64
 #define SYSCMD_MAX	1024
 
@@ -23,6 +23,7 @@
 #define CLOCKFILE	APPDIR"/clock"
 #define VOLTAGEFILE	APPDIR"/voltage"
 #define IDT8A34001FILE	APPDIR"/8A34001"
+#define BOARDFILE	APPDIR"/board"
 
 /*
  * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code
@@ -256,20 +257,73 @@ struct i2c_info {
 	__u16 Read_len;
 };
 
-struct ddr_dimm1 {
+/* DDR DIMM */
+typedef struct {
 	char I2C_Bus[STRLEN_MAX];
 	struct i2c_info Spd;
 	struct i2c_info Therm;
-};
+} DIMM_t;
 
 /*
- * GPIO line-number, sc_app-display-name, and internal name
+ * GPIO lines
  */
-struct Gpio_line_name {
+typedef struct {
 	int Line;
 	const char *Display_Name;
 	const char *Internal_Name;
-};
+} GPIO_t;
+
+typedef struct GPIOs {
+	int Numbers;
+	GPIO_t GPIO[ITEMS_MAX];
+} GPIOs_t;
+
+/*
+ * Board-specific Devices
+ */
+typedef struct {
+	BootModes_t *BootModes;
+	Clocks_t *Clocks;
+	Ina226s_t *Ina226s;
+	Power_Domains_t *Power_Domains;
+	Voltages_t *Voltages;
+	DIMM_t *DIMM;
+	GPIOs_t *GPIOs;
+	IO_Exp_t *IO_Exp;
+	OnBoard_EEPROM_t *OnBoard_EEPROM;
+	Daughter_Card_t *Daughter_Card;
+	SFPs_t *SFPs;
+	QSFPs_t *QSFPs;
+	FMCs_t *FMCs;
+	Workarounds_t *Workarounds;
+} Plat_Devs_t;
+
+/*
+ * Board-specific Operations
+ */
+typedef struct {
+	void (*Version_Op)(int *, int *);
+	int (*Reset_Op)(void);
+	int (*IDCODE_Op)(char *, int);
+	int (*XSDB_Op)(const char *, char *, int);
+	int (*Temperature_Op)(void);
+	int (*QSFP_Init_Op)(void);
+	int (*FMCAutoVadj_Op)(void);
+} Plat_Ops_t;
+
+/*
+ * Board Info
+ */
+typedef struct {
+	char Name[STRLEN_MAX];
+	Plat_Devs_t *Devs;
+	Plat_Ops_t *Ops;
+} Board_t;
+
+typedef struct {
+	int Numbers;
+	Board_t Board_Info[ITEMS_MAX];
+} Boards_t;
 
 #define I2C_READ(FD, Address, Len, Out, In, Return) \
 { \
@@ -323,6 +377,9 @@ struct Gpio_line_name {
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))
+
+#define VOLT_MIN(VOLT)	(VOLT - (0.03 * VOLT))
+#define VOLT_MAX(VOLT)	(VOLT + (0.03 * VOLT))
 
 #endif	/* SC_APP_H_ */
 

@@ -46,15 +46,13 @@ GPIO_Behavior_t GPIO_Behavior = Unknown;
 time_t GPIO_First_Time = 0;
 int GPIO_State;
 
-extern Clocks_t Clocks;
-extern Voltages_t Voltages;
-extern Workarounds_t Workarounds;
 int (*Workaround_Op)(void *);
-extern int Plat_Board_Name(char *);
-extern int Plat_Reset_Ops(void);
-extern int Plat_FMCAutoAdjust(void);
+extern int Board_Identification(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Set_IDT_8A34001(Clock_t *, char *, int);
+
+extern Plat_Devs_t *Plat_Devs;
+extern Plat_Ops_t *Plat_Ops;
 
 static int
 Is_Silicon_ES1(void)
@@ -121,7 +119,7 @@ Timer_Handler(int Signal, siginfo_t *Signal_Info, void *Arg)
 		SC_ERR("failed to set the timer: %m");
 	}
 
-	(void) (*Plat_Reset_Ops)();
+	(void) Plat_Ops->Reset_Op();
 }
 
 int
@@ -170,6 +168,7 @@ int
 VCK190_GPIO(void)
 {
 	FILE *FP;
+	Workarounds_t *Workarounds;
 	char Buffer[SYSCMD_MAX];
 	char Config_Token[STRLEN_MAX];
 	struct sigaction Sig_Action;
@@ -184,9 +183,10 @@ VCK190_GPIO(void)
 	int WDT_Enable = 0;
 	
 	/* Find the vccaux workaround function */
-	for (int i = 0; i < Workarounds.Numbers; i++) {
-		if (strcmp("vccaux", (char *)Workarounds.Workaround[i].Name) == 0) {
-			Workaround_Op = Workarounds.Workaround[i].Plat_Workaround_Op;
+	Workarounds = Plat_Devs->Workarounds;
+	for (int i = 0; i < Workarounds->Numbers; i++) {
+		if (strcmp("vccaux", (char *)Workarounds->Workaround[i].Name) == 0) {
+			Workaround_Op = Workarounds->Workaround[i].Plat_Workaround_Op;
 			break;
 		}
 	}
@@ -392,15 +392,17 @@ int
 VCK190_Version(void)
 {
 	FILE *FP;
+	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;
 
 	/* Remove previous 'silicon' file, if any */
 	(void) remove(SILICONFILE);
 
-	for (int i = 0; i < Voltages.Numbers; i++) {
-		if (strcmp((char *)Voltages.Voltage[i].Name, "VCC_RAM") == 0) {
-			Regulator = &Voltages.Voltage[i];
+	Voltages = Plat_Devs->Voltages;
+	for (int i = 0; i < Voltages->Numbers; i++) {
+		if (strcmp((char *)Voltages->Voltage[i].Name, "VCC_RAM") == 0) {
+			Regulator = &Voltages->Voltage[i];
 			break;
 		}
 	}
@@ -434,6 +436,43 @@ VCK190_Version(void)
 }
 
 /*
+ * External WDT support
+ */
+int
+WDT_Support(void)
+{
+	FILE *FP;
+	char Buffer[SYSCMD_MAX] = { 0 };
+
+	if (access(BOARDFILE, F_OK) != 0) {
+		SC_ERR("failed to access board file");
+		return -1;
+	}
+
+	FP = fopen(BOARDFILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read file %s: %m", BOARDFILE);
+		return -1;
+	}
+
+	(void) fgets(Buffer, SYSCMD_MAX, FP);
+	(void) fclose(FP);
+
+	/* Currently WDT is supported on VCK190/VMK180 boards */
+	if ((strcmp(Buffer, "VCK190\n") != 0) && (strcmp(Buffer, "VMK180\n") != 0)) {
+		SC_INFO("external WDT is not supported on %s", Buffer);
+		return 0;
+	}
+
+	if (VCK190_Version() != 0) {
+		SC_ERR("failed to determine silicon version");
+		return -1;
+	}
+
+	return VCK190_GPIO();
+}
+
+/*
  * This routine sets any custom clock frequency defined by the user.
  */
 int
@@ -441,6 +480,7 @@ Set_Clocks(void)
 {
 	FILE *FP;
 	int FD;
+	Clocks_t *Clocks;
 	Clock_t *Clock;
 	char Buffer[SYSCMD_MAX];
 	char Value[SYSCMD_MAX];
@@ -459,13 +499,14 @@ Set_Clocks(void)
 		return -1;
 	}
 
+	Clocks = Plat_Devs->Clocks;
 	while (fgets(Buffer, SYSCMD_MAX, FP)) {
 		SC_INFO("%s: %s", CLOCKFILE, Buffer);
 		(void) strtok(Buffer, ":");
 		(void) strcpy(Value, strtok(NULL, "\n"));
-		for (int i = 0; i < Clocks.Numbers; i++) {
-			if (strcmp(Buffer, (char *)Clocks.Clock[i].Name) == 0) {
-				Clock = &Clocks.Clock[i];
+		for (int i = 0; i < Clocks->Numbers; i++) {
+			if (strcmp(Buffer, (char *)Clocks->Clock[i].Name) == 0) {
+				Clock = &Clocks->Clock[i];
 				break;
 			}
 		}
@@ -509,6 +550,7 @@ int
 Set_Voltages(void)
 {
 	FILE *FP;
+	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	char Buffer[SYSCMD_MAX];
 	char Value[STRLEN_MAX];
@@ -526,13 +568,14 @@ Set_Voltages(void)
 		return -1;
 	}
 
+	Voltages = Plat_Devs->Voltages;
 	while (fgets(Buffer, SYSCMD_MAX, FP)) {
 		SC_INFO("%s: %s", VOLTAGEFILE, Buffer);
 		(void) strtok(Buffer, ":");
 		(void) strcpy(Value, strtok(NULL, "\n"));
-		for (int i = 0; i < Voltages.Numbers; i++) {
-			if (strcmp(Buffer, (char *)Voltages.Voltage[i].Name) == 0) {
-				Regulator = &Voltages.Voltage[i];
+		for (int i = 0; i < Voltages->Numbers; i++) {
+			if (strcmp(Buffer, (char *)Voltages->Voltage[i].Name) == 0) {
+				Regulator = &Voltages->Voltage[i];
 				break;
 			}
 		}
@@ -590,10 +633,15 @@ main()
 		}
 	}
 
+	/* Identify the board */
+	if (Board_Identification() != 0) {
+		goto Out;
+	}
+
 	/* Detect FMC cards and auto adjust voltage */
 	/* XXX - Currently it is done by Board Framework */
 #ifdef FMC_AUTO_VADJ
-	if (Plat_FMCAutoAdjust() != 0) {
+	if (Plat_Ops->FMCAutoVadj_Op() != 0) {
 		SC_ERR("failed to auto adjust FMC cards");
 		goto Out;
 	}
@@ -614,18 +662,9 @@ main()
 	/* No pre-set boot mode is supported */
 	(void) remove(BOOTMODEFILE);
 
-	if (Plat_Board_Name(Board) == -1) {
-		SC_ERR("failed to get board name");
-		goto Out;
-	}
-
-	if (strcmp(Board, "vck190") == 0) {
-		if (VCK190_Version() == -1) {
-			SC_ERR("failed to determine silicon version");
-			goto Out;
-		}
-
-		Ret = VCK190_GPIO();
+	/* WDT support */
+	if (WDT_Support() != 0) {
+		SC_ERR("failed to support external WDT");
 	}
 
 Out:

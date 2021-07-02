@@ -39,28 +39,18 @@
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
 
-extern BootModes_t BootModes;
-extern Clocks_t Clocks;
-extern Ina226s_t Ina226s;
-extern Power_Domains_t Power_Domains;
-extern Voltages_t Voltages;
-extern Workarounds_t Workarounds;
+extern Plat_Devs_t *Plat_Devs;
+extern Plat_Ops_t *Plat_Ops;
 extern BITs_t BITs;
-extern struct ddr_dimm1 Dimm1;
-extern struct Gpio_line_name Gpio_target[];
-extern IO_Exp_t IO_Exp;
-extern SFPs_t SFPs;
-extern QSFPs_t QSFPs;
-extern OnBoard_EEPROM_t OnBoard_EEPROM;
-extern Daughter_Card_t Daughter_Card;
-extern FMCs_t FMCs;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
 int Destroy_Lockfile(void);
 int Version_Ops(void);
 int BootMode_Ops(void);
+int Reset_Ops(void);
 int EEPROM_Ops(void);
+int Temperature_Ops(void);
 int Clock_Ops(void);
 int Voltage_Ops(void);
 int Power_Ops(void);
@@ -74,12 +64,7 @@ int SFP_Ops(void);
 int QSFP_Ops(void);
 int EBM_Ops(void);
 int FMC_Ops(void);
-extern int Plat_Gpio_target_size(void);
-extern int Plat_Version_Ops(int *Major, int *Minor);
-extern int Plat_Reset_Ops(void);
-extern int Plat_IDCODE_Ops(char *, int);
-extern int Plat_Temperature_Ops(void);
-extern int Plat_QSFP_Init(void);
+extern int Board_Identification(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int GPIO_Get(char *, int *);
@@ -200,10 +185,10 @@ static Command_t Commands[] = {
 	{ .CmdId = VERSION, .CmdStr = "version", .CmdOps = Version_Ops, },
 	{ .CmdId = LISTBOOTMODE, .CmdStr = "listbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
-	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Plat_Reset_Ops, },
+	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Ops, },
 	{ .CmdId = EEPROM, .CmdStr = "eeprom", .CmdOps = EEPROM_Ops, },
 	{ .CmdId = GETEEPROM, .CmdStr = "geteeprom", .CmdOps = EEPROM_Ops, },
-	{ .CmdId = TEMPERATURE, .CmdStr = "temperature", .CmdOps = Plat_Temperature_Ops, },
+	{ .CmdId = TEMPERATURE, .CmdStr = "temperature", .CmdOps = Temperature_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },
@@ -267,6 +252,10 @@ main(int argc, char **argv)
 	SC_INFO(">>> Begin: %s", Buffer);
 
 	if (Create_Lockfile() != 0) {
+		goto Out;
+	}
+
+	if (Board_Identification() != 0) {
 		goto Out;
 	}
 
@@ -407,14 +396,18 @@ Destroy_Lockfile(void)
 int
 Version_Ops(void)
 {
-	int Major, Minor;
+	int Major = -1;
+	int Minor = -1;
 	struct utsname UTS;
 	char BSP_Version[STRLEN_MAX];
 	int Linux_Compatible = 1;
 	int BSP_Compatible = 1;
 	char *CP;
 
-	(void) (*Plat_Version_Ops)(&Major, &Minor);
+	if (Plat_Ops->Version_Op != NULL) {
+		(void) Plat_Ops->Version_Op(&Major, &Minor);
+	}
+
 	if (Major == -1 && Minor == -1) {
 		Major = MAJOR;
 		Minor = MINOR;
@@ -461,13 +454,20 @@ BootMode_Ops(void)
 {
 	int Target_Index = -1;
 	FILE *FP;
+	BootModes_t *BootModes;
 	BootMode_t *BootMode;
 	char Buffer[STRLEN_MAX];
 
+	BootModes = Plat_Devs->BootModes;
+	if (BootModes == NULL) {
+		SC_ERR("bootmode operation is not supported");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTBOOTMODE) {
-		for (int i = 0; i < BootModes.Numbers; i++) {
-			SC_PRINT("%s\t0x%x", BootModes.BootMode[i].Name,
-			    BootModes.BootMode[i].Value);
+		for (int i = 0; i < BootModes->Numbers; i++) {
+			SC_PRINT("%s\t0x%x", BootModes->BootMode[i].Name,
+			    BootModes->BootMode[i].Value);
 		}
 
 		return 0;
@@ -479,10 +479,10 @@ BootMode_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < BootModes.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)BootModes.BootMode[i].Name) == 0) {
+	for (int i = 0; i < BootModes->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)BootModes->BootMode[i].Name) == 0) {
 			Target_Index = i;
-			BootMode = &BootModes.BootMode[Target_Index];
+			BootMode = &BootModes->BootMode[Target_Index];
 			break;
 		}
 	}
@@ -512,6 +512,17 @@ BootMode_Ops(void)
 	}
 
 	return 0;
+}
+
+int
+Reset_Ops(void)
+{
+	if (Plat_Ops->Reset_Op == NULL) {
+		SC_ERR("reset operation is not supported");
+		return -1;
+	}
+
+	return Plat_Ops->Reset_Op();
 }
 
 void
@@ -544,6 +555,7 @@ int
 EEPROM_Ops(void)
 {
 	EEPROM_Targets Target;
+	OnBoard_EEPROM_t *OnBoard_EEPROM;
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
 	char Out_Buffer[STRLEN_MAX];
@@ -576,15 +588,21 @@ EEPROM_Ops(void)
 		}
 	}
 
-	FD = open(OnBoard_EEPROM.I2C_Bus, O_RDWR);
-	if (FD < 0) {
-		SC_ERR("unable to access I2C bus %s: %m", OnBoard_EEPROM.I2C_Bus);
+	OnBoard_EEPROM = Plat_Devs->OnBoard_EEPROM;
+	if (OnBoard_EEPROM == NULL) {
+		SC_ERR("eeprom operation is not supported");
 		return -1;
 	}
 
-	if (ioctl(FD, I2C_SLAVE_FORCE, OnBoard_EEPROM.I2C_Address) < 0) {
+	FD = open(OnBoard_EEPROM->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		SC_ERR("unable to access I2C bus %s: %m", OnBoard_EEPROM->I2C_Bus);
+		return -1;
+	}
+
+	if (ioctl(FD, I2C_SLAVE_FORCE, OnBoard_EEPROM->I2C_Address) < 0) {
 		SC_ERR("unable to access onboard EEPROM address %#x",
-		       OnBoard_EEPROM.I2C_Address);
+		       OnBoard_EEPROM->I2C_Address);
 		(void) close(FD);
 		return -1;
 	}
@@ -609,7 +627,12 @@ EEPROM_Ops(void)
 	switch (Target) {
 	case EEPROM_SUMMARY:
 		SC_PRINT("Language: %d", In_Buffer[0xA]);
-		if (Plat_IDCODE_Ops(Buffer, STRLEN_MAX) != 0) {
+		if (Plat_Ops->IDCODE_Op == NULL) {
+			SC_ERR("eeprom operation is not supported");
+			return -1;
+		}
+
+		if (Plat_Ops->IDCODE_Op(Buffer, STRLEN_MAX) != 0) {
 			SC_ERR("failed to get silicon revision");
 			return -1;
 		}
@@ -680,6 +703,17 @@ EEPROM_Ops(void)
 	return 0;
 }
 
+int
+Temperature_Ops(void)
+{
+	if (Plat_Ops->Temperature_Op == NULL) {
+		SC_ERR("temperature operation is not supported");
+		return -1;
+	}
+
+	return Plat_Ops->Temperature_Op();
+}
+
 /*
  * Clock Operations
  */
@@ -687,6 +721,7 @@ int
 Clock_Ops(void)
 {
 	int Target_Index = -1;
+	Clocks_t *Clocks;
 	Clock_t *Clock;
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
@@ -694,9 +729,15 @@ Clock_Ops(void)
 	double Frequency;
 	double Upper, Lower;
 
+	Clocks = Plat_Devs->Clocks;
+	if (Clocks == NULL) {
+		SC_ERR("clock operation is not supported");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTCLOCK) {
-		for (int i = 0; i < Clocks.Numbers; i++) {
-			SC_PRINT("%s", Clocks.Clock[i].Name);
+		for (int i = 0; i < Clocks->Numbers; i++) {
+			SC_PRINT("%s", Clocks->Clock[i].Name);
 		}
 
 		return 0;
@@ -708,10 +749,10 @@ Clock_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < Clocks.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)Clocks.Clock[i].Name) == 0) {
+	for (int i = 0; i < Clocks->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)Clocks->Clock[i].Name) == 0) {
 			Target_Index = i;
-			Clock = &Clocks.Clock[Target_Index];
+			Clock = &Clocks->Clock[Target_Index];
 			break;
 		}
 	}
@@ -827,14 +868,21 @@ Clock_Ops(void)
 int Voltage_Ops(void)
 {
 	int Target_Index = -1;
+	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
 	float Voltage;
 
+	Voltages = Plat_Devs->Voltages;
+	if (Voltages == NULL) {
+		SC_ERR("voltage operation is not suppoprted");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTVOLTAGE) {
-		for (int i = 0; i < Voltages.Numbers; i++) {
-			SC_PRINT("%s", Voltages.Voltage[i].Name);
+		for (int i = 0; i < Voltages->Numbers; i++) {
+			SC_PRINT("%s", Voltages->Voltage[i].Name);
 		}
 
 		return 0;
@@ -846,10 +894,10 @@ int Voltage_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < Voltages.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)Voltages.Voltage[i].Name) == 0) {
+	for (int i = 0; i < Voltages->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)Voltages->Voltage[i].Name) == 0) {
 			Target_Index = i;
-			Regulator = &Voltages.Voltage[Target_Index];
+			Regulator = &Voltages->Voltage[Target_Index];
 			break;
 		}
 	}
@@ -997,14 +1045,21 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 int Power_Ops(void)
 {
 	int Target_Index = -1;
+	Ina226s_t *Ina226s;
 	Ina226_t *Ina226;
 	float Voltage;
 	float Current;
 	float Power;
 
+	Ina226s = Plat_Devs->Ina226s;
+	if (Ina226s == NULL) {
+		SC_ERR("power operation is not supported");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTPOWER) {
-		for (int i = 0; i < Ina226s.Numbers; i++) {
-			SC_PRINT("%s", Ina226s.Ina226[i].Name);
+		for (int i = 0; i < Ina226s->Numbers; i++) {
+			SC_PRINT("%s", Ina226s->Ina226[i].Name);
 		}
 
 		return 0;
@@ -1016,10 +1071,10 @@ int Power_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < Ina226s.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)Ina226s.Ina226[i].Name) == 0) {
+	for (int i = 0; i < Ina226s->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)Ina226s->Ina226[i].Name) == 0) {
 			Target_Index = i;
-			Ina226 = &Ina226s.Ina226[Target_Index];
+			Ina226 = &Ina226s->Ina226[Target_Index];
 			break;
 		}
 	}
@@ -1055,16 +1110,24 @@ int Power_Ops(void)
 int Power_Domain_Ops(void)
 {
 	int Target_Index = -1;
+	Power_Domains_t *Power_Domains;
 	Power_Domain_t *Power_Domain;
+	Ina226s_t *Ina226s;
 	Ina226_t *Ina226;
 	float Voltage;
 	float Current;
 	float Power;
 	float Total_Power = 0;
 
+	Power_Domains = Plat_Devs->Power_Domains;
+	if (Power_Domains == NULL) {
+		SC_ERR("power domain operation is not supported");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTPOWERDOMAIN) {
-		for (int i = 0; i < Power_Domains.Numbers; i++) {
-			SC_PRINT("%s", Power_Domains.Power_Domain[i].Name);
+		for (int i = 0; i < Power_Domains->Numbers; i++) {
+			SC_PRINT("%s", Power_Domains->Power_Domain[i].Name);
 		}
 
 		return 0;
@@ -1076,10 +1139,10 @@ int Power_Domain_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < Power_Domains.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)Power_Domains.Power_Domain[i].Name) == 0) {
+	for (int i = 0; i < Power_Domains->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)Power_Domains->Power_Domain[i].Name) == 0) {
 			Target_Index = i;
-			Power_Domain = &Power_Domains.Power_Domain[Target_Index];
+			Power_Domain = &Power_Domains->Power_Domain[Target_Index];
 			break;
 		}
 	}
@@ -1091,8 +1154,9 @@ int Power_Domain_Ops(void)
 
 	switch (Command.CmdId) {
 	case POWERDOMAIN:
+		Ina226s = Plat_Devs->Ina226s;
 		for (int i = 0; i < Power_Domain->Numbers; i++) {
-			Ina226 = &Ina226s.Ina226[Power_Domain->Rails[i]];
+			Ina226 = &Ina226s->Ina226[Power_Domain->Rails[i]];
 			if (Read_Sensor(Ina226, &Voltage, &Current, &Power) == -1) {
 				SC_ERR("failed to get total power");
 				return -1;
@@ -1118,12 +1182,19 @@ int Power_Domain_Ops(void)
 int Workaround_Ops(void)
 {
 	int Target_Index = -1;
+	Workarounds_t *Workarounds;
 	unsigned long int Value;
 	int Return = -1;
 
+	Workarounds = Plat_Devs->Workarounds;
+	if (Workarounds == NULL) {
+		SC_ERR("workaround operation is not supported");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTWORKAROUND) {
-		for (int i = 0; i < Workarounds.Numbers; i++) {
-			SC_PRINT("%s", Workarounds.Workaround[i].Name);
+		for (int i = 0; i < Workarounds->Numbers; i++) {
+			SC_PRINT("%s", Workarounds->Workaround[i].Name);
 		}
 
 		return 0;
@@ -1135,8 +1206,8 @@ int Workaround_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < Workarounds.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)Workarounds.Workaround[i].Name) == 0) {
+	for (int i = 0; i < Workarounds->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)Workarounds->Workaround[i].Name) == 0) {
 			Target_Index = i;
 			break;
 		}
@@ -1148,13 +1219,13 @@ int Workaround_Ops(void)
 	}
 
 	/* Does the workaround need argument? */
-	if (Workarounds.Workaround[Target_Index].Arg_Needed == 1 && V_Flag == 0) {
+	if (Workarounds->Workaround[Target_Index].Arg_Needed == 1 && V_Flag == 0) {
 		SC_ERR("no workaround value");
 		return -1;
 	}
 
 	if (V_Flag == 0) {
-		Return = (*Workarounds.Workaround[Target_Index].Plat_Workaround_Op)(NULL);
+		Return = (*Workarounds->Workaround[Target_Index].Plat_Workaround_Op)(NULL);
 	} else {
 		Value = atol(Value_Arg);
 		if (Value != 0 && Value != 1) {
@@ -1162,7 +1233,7 @@ int Workaround_Ops(void)
 			return -1;
 		}
 
-		Return = (*Workarounds.Workaround[Target_Index].Plat_Workaround_Op)(&Value);
+		Return = (*Workarounds->Workaround[Target_Index].Plat_Workaround_Op)(&Value);
 	}
 
 	if (Return == -1) {
@@ -1262,12 +1333,14 @@ int DIMM_spd(int fd)
 {
 	char Buf_1[STRLEN_MAX];
 	char Buf_2[SYSCMD_MAX] = { 0 };
+	DIMM_t *DIMM;
 	union spd_ddr Spd_buf = {.a64 = {0, 0}};
 	struct spd_ddr4 *p = &Spd_buf.ddr4;
 	__u8 Sz256;
 	int Ret;
 
-	Ret = DDRi2c_read(fd, Spd_buf.b, &Dimm1.Spd);
+	DIMM = Plat_Devs->DIMM;
+	Ret = DDRi2c_read(fd, Spd_buf.b, &DIMM->Spd);
 	if (Ret < 0) {
 		SC_ERR("failed to read DDR SPD");
 		return Ret;
@@ -1307,10 +1380,12 @@ int DIMM_spd(int fd)
  */
 int DIMM_temperature(int fd)
 {
+	DIMM_t *DIMM;
 	__u16 Tbuf = 0;
 	int Ret = 0;
 
-	Ret = DDRi2c_read(fd, (void *)&Tbuf, &Dimm1.Therm);
+	DIMM = Plat_Devs->DIMM;
+	Ret = DDRi2c_read(fd, (void *)&Tbuf, &DIMM->Therm);
 	if (Ret == 0) {
 		__s16 t = (Tbuf << 8 | Tbuf >> 8) << 3;
 		SC_PRINT("Temperature(C):\t%.2f", (.125 * t / 16));
@@ -1325,6 +1400,7 @@ int DIMM_temperature(int fd)
  */
 int DDR_Ops(void)
 {
+	DIMM_t *DIMM;
 	int FD, Ret = 0;
 
 	if (T_Flag == 0) {
@@ -1337,9 +1413,15 @@ int DDR_Ops(void)
 		return -1;
 	}
 
-	FD = open(Dimm1.I2C_Bus, O_RDWR);
+	DIMM = Plat_Devs->DIMM;
+	if (DIMM == NULL) {
+		SC_ERR("ddr operation is not supported");
+		return -1;
+	}
+
+	FD = open(DIMM->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		SC_ERR("failed to open I2C bus %s: %m", Dimm1.I2C_Bus);
+		SC_ERR("failed to open I2C bus %s: %m", DIMM->I2C_Bus);
 		return -1;
 	}
 
@@ -1353,7 +1435,7 @@ int DDR_Ops(void)
 	return Ret;
 }
 
-static int Gpio_get1(const struct Gpio_line_name *p)
+static int Gpio_get1(const GPIO_t *p)
 {
 	int State;
 
@@ -1412,7 +1494,7 @@ static int Gpio_get_all(void)
 
 static int Gpio_get(void)
 {
-	int i, Total = Plat_Gpio_target_size();
+	GPIOs_t *GPIOs;
 	long Tval = strtol(Target_Arg, NULL, 0);
 
 	if (strcmp(Target_Arg, "all") == 0) {
@@ -1424,11 +1506,12 @@ static int Gpio_get(void)
 		return 0;
 	}
 
-	for (i = 0; i < Total; i++) {
-		if (Tval == Gpio_target[i].Line ||
-		    !strncmp(Gpio_target[i].Display_Name, Target_Arg, STRLEN_MAX) ||
-		    !strncmp(Gpio_target[i].Internal_Name, Target_Arg, STRLEN_MAX)) {
-			if (Gpio_get1(&Gpio_target[i]) != 0) {
+	GPIOs = Plat_Devs->GPIOs;
+	for (int i = 0; i < GPIOs->Numbers; i++) {
+		if (Tval == GPIOs->GPIO[i].Line ||
+		    !strncmp(GPIOs->GPIO[i].Display_Name, Target_Arg, STRLEN_MAX) ||
+		    !strncmp(GPIOs->GPIO[i].Internal_Name, Target_Arg, STRLEN_MAX)) {
+			if (Gpio_get1(&GPIOs->GPIO[i]) != 0) {
 				return -1;
 			}
 
@@ -1440,27 +1523,25 @@ static int Gpio_get(void)
 	return -1;
 }
 
-static void Gpio_list(void)
-{
-	int i, Total = Plat_Gpio_target_size();
-
-	for (i = 0; i < Total; i++) {
-		SC_PRINT("%s", Gpio_target[i].Display_Name);
-	}
-}
-
 /*
  * GPIO_Ops lists the supported gpio lines
- * "-c getgpio -t <label>" - get the state of gpio line <label>
  */
 int GPIO_Ops(void)
 {
+	GPIOs_t *GPIOs;
+
+	GPIOs = Plat_Devs->GPIOs;
+	if (GPIOs == NULL) {
+		SC_ERR("gpio operation is not supported");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTGPIO) {
-		Gpio_list();
-	} else {
-		if (Gpio_get() != 0) {
-			return -1;
+		for (int i = 0; i < GPIOs->Numbers; i++) {
+			SC_PRINT("%s", GPIOs->GPIO[i].Display_Name);
 		}
+	} else {
+		return Gpio_get();
 	}
 
 	return 0;
@@ -1471,9 +1552,16 @@ int GPIO_Ops(void)
  */
 int IO_Exp_Ops(void)
 {
+	IO_Exp_t *IO_Exp;
 	unsigned long int Value;
 
-	if (strcmp(IO_Exp.Name, "TCA6416A") != 0) {
+	IO_Exp = Plat_Devs->IO_Exp;
+	if (IO_Exp == NULL) {
+		SC_ERR("ioexp operation is not supported");
+		return -1;
+	}
+
+	if (strcmp(IO_Exp->Name, "TCA6416A") != 0) {
 		SC_ERR("unsupported IO expander chip");
 		return -1;
 	}
@@ -1487,7 +1575,7 @@ int IO_Exp_Ops(void)
 		}
 
 		if (strcmp(Target_Arg, "all") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 0, 0x0,
+			if (Access_IO_Exp(IO_Exp, 0, 0x0,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read input");
 				return -1;
@@ -1495,7 +1583,7 @@ int IO_Exp_Ops(void)
 
 			SC_PRINT("Input GPIO:\t%#x", Value);
 
-			if (Access_IO_Exp(&IO_Exp, 0, 0x2,
+			if (Access_IO_Exp(IO_Exp, 0, 0x2,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read output");
 				return -1;
@@ -1503,7 +1591,7 @@ int IO_Exp_Ops(void)
 
 			SC_PRINT("Output GPIO:\t%#x", Value);
 
-			if (Access_IO_Exp(&IO_Exp, 0, 0x6,
+			if (Access_IO_Exp(IO_Exp, 0, 0x6,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read direction");
 				return -1;
@@ -1512,30 +1600,30 @@ int IO_Exp_Ops(void)
 			SC_PRINT("Direction:\t%#x", Value);
 
 		} else if (strcmp(Target_Arg, "input") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 0, 0x0,
+			if (Access_IO_Exp(IO_Exp, 0, 0x0,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read input");
 				return -1;
 			}
 
-			for (int i = 0; i < IO_Exp.Numbers; i++) {
-				if (IO_Exp.Directions[i] == 1) {
-					SC_PRINT("%s:\t%d", IO_Exp.Labels[i],
-					    ((Value >> (IO_Exp.Numbers - i - 1)) & 1));
+			for (int i = 0; i < IO_Exp->Numbers; i++) {
+				if (IO_Exp->Directions[i] == 1) {
+					SC_PRINT("%s:\t%d", IO_Exp->Labels[i],
+					    ((Value >> (IO_Exp->Numbers - i - 1)) & 1));
 				}
 			}
 
 		} else if (strcmp(Target_Arg, "output") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 0, 0x2,
+			if (Access_IO_Exp(IO_Exp, 0, 0x2,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read output");
 				return -1;
 			}
 
-			for (int i = 0; i < IO_Exp.Numbers; i++) {
-				if (IO_Exp.Directions[i] == 0) {
-					SC_PRINT("%s:\t%d", IO_Exp.Labels[i],
-					    ((Value >> (IO_Exp.Numbers - i - 1)) & 1));
+			for (int i = 0; i < IO_Exp->Numbers; i++) {
+				if (IO_Exp->Directions[i] == 0) {
+					SC_PRINT("%s:\t%d", IO_Exp->Labels[i],
+					    ((Value >> (IO_Exp->Numbers - i - 1)) & 1));
 				}
 			}
 
@@ -1561,14 +1649,14 @@ int IO_Exp_Ops(void)
 
 		Value = strtol(Value_Arg, NULL, 16);
 		if (strcmp(Target_Arg, "direction") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 1, 0x6,
+			if (Access_IO_Exp(IO_Exp, 1, 0x6,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to set direction");
 				return -1;
 			}
 
 		} else if (strcmp(Target_Arg, "output") == 0) {
-			if (Access_IO_Exp(&IO_Exp, 1, 0x2,
+			if (Access_IO_Exp(IO_Exp, 1, 0x2,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to set output");
 				return -1;
@@ -1583,22 +1671,22 @@ int IO_Exp_Ops(void)
 
 	case RESTOREIOEXP:
 		Value = 0;
-		for (int i = 0; i < IO_Exp.Numbers; i++) {
+		for (int i = 0; i < IO_Exp->Numbers; i++) {
 			Value <<= 1;
-			if ((IO_Exp.Directions[i] == 1) ||
-			   (IO_Exp.Directions[i] == -1)) {
+			if ((IO_Exp->Directions[i] == 1) ||
+			   (IO_Exp->Directions[i] == -1)) {
 				Value |= 1;
 			}
 		}
 
-		if (Access_IO_Exp(&IO_Exp, 1, 0x6,
+		if (Access_IO_Exp(IO_Exp, 1, 0x6,
 				  (unsigned int *)&Value) != 0) {
 			SC_ERR("failed to set direction");
 			return -1;
 		}
 
 		Value = ~Value;
-		if (Access_IO_Exp(&IO_Exp, 1, 0x2,
+		if (Access_IO_Exp(IO_Exp, 1, 0x2,
 				  (unsigned int *)&Value) != 0) {
 			SC_ERR("failed to set output");
 			return -1;
@@ -1616,12 +1704,14 @@ int IO_Exp_Ops(void)
 
 int SFP_List(void)
 {
+	SFPs_t *SFPs;
 	SFP_t *SFP;
 	int FD;
 	char Buffer[STRLEN_MAX];
 
-	for (int i = 0; i < SFPs.Numbers; i++) {
-		SFP = &SFPs.SFP[i];
+	SFPs = Plat_Devs->SFPs;
+	for (int i = 0; i < SFPs->Numbers; i++) {
+		SFP = &SFPs->SFP[i];
 		FD = open(SFP->I2C_Bus, O_RDWR);
 		if (FD < 0) {
 			SC_ERR("failed to access I2C bus %s: %m", SFP->I2C_Bus);
@@ -1657,11 +1747,18 @@ int SFP_Ops(void)
 {
 	int Target_Index = -1;
 	unsigned long int Value;
+	SFPs_t *SFPs;
 	SFP_t *SFP;
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
+
+	SFPs = Plat_Devs->SFPs;
+	if (SFPs == NULL) {
+		SC_ERR("SFP operation is not supported");
+		return -1;
+	}
 
 	if (Command.CmdId == LISTSFP) {
 		return SFP_List();
@@ -1673,10 +1770,10 @@ int SFP_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < SFPs.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)SFPs.SFP[i].Name) == 0) {
+	for (int i = 0; i < SFPs->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)SFPs->SFP[i].Name) == 0) {
 			Target_Index = i;
-			SFP = &SFPs.SFP[Target_Index];
+			SFP = &SFPs->SFP[Target_Index];
 			break;
 		}
 	}
@@ -1820,17 +1917,19 @@ int SFP_Ops(void)
 
 int QSFP_List(void)
 {
+	QSFPs_t *QSFPs;
 	QSFP_t *QSFP;
 	int FD;
 	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 
-	if (Plat_QSFP_Init() != 0) {
+	if (Plat_Ops->QSFP_Init_Op() != 0) {
 		return -1;
 	}
 
-	for (int i = 0; i < QSFPs.Numbers; i++) {
-		QSFP = &QSFPs.QSFP[i];
+	QSFPs = Plat_Devs->QSFPs;
+	for (int i = 0; i < QSFPs->Numbers; i++) {
+		QSFP = &QSFPs->QSFP[i];
 		FD = open(QSFP->I2C_Bus, O_RDWR);
 		if (FD < 0) {
 			SC_ERR("failed to access I2C bus %s: %m", QSFP->I2C_Bus);
@@ -1859,11 +1958,11 @@ int QSFP_List(void)
 	}
 Out:
 	/*
-	 * The Plat_QSFP_Init() call may change the current boot mode to JTAG
-	 * to download a PDI.  Calling Plat_Reset_Ops() restores the current
+	 * The QSFP_Init_Op() call may change the current boot mode to JTAG
+	 * to download a PDI.  Calling Reset_Op() restores the current
 	 * boot mode.
 	 */
-	(void) Plat_Reset_Ops();
+	(void) Plat_Ops->Reset_Op();
 	(void) close(FD);
 	return Ret;
 }
@@ -1875,11 +1974,18 @@ int QSFP_Ops(void)
 {
 	int Target_Index = -1;
 	unsigned long int Value;
+	QSFPs_t *QSFPs;
 	QSFP_t *QSFP;
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
+
+	QSFPs = Plat_Devs->QSFPs;
+	if (QSFPs == NULL) {
+		SC_ERR("QSFP operation is not supported");
+		return -1;
+	}
 
 	if (Command.CmdId == LISTQSFP) {
 		return QSFP_List();
@@ -1891,10 +1997,10 @@ int QSFP_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < QSFPs.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)QSFPs.QSFP[i].Name) == 0) {
+	for (int i = 0; i < QSFPs->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)QSFPs->QSFP[i].Name) == 0) {
 			Target_Index = i;
-			QSFP = &QSFPs.QSFP[Target_Index];
+			QSFP = &QSFPs->QSFP[Target_Index];
 			break;
 		}
 	}
@@ -1904,7 +2010,7 @@ int QSFP_Ops(void)
 		return -1;
 	}
 
-	if (Plat_QSFP_Init() != 0) {
+	if (Plat_Ops->QSFP_Init_Op() != 0) {
 		return -1;
 	}
 
@@ -2094,11 +2200,11 @@ int QSFP_Ops(void)
 
 Out:
 	/*
-	 * The Plat_QSFP_Init() call may change the current boot mode to JTAG
-	 * to download a PDI.  Calling Plat_Reset_Ops() restores the current
+	 * The QSFP_Init_Op() call may change the current boot mode to JTAG
+	 * to download a PDI.  Calling Reset_Op() restores the current
 	 * boot mode.
 	 */
-	(void) Plat_Reset_Ops();
+	(void) Plat_Ops->Reset_Op();
 	(void) close(FD);
 	return Ret;
 }
@@ -2109,6 +2215,7 @@ Out:
 int EBM_Ops(void)
 {
 	EEPROM_Targets Target;
+	Daughter_Card_t *Daughter_Card;
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
 	char Out_Buffer[SYSCMD_MAX];
@@ -2134,16 +2241,22 @@ int EBM_Ops(void)
 		return -1;
 	}
 
-	FD = open(Daughter_Card.I2C_Bus, O_RDWR);
+	Daughter_Card = Plat_Devs->Daughter_Card;
+	if (Daughter_Card == NULL) {
+		SC_ERR("EBM card operation is not supported");
+		return -1;
+	}
+
+	FD = open(Daughter_Card->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		SC_ERR("unable to access I2C bus %s: %m", Daughter_Card.I2C_Bus);
+		SC_ERR("unable to access I2C bus %s: %m", Daughter_Card->I2C_Bus);
 		return -1;
 	}
 
 	(void) memset(Out_Buffer, 0, SYSCMD_MAX);
 	(void) memset(In_Buffer, 0, SYSCMD_MAX);
 	Out_Buffer[0] = 0x0;
-	I2C_READ(FD, Daughter_Card.I2C_Address, 256, Out_Buffer, In_Buffer, Ret);
+	I2C_READ(FD, Daughter_Card->I2C_Address, 256, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
 		(void) close(FD);
 		return Ret;
@@ -2170,6 +2283,7 @@ int EBM_Ops(void)
 
 int FMC_List(void)
 {
+	FMCs_t *FMCs;
 	FMC_t *FMC;
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
@@ -2178,8 +2292,9 @@ int FMC_List(void)
 	int Ret = 0;
 	int Offset, Length;
 
-	for (int i = 0; i < FMCs.Numbers; i++) {
-		FMC = &FMCs.FMC[i];
+	FMCs = Plat_Devs->FMCs;
+	for (int i = 0; i < FMCs->Numbers; i++) {
+		FMC = &FMCs->FMC[i];
 		FD = open(FMC->I2C_Bus, O_RDWR);
 		if (FD < 0) {
 			SC_ERR("unable to access I2C bus %s: %m", FMC->I2C_Bus);
@@ -2237,12 +2352,19 @@ int FMC_List(void)
 int FMC_Ops(void)
 {
 	int Target_Index = -1;
+	FMCs_t *FMCs;
 	FMC_t *FMC;
 	EEPROM_Targets Area;
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
 	char Out_Buffer[SYSCMD_MAX];
 	int Ret = 0;
+
+	FMCs = Plat_Devs->FMCs;
+	if (FMCs == NULL) {
+		SC_ERR("FMC operation is not supported");
+		return -1;
+	}
 
 	if (Command.CmdId == LISTFMC) {
 		return FMC_List();
@@ -2254,10 +2376,10 @@ int FMC_Ops(void)
 	}
 
 	(void) strcpy(Out_Buffer, strtok(Target_Arg, " - "));
-	for (int i = 0; i < FMCs.Numbers; i++) {
-		if (strcmp(Out_Buffer, FMCs.FMC[i].Name) == 0) {
+	for (int i = 0; i < FMCs->Numbers; i++) {
+		if (strcmp(Out_Buffer, FMCs->FMC[i].Name) == 0) {
 			Target_Index = i;
-			FMC = &FMCs.FMC[Target_Index];
+			FMC = &FMCs->FMC[Target_Index];
 			break;
 		}
 	}

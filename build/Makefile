@@ -1,20 +1,22 @@
 #
-# Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+# Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
-PLAT	:= vck190
-BIT	:= BIT
-APP	= sc_app
-APPD	= sc_appd
-COMMON	= sc_common
-CFLAGS	= -I../src
-LDFLAGS ?= -L../src
-SRCDIR	= ../src
-APP_OBJS	= $(APP).o $(COMMON).o sc_$(PLAT).o sc_$(BIT).o
-APPD_OBJS	= $(APPD).o $(COMMON).o sc_$(PLAT).o
-DEPS	= $(APP).h
+APP		= sc_app
+APPD		= sc_appd
+DEPS		= $(APP).h
+
+BOARD_OBJS	= sc_vck190.o
+BIT_OBJS	= sc_BIT.o
+COMMON_OBJS	= sc_common.o
+APP_OBJS	= $(APP).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
+APPD_OBJS	= $(APPD).o $(COMMON_OBJS) $(BOARD_OBJS)
+
+CFLAGS		= -I../src
+LDFLAGS 	?= -L../src
+SRCDIR		= ../src
 
 all: $(APP) $(APPD)
 

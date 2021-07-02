@@ -15,6 +15,142 @@
 #include <gpiod.h>
 #include "sc_app.h"
 
+extern Plat_Devs_t VCK190_Devs;
+extern Plat_Ops_t VCK190_Ops;
+
+Plat_Devs_t *Plat_Devs;
+Plat_Ops_t *Plat_Ops;
+
+/*
+ * Supported Boards
+ */
+typedef enum {
+	BOARD_VCK190,
+	BOARD_VMK180,
+	BOARD_MAX,
+} Board_Index;
+
+Boards_t Boards = {
+	.Numbers = BOARD_MAX,
+	.Board_Info[BOARD_VCK190] = {
+		.Name = "VCK190",
+		.Devs = &VCK190_Devs,
+		.Ops = &VCK190_Ops,
+	},
+	.Board_Info[BOARD_VMK180] = {
+		.Name = "VMK180",
+		.Devs = &VCK190_Devs,
+		.Ops = &VCK190_Ops,
+	},
+};
+
+static int
+Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
+{
+	int FD;
+	char In_Buffer[SYSCMD_MAX];
+	char Out_Buffer[STRLEN_MAX];
+	int Offset, Length;
+
+	FD = open(EEPROM->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		SC_INFO("unable to access I2C bus %s: %m", EEPROM->I2C_Bus);
+		return -1;
+	}
+
+	if (ioctl(FD, I2C_SLAVE_FORCE, EEPROM->I2C_Address) < 0) {
+		SC_INFO("unable to access onboard EEPROM address %#x",
+			EEPROM->I2C_Address);
+		(void) close(FD);
+		return -1;
+	}
+
+	Out_Buffer[0] = 0x0;
+	Out_Buffer[1] = 0x0;
+	if (write(FD, Out_Buffer, 2) != 2) {
+		SC_INFO("unable to set the offset address on onboard EEPROM");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) memset(In_Buffer, 0, SYSCMD_MAX);
+	if (read(FD, In_Buffer, 256) != 256) {
+		SC_ERR("unable to read onboard EEPROM");
+		(void) close(FD);
+		return -1;
+	}
+
+	(void) close(FD);
+
+	Offset = 0x15;
+	Length = (In_Buffer[Offset] & 0x3F);
+	snprintf(Product_Name, Length + 1, "%s", &In_Buffer[Offset + 1]);
+	SC_INFO("Product Name: %s", Product_Name);
+
+	return 0;
+}
+
+int
+Board_Identification(void)
+{
+	FILE *FP;
+	Board_t *Board;
+	char Buffer[SYSCMD_MAX] = { 0 };
+	char System_Cmd[SYSCMD_MAX];
+	int Ret;
+
+	if (access(BOARDFILE, F_OK) != 0) {
+		for (int i = 0; i < Boards.Numbers; i++) {
+			Board = &Boards.Board_Info[i];
+			if (Board->Devs->OnBoard_EEPROM == NULL) {
+				SC_ERR("eeprom info is not available for %s",
+				       Board->Name);
+				return -1;
+			}
+
+			Ret = Get_Product_Name(Board->Devs->OnBoard_EEPROM, Buffer);
+			if (Ret == 0) {
+				break;
+			}
+		}
+
+		if (Ret != 0) {
+			SC_ERR("failed to identify the board");
+			return -1;
+		}
+
+		(void) sprintf(System_Cmd, "echo %s > %s; sync", Buffer, BOARDFILE);
+		SC_INFO("Command: %s", System_Cmd);
+		system(System_Cmd);
+	}
+
+	FP = fopen(BOARDFILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read file %s: %m", BOARDFILE);
+		return -1;
+	}
+
+	(void) fgets(System_Cmd, SYSCMD_MAX, FP);
+	(void) fclose(FP);
+	(void) strcpy(Buffer, strtok(System_Cmd, "\n"));
+
+	for (int i = 0; i < Boards.Numbers; i++) {
+		Board = &Boards.Board_Info[i];
+		if (strcmp(Board->Name, Buffer) == 0) {
+			Plat_Devs = Board->Devs;
+			Plat_Ops = Board->Ops;
+			break;
+		}
+	}
+
+	if (Plat_Devs == NULL || Plat_Ops == NULL) {
+		SC_ERR("Unsupported board");
+		return -1;
+	}
+
+	return 0;
+}
+
 int
 Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 {

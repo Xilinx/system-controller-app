@@ -14,20 +14,16 @@
 #include <linux/i2c-dev.h>
 #include "sc_app.h"
 
-#define BOARDNAME	"vck190"
 #define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"
 #define IDCODE_TCL	"idcode/idcode_check.tcl"
 #define QSFP_MODSEL_TCL	"qsfp_set_modsel/qsfp_download.tcl"
 
-int Plat_Board_Name(char *Name);
-int Plat_BootMode_Ops(int);
-int Plat_Reset_Ops(void);
-int Plat_JTAG_Ops(int);
-int Plat_IDCODE_Ops(char *, int);
-int Plat_XSDB_Ops(const char *, char *, int);
-int Plat_Temperature_Ops(void);
-int Plat_FMCAutoAdjust(void);
-int Plat_IDT_8A34001_Reset(void);
+extern Plat_Devs_t *Plat_Devs;
+extern Plat_Ops_t *Plat_Ops;
+
+int VCK190_JTAG_Op(int);
+int VCK190_XSDB_Op(const char *, char *, int);
+int VCK190_IDT_8A34001_Reset(void);
 int Workaround_Vccaux(void *Arg);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
@@ -53,7 +49,7 @@ typedef enum {
 	BOOTMODE_MAX,
 } BootMode_Index;
 
-BootModes_t BootModes = {
+BootModes_t VCK190_BootModes = {
 	.Numbers = BOOTMODE_MAX,
 	.Mode_Lines = {
 		 "SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -108,7 +104,7 @@ BootModes_t BootModes = {
 /*
  * Clocks
  */
-IDT_8A34001_Data_t IDT_8A34001_Data = {
+IDT_8A34001_Data_t VCK190_IDT_8A34001_Data = {
 	.Number_Label = 14,
 	.Display_Label = { "CIN 1 From Bank 200 GTY_REF", \
 			   "CIN 2 From Bank 706", \
@@ -140,7 +136,7 @@ IDT_8A34001_Data_t IDT_8A34001_Data = {
 			    "OUT10DesiredFrequency", \
 			    "OUT11DesiredFrequency", \
 	},
-	.Chip_Reset = Plat_IDT_8A34001_Reset,
+	.Chip_Reset = VCK190_IDT_8A34001_Reset,
 };
 
 typedef enum {
@@ -155,7 +151,7 @@ typedef enum {
 	CLOCK_MAX,
 } Clock_Index;
 
-Clocks_t Clocks = {
+Clocks_t VCK190_Clocks = {
 	.Numbers = CLOCK_MAX,
 	.Clock[SI570_ZSFP] = {
 		.Name = "zSFP Si570",		// Name of the device referenced by application
@@ -180,7 +176,7 @@ Clocks_t Clocks = {
 	.Clock[IDT_8A34001_FMC2] = {
 		.Name = "8A34001 FMC2",
 		.Type = IDT_8A34001,
-		.Type_Data = &IDT_8A34001_Data,
+		.Type_Data = &VCK190_IDT_8A34001_Data,
 		.I2C_Bus = "/dev/i2c-18",
 		.I2C_Address = 0x5b,
 	},
@@ -260,7 +256,7 @@ typedef enum {
 	INA226_MAX,
 } Ina226_Index;
 
-Ina226s_t Ina226s = {
+Ina226s_t VCK190_Ina226s = {
 	.Numbers = INA226_MAX,
 	.Ina226[INA226_VCCINT] = {
 		.Name = "VCCINT",		// Name of the device referenced by application
@@ -398,7 +394,7 @@ typedef enum {
 	PD_MAX,
 } Power_Domain_Index;
 
-Power_Domains_t Power_Domains = {
+Power_Domains_t VCK190_Power_Domains = {
 	.Numbers = PD_MAX,
 	.Power_Domain[PD_FPD] = {
 		.Name = "FPD",
@@ -468,9 +464,6 @@ Power_Domains_t Power_Domains = {
 	},
 };
 
-#define VOLT_MIN(VOLT)	(VOLT - (0.03 * VOLT))
-#define VOLT_MAX(VOLT)	(VOLT + (0.03 * VOLT))
-
 /*
  * Voltages - power rails
  */
@@ -496,7 +489,7 @@ typedef enum {
 	VOLTAGE_MAX,
 } Voltage_Index;
 
-Voltages_t Voltages = {
+Voltages_t VCK190_Voltages = {
 	.Numbers = VOLTAGE_MAX,
 	.Voltage[VOLTAGE_VCCINT] = {
 		.Name = "VCCINT",		// Name of the device referenced by application
@@ -699,9 +692,66 @@ Voltages_t Voltages = {
 };
 
 /*
+ * According to UG1366 "VCK190 Evaluation Board User Guide"
+ * DDR4_DIMM1 is connected to Channel 3 of the i2c mux at address 0x74
+ * on the I2C1 bus. The system controller running 5.4.0-xilinx-v2020.1
+ * linux maps it to i2c-14 (i2cdetect -l):
+ *      i2c-14  i2c     i2c-2-mux (chan_id 3)
+ *
+ *  addr=0x50, reg_addr=0 len=16:   DIMM's SPD EEPROM
+ *  addr=0x18, reg_addr=5 len=2:    DIMM's temp sensor
+ */
+DIMM_t VCK190_DIMM = {
+	.I2C_Bus = "/dev/i2c-14",
+	.Spd   = { .Bus_addr = 0x50, .Reg_addr = 0, .Read_len = 16 },
+	.Therm = { .Bus_addr = 0x18, .Reg_addr = 5, .Read_len = 2 }
+};
+
+GPIOs_t VCK190_GPIOs = {
+	.Numbers = 37,
+	.GPIO[0] = { 7, "500 - DC_SYS_CTRL0", "DC_SYS_CTRL0" },
+	.GPIO[1] = { 8, "500 - DC_SYS_CTRL1", "DC_SYS_CTRL1" },
+	.GPIO[2] = { 9, "500 - DC_SYS_CTRL2", "DC_SYS_CTRL2" },
+	.GPIO[3] = { 10, "500 - DC_SYS_CTRL3", "DC_SYS_CTRL3" },
+	.GPIO[4] = { 12, "500 - SYSCTLR_PB", "SYSCTLR_PB" },
+	.GPIO[5] = { 34, "501 - LP_I2C0_PMC_SCL", "LP_I2C0_PMC_SCL" },
+	.GPIO[6] = { 35, "501 - LP_I2C0_PMC_SDA", "LP_I2C0_PMC_SDA" },
+	.GPIO[7] = { 36, "501 - LP_I2C1_SCL", "LP_I2C1_SCL" },
+	.GPIO[8] = { 37, "501 - LP_I2C1_SDA", "LP_I2C1_SDA" },
+	.GPIO[9] = { 38, "501 - SYSCTLR_UART0_RXD_IN", "UART0_RXD_IN" },
+	.GPIO[10] = { 39, "501 - SYSCTLR_UART0_TXD_OUT", "UART0_TXD_OUT" },
+	.GPIO[11] = { 42, "501 - SYSCTLR_ETH_RESET_B_R", "ETH_RESET_B" },
+	.GPIO[12] = { 45, "501 - SYSCTLR_SD1_CD_B", "SD1_CD_B" },
+	.GPIO[13] = { 46, "501 - SYSCTLR_SD1_DATA0", "SD1_DATA0" },
+	.GPIO[14] = { 47, "501 - SYSCTLR_SD1_DATA1", "SD1_DATA1" },
+	.GPIO[15] = { 48, "501 - SYSCTLR_SD1_DATA2", "SD1_DATA2" },
+	.GPIO[16] = { 49, "501 - SYSCTLR_SD1_DATA3", "SD1_DATA3" },
+	.GPIO[17] = { 50, "501 - SYSCTLR_SD1_CMD", "SD1_CMD" },
+	.GPIO[18] = { 51, "501 - SYSCTLR_SD1_CLK", "SD1_CLK" },
+	.GPIO[19] = { 76, "502 - SYSCTLR_ETH_MDC", "ETH_MDC" },
+	.GPIO[20] = { 77, "502 - SYSCTLR_ETH_MDIO", "ETH_MDIO" },
+	.GPIO[21] = { 90, "43 - SYSCTLR_GPIO0", "SYSCTLR_GPIO0" },
+	.GPIO[22] = { 91, "43 - SYSCTLR_GPIO1", "SYSCTLR_GPIO1" },
+	.GPIO[23] = { 92, "43 - SYSCTLR_GPIO2", "SYSCTLR_GPIO2" },
+	.GPIO[24] = { 93, "43 - SYSCTLR_GPIO3", "SYSCTLR_GPIO3" },
+	.GPIO[25] = { 94, "43 - SYSCTLR_GPIO4", "SYSCTLR_GPIO4" },
+	.GPIO[26] = { 95, "43 - SYSCTLR_GPIO5", "SYSCTLR_GPIO5" },
+	.GPIO[27] = { 78, "44 - SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE0" },
+	.GPIO[28] = { 79, "44 - SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE1" },
+	.GPIO[29] = { 80, "44 - SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE2" },
+	.GPIO[30] = { 81, "44 - SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE3" },
+	.GPIO[31] = { 82, "44 - SYSCTLR_POR_B_LS", "SYSCTLR_POR_B_LS" },
+	.GPIO[32] = { 83, "44 - DC_PRSNT", "DC_PRSNT" },
+	.GPIO[33] = { 85, "44 - SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S0" },
+	.GPIO[34] = { 86, "44 - SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S1" },
+	.GPIO[35] = { 87, "44 - SYSCTLR_IIC_MUX0_RESET_B", "SYSCTLR_IIC_MUX0_RESET_B" },
+	.GPIO[36] = { 88, "44 - SYSCTLR_IIC_MUX1_RESET_B", "SYSCTLR_IIC_MUX1_RESET_B" },
+};
+
+/*
  * IO Expander
  */
-IO_Exp_t IO_Exp = {
+IO_Exp_t VCK190_IO_Exp = {
 	.Name = "TCA6416A",
 	.Numbers = 16,
 	.Labels = { "Port 0(7) - MAX6643 FULLSPD",
@@ -729,7 +779,7 @@ IO_Exp_t IO_Exp = {
 /*
  * On-board EEPROM
  */
-OnBoard_EEPROM_t OnBoard_EEPROM = {
+OnBoard_EEPROM_t VCK190_OnBoard_EEPROM = {
 	.Name = "EEPROM",
 	.I2C_Bus = "/dev/i2c-11",
 	.I2C_Address = 0x54,
@@ -738,7 +788,7 @@ OnBoard_EEPROM_t OnBoard_EEPROM = {
 /*
  * Daughter Card
  */
-Daughter_Card_t Daughter_Card = {
+Daughter_Card_t VCK190_Daughter_Card = {
 	.Name = "EBM",
 	.I2C_Bus = "/dev/i2c-11",
 	.I2C_Address = 0x52,
@@ -753,7 +803,7 @@ typedef enum {
 	SFP_MAX,
 } SFP_Index;
 
-SFPs_t SFPs = {
+SFPs_t VCK190_SFPs = {
 	.Numbers = SFP_MAX,
 	.SFP[SFP_0] = {
 		.Name = "zSFP-0",
@@ -775,7 +825,7 @@ typedef enum {
 	QSFP_MAX,
 } QSFP_Index;
 
-QSFPs_t QSFPs = {
+QSFPs_t VCK190_QSFPs = {
 	.Numbers = QSFP_MAX,
 	.QSFP[QSFP_0] = {
 		.Name = "zQSFP1",
@@ -793,7 +843,7 @@ typedef enum {
 	FMC_MAX,
 } FMC_Index;
 
-FMCs_t FMCs = {
+FMCs_t VCK190_FMCs = {
 	.Numbers = FMC_MAX,
 	.FMC[FMC_1] = {
 		.Name = "FMC1",
@@ -815,13 +865,33 @@ typedef enum {
 	WORKAROUND_MAX,
 } Workaround_Index;
 
-Workarounds_t Workarounds = {
+Workarounds_t VCK190_Workarounds = {
 	.Numbers = WORKAROUND_MAX,
 	.Workaround[WORKAROUND_VCCAUX] = {
 		.Name = "vccaux",		// Name of workaround for this platform
 		.Arg_Needed = 1,		// Whether following workaround routine needs argument
 		.Plat_Workaround_Op = Workaround_Vccaux, // Platform workaround routine
 	},
+};
+
+/*
+ * VCK190-sepcific Devices
+ */
+Plat_Devs_t VCK190_Devs = {
+	.BootModes = &VCK190_BootModes,
+	.Clocks = &VCK190_Clocks,
+	.Ina226s = &VCK190_Ina226s,
+	.Power_Domains = &VCK190_Power_Domains,
+	.Voltages = &VCK190_Voltages,
+	.DIMM = &VCK190_DIMM,
+	.GPIOs = &VCK190_GPIOs,
+	.IO_Exp = &VCK190_IO_Exp,
+	.OnBoard_EEPROM = &VCK190_OnBoard_EEPROM,
+	.Daughter_Card = &VCK190_Daughter_Card,
+	.SFPs = &VCK190_SFPs,
+	.QSFPs = &VCK190_QSFPs,
+	.FMCs = &VCK190_FMCs,
+	.Workarounds = &VCK190_Workarounds,
 };
 
 int
@@ -869,34 +939,13 @@ Workaround_Vccaux(void *Arg)
 }
 
 int
-Plat_Board_Name(char *Board_Name)
-{
-	if (Board_Name == NULL) {
-		SC_ERR("need a pre-allocated string array");
-		return -1;
-	}
-
-	(void) strcpy(Board_Name, BOARDNAME);
-	return 0;
-}
-
-int
-Plat_Version_Ops(int *Major, int *Minor)
-{
-	// Same version number as common code.
-	*Major = -1;
-	*Minor = -1;
-	return 0;
-}
-
-int
-Plat_BootMode_Ops(int Value)
+VCK190_BootMode_Op(int Value)
 {
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
 
-	(void) Plat_JTAG_Ops(1);
+	(void) VCK190_JTAG_Op(1);
 	sprintf(System_Cmd, "%s; %s %s%s %x 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
 	    BOOTMODE_TCL, Value);
 	SC_INFO("Command: %s", System_Cmd);
@@ -909,7 +958,7 @@ Plat_BootMode_Ops(int Value)
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
 	SC_INFO("XSDB Output: %s", Output);
-	(void) Plat_JTAG_Ops(0);
+	(void) VCK190_JTAG_Op(0);
 	if (strstr(Output, "no targets found") != NULL) {
 		SC_ERR("could not connect to Versal through jtag");
 		return -1;
@@ -919,11 +968,12 @@ Plat_BootMode_Ops(int Value)
 }
 
 int
-Plat_Reset_Ops(void)
+VCK190_Reset_Op(void)
 {
 	FILE *FP;
 	int State;
 	char Buffer[SYSCMD_MAX] = { 0 };
+	BootModes_t *BootModes;
 	BootMode_t *BootMode;
 
 	if (access(SILICONFILE, F_OK) == 0) {
@@ -971,10 +1021,11 @@ Plat_Reset_Ops(void)
 		(void) fscanf(FP, "%s", Buffer);
 		(void) fclose(FP);
 		SC_INFO("%s: %s", BOOTMODEFILE, Buffer);
-		for (int i = 0; i < BootModes.Numbers; i++) {
-			BootMode = &BootModes.BootMode[i];
+		BootModes = Plat_Devs->BootModes;
+		for (int i = 0; i < BootModes->Numbers; i++) {
+			BootMode = &BootModes->BootMode[i];
 			if (strcmp(Buffer, (char *)BootMode->Name) == 0) {
-				if (Plat_BootMode_Ops(BootMode->Value) != 0) {
+				if (VCK190_BootMode_Op(BootMode->Value) != 0) {
 					SC_ERR("failed to set the boot mode");
 					return -1;
 				}
@@ -988,7 +1039,7 @@ Plat_Reset_Ops(void)
 }
 
 int
-Plat_JTAG_Ops(int Select)
+VCK190_JTAG_Op(int Select)
 {
 	int State;
 
@@ -1032,7 +1083,7 @@ Plat_JTAG_Ops(int Select)
 }
 
 int
-Plat_XSDB_Ops(const char *TCL_File, char *Output, int Length)
+VCK190_XSDB_Op(const char *TCL_File, char *Output, int Length)
 {
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
@@ -1049,7 +1100,7 @@ Plat_XSDB_Ops(const char *TCL_File, char *Output, int Length)
 		return -1;
 	}
 
-	(void) Plat_JTAG_Ops(1);
+	(void) VCK190_JTAG_Op(1);
 	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD,
 		       BIT_PATH, TCL_File);
 	SC_INFO("Command: %s", System_Cmd);
@@ -1069,21 +1120,21 @@ Plat_XSDB_Ops(const char *TCL_File, char *Output, int Length)
 	}
 
 Out:
-	(void) Plat_JTAG_Ops(0);
+	(void) VCK190_JTAG_Op(0);
 	return Ret;
 }
 
 int
-Plat_IDCODE_Ops(char *Output, int Length)
+VCK190_IDCODE_Op(char *Output, int Length)
 {
-	return Plat_XSDB_Ops(IDCODE_TCL, Output, Length);
+	return VCK190_XSDB_Op(IDCODE_TCL, Output, Length);
 }
 
 /*
  * Get the board temperature
  */
 int
-Plat_Temperature_Ops(void)
+VCK190_Temperature_Op(void)
 {
 	FILE *FP;
 	char Output[STRLEN_MAX];
@@ -1118,90 +1169,19 @@ Plat_Temperature_Ops(void)
 }
 
 /*
- * According to UG1366 "VCK190 Evaluation Board User Guide"
- * DDR4_DIMM1 is connected to Channel 3 of the i2c mux at address 0x74
- * on the I2C1 bus. The system controller running 5.4.0-xilinx-v2020.1
- * linux maps it to i2c-14 (i2cdetect -l):
- *      i2c-14  i2c     i2c-2-mux (chan_id 3)
- *
- *  addr=0x50, reg_addr=0 len=16:   DIMM's SPD EEPROM
- *  addr=0x18, reg_addr=5 len=2:    DIMM's temp sensor
- */
-struct ddr_dimm1 Dimm1 = {
-	.I2C_Bus = "/dev/i2c-14",
-	.Spd   = { .Bus_addr = 0x50, .Reg_addr = 0, .Read_len = 16 },
-	.Therm = { .Bus_addr = 0x18, .Reg_addr = 5, .Read_len = 2 }
-};
-
-/*
- * The display name for a GPIO line and the label name used in the device
- * tree may be different.
- */
-#define GPIO_LN(Num, Display, Internal) { \
-		.Line = Num, \
-		.Display_Name = Display, \
-		.Internal_Name = Internal, \
-}
-
-const struct Gpio_line_name Gpio_target[] = {
-	GPIO_LN(7, "500 - DC_SYS_CTRL0", "DC_SYS_CTRL0"),
-	GPIO_LN(8, "500 - DC_SYS_CTRL1", "DC_SYS_CTRL1"),
-	GPIO_LN(9, "500 - DC_SYS_CTRL2", "DC_SYS_CTRL2"),
-	GPIO_LN(10, "500 - DC_SYS_CTRL3", "DC_SYS_CTRL3"),
-	GPIO_LN(12, "500 - SYSCTLR_PB", "SYSCTLR_PB"),
-	GPIO_LN(34, "501 - LP_I2C0_PMC_SCL", "LP_I2C0_PMC_SCL"),
-	GPIO_LN(35, "501 - LP_I2C0_PMC_SDA", "LP_I2C0_PMC_SDA"),
-	GPIO_LN(36, "501 - LP_I2C1_SCL", "LP_I2C1_SCL"),
-	GPIO_LN(37, "501 - LP_I2C1_SDA", "LP_I2C1_SDA"),
-	GPIO_LN(38, "501 - SYSCTLR_UART0_RXD_IN", "UART0_RXD_IN"),
-	GPIO_LN(39, "501 - SYSCTLR_UART0_TXD_OUT", "UART0_TXD_OUT"),
-	GPIO_LN(42, "501 - SYSCTLR_ETH_RESET_B_R", "ETH_RESET_B"),
-	GPIO_LN(45, "501 - SYSCTLR_SD1_CD_B", "SD1_CD_B"),
-	GPIO_LN(46, "501 - SYSCTLR_SD1_DATA0", "SD1_DATA0"),
-	GPIO_LN(47, "501 - SYSCTLR_SD1_DATA1", "SD1_DATA1"),
-	GPIO_LN(48, "501 - SYSCTLR_SD1_DATA2", "SD1_DATA2"),
-	GPIO_LN(49, "501 - SYSCTLR_SD1_DATA3", "SD1_DATA3"),
-	GPIO_LN(50, "501 - SYSCTLR_SD1_CMD", "SD1_CMD"),
-	GPIO_LN(51, "501 - SYSCTLR_SD1_CLK", "SD1_CLK"),
-	GPIO_LN(76, "502 - SYSCTLR_ETH_MDC", "ETH_MDC"),
-	GPIO_LN(77, "502 - SYSCTLR_ETH_MDIO", "ETH_MDIO"),
-	GPIO_LN(90, "43 - SYSCTLR_GPIO0", "SYSCTLR_GPIO0"),
-	GPIO_LN(91, "43 - SYSCTLR_GPIO1", "SYSCTLR_GPIO1"),
-	GPIO_LN(92, "43 - SYSCTLR_GPIO2", "SYSCTLR_GPIO2"),
-	GPIO_LN(93, "43 - SYSCTLR_GPIO3", "SYSCTLR_GPIO3"),
-	GPIO_LN(94, "43 - SYSCTLR_GPIO4", "SYSCTLR_GPIO4"),
-	GPIO_LN(95, "43 - SYSCTLR_GPIO5", "SYSCTLR_GPIO5"),
-	GPIO_LN(78, "44 - SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE0"),
-	GPIO_LN(79, "44 - SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE1"),
-	GPIO_LN(80, "44 - SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE2"),
-	GPIO_LN(81, "44 - SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE3"),
-	GPIO_LN(82, "44 - SYSCTLR_POR_B_LS", "SYSCTLR_POR_B_LS"),
-	GPIO_LN(83, "44 - DC_PRSNT", "DC_PRSNT"),
-	GPIO_LN(85, "44 - SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S0"),
-	GPIO_LN(86, "44 - SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S1"),
-	GPIO_LN(87, "44 - SYSCTLR_IIC_MUX0_RESET_B", "SYSCTLR_IIC_MUX0_RESET_B"),
-	GPIO_LN(88, "44 - SYSCTLR_IIC_MUX1_RESET_B", "SYSCTLR_IIC_MUX1_RESET_B"),
-};
-
-int Plat_Gpio_target_size(void)
-{
-	return sizeof(Gpio_target) / sizeof(Gpio_target[0]);
-}
-
-/*
  * The QSFP must be selected and not held in Reset (High) in order to be
  * accessed.  These lines are driven by Vesal.  The QSFP1_RESETL_LS high
  * has a pull up, but QSFP1_MODSKLL_LS has no pull down.  If Versal is not
  * programmed to drive QSFP1_MODSKLL_LS low, the QSFP will not respond.
  */
 int
-Plat_QSFP_Init(void)
+VCK190_QSFP_Init_Op(void)
 {
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
 
-	(void) Plat_JTAG_Ops(1);
+	(void) VCK190_JTAG_Op(1);
 	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
 	    QSFP_MODSEL_TCL);
 	SC_INFO("Command: %s", System_Cmd);
@@ -1214,7 +1194,7 @@ Plat_QSFP_Init(void)
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
 	SC_INFO("XSDB Output: %s", Output);
-	(void) Plat_JTAG_Ops(0);
+	(void) VCK190_JTAG_Op(0);
 	if (strstr(Output, "no targets found") != NULL) {
 		SC_ERR("could not connect to Versal through jtag");
 		return -1;
@@ -1224,11 +1204,14 @@ Plat_QSFP_Init(void)
 }
 
 int
-Plat_FMCAutoAdjust(void)
+VCK190_FMCAutoVadj_Op(void)
 {
 	int Target_Index = -1;
+	IO_Exp_t *IO_Exp;
 	unsigned int Value;
+	Voltages_t *Voltages;
 	Voltage_t *Regulator;
+	FMCs_t *FMCs;
 	FMC_t *FMC;
 	int FMC1 = 0;
 	int FMC2 = 0;
@@ -1239,7 +1222,8 @@ Plat_FMCAutoAdjust(void)
 	float Max_Voltage_2 = 0;
 	float Min_Combined, Max_Combined;
 
-	if (Access_IO_Exp(&IO_Exp, 0, 0x0, &Value) != 0) {
+	IO_Exp = Plat_Devs->IO_Exp;
+	if (Access_IO_Exp(IO_Exp, 0, 0x0, &Value) != 0) {
 		SC_ERR("failed to read input of IO Expander");
 		return -1;
 	}
@@ -1256,10 +1240,11 @@ Plat_FMCAutoAdjust(void)
 		FMC2 = 1;
 	}
 
-	for (int i = 0; i < Voltages.Numbers; i++) {
-		if (strcmp("VADJ_FMC", (char *)Voltages.Voltage[i].Name) == 0) {
+	Voltages = Plat_Devs->Voltages;
+	for (int i = 0; i < Voltages->Numbers; i++) {
+		if (strcmp("VADJ_FMC", (char *)Voltages->Voltage[i].Name) == 0) {
 			Target_Index = i;
-			Regulator = &Voltages.Voltage[Target_Index];
+			Regulator = &Voltages->Voltage[Target_Index];
 			break;
 		}
 	}
@@ -1269,8 +1254,9 @@ Plat_FMCAutoAdjust(void)
 		return -1;
 	}
 
+	FMCs = Plat_Devs->FMCs;
 	if (FMC1 == 1) {
-		FMC = &FMCs.FMC[FMC_1];
+		FMC = &FMCs->FMC[FMC_1];
 		if (FMC_Vadj_Range(FMC, &Min_Voltage_1, &Max_Voltage_1) != 0) {
 			SC_ERR("failed to get Voltage Adjust range for FMC1");
 			return -1;
@@ -1278,7 +1264,7 @@ Plat_FMCAutoAdjust(void)
 	}
 
 	if (FMC2 == 1) {
-		FMC = &FMCs.FMC[FMC_2];
+		FMC = &FMCs->FMC[FMC_2];
 		if (FMC_Vadj_Range(FMC, &Min_Voltage_2, &Max_Voltage_2) != 0) {
 			SC_ERR("failed to get Voltage Adjust range for FMC2");
 			return -1;
@@ -1323,9 +1309,12 @@ Plat_FMCAutoAdjust(void)
 }
 
 int
-Plat_IDT_8A34001_Reset(void)
+VCK190_IDT_8A34001_Reset(void)
 {
+	IO_Exp_t *IO_Exp;
 	unsigned int Value;
+
+	IO_Exp = Plat_Devs->IO_Exp;
 
 	/*
 	 * The '8A34001_EXP_RST_B' line is controlled by bit 5 of register
@@ -1333,7 +1322,7 @@ Plat_IDT_8A34001_Reset(void)
 	 * at once.
 	 */
 	Value = 0x0;	// Assert reset - active low
-	if (Access_IO_Exp(&IO_Exp, 1, 0x2, &Value) != 0) {
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
 		SC_ERR("failed to assert reset of 8A34001 chip");
 		return -1;
 	}
@@ -1341,10 +1330,22 @@ Plat_IDT_8A34001_Reset(void)
 	sleep (1);
 
 	Value = 0x20;	// De-assert reset
-	if (Access_IO_Exp(&IO_Exp, 1, 0x2, &Value) != 0) {
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
 		SC_ERR("failed to de-assert reset of 8A34001 chip");
 		return -1;
 	}
 
 	return 0;
 }
+
+/*
+ * VCK190-specific Operations
+*/
+Plat_Ops_t VCK190_Ops = {
+	.Reset_Op = VCK190_Reset_Op,
+	.IDCODE_Op = VCK190_IDCODE_Op,
+	.XSDB_Op = VCK190_XSDB_Op,
+	.Temperature_Op = VCK190_Temperature_Op,
+	.QSFP_Init_Op = VCK190_QSFP_Init_Op,
+	.FMCAutoVadj_Op = VCK190_FMCAutoVadj_Op,
+};

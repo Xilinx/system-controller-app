@@ -11,20 +11,15 @@
 #include <string.h>
 #include "sc_app.h"
 
-extern Clocks_t Clocks;
-extern Daughter_Card_t Daughter_Card;
-extern struct ddr_dimm1 Dimm1;
-extern Voltages_t Voltages;
+extern Plat_Devs_t *Plat_Devs;
+extern Plat_Ops_t *Plat_Ops;
 
 int Clocks_Check(void *);
 int XSDB_BIT(void *);
 int EBM_EEPROM_Check(void *);
 int DIMM_EEPROM_Check(void *);
 int Voltages_Check(void *);
-
 extern int Access_Regulator(Voltage_t *, float *, int);
-extern int Plat_Reset_Ops(void);
-extern int Plat_XSDB_Ops(const char *, char *, int);
 
 /*
  * BITs
@@ -76,22 +71,29 @@ BITs_t BITs = {
 int
 Clocks_Check(void *Arg)
 {
+	Clocks_t *Clocks;
 	BIT_t *BIT_p = Arg;
 	int FD;
 	char ReadBuffer[STRLEN_MAX];
 	double Freq, Lower, Upper, Delta;
 
-	for (int i = 0; i < Clocks.Numbers; i++) {
-		if (Clocks.Clock[i].Type == IDT_8A34001) {
+	Clocks = Plat_Devs->Clocks;
+	if (Clocks == NULL) {
+		SC_ERR("clock operation is not supported");
+		return -1;
+	}
+
+	for (int i = 0; i < Clocks->Numbers; i++) {
+		if (Clocks->Clock[i].Type == IDT_8A34001) {
 			continue;
 		}
 
-		SC_INFO("Clock: %s", Clocks.Clock[i].Name);
-		FD = open(Clocks.Clock[i].Sysfs_Path, O_RDONLY);
+		SC_INFO("Clock: %s", Clocks->Clock[i].Name);
+		FD = open(Clocks->Clock[i].Sysfs_Path, O_RDONLY);
 		ReadBuffer[0] = '\0';
 		if (read(FD, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {
 			SC_ERR("failed to access clock %s",
-			       Clocks.Clock[i].Name);
+			       Clocks->Clock[i].Name);
 			SC_PRINT("%s: FAIL", BIT_p->Name);
 			(void) close(FD);
 			return -1;
@@ -100,11 +102,11 @@ Clocks_Check(void *Arg)
 		/* Allow up to 1000 Hz delta */
 		Delta = 0.001;
 		Freq = strtod(ReadBuffer, NULL) / 1000000.0;	// In MHz
-		Lower = Clocks.Clock[i].Default_Freq - Delta;
-		Upper = Clocks.Clock[i].Default_Freq + Delta;
+		Lower = Clocks->Clock[i].Default_Freq - Delta;
+		Upper = Clocks->Clock[i].Default_Freq + Delta;
 		if (Freq < Lower || Freq > Upper) {
 			SC_ERR("%s: BIT failed for clock %s", BIT_p->Name,
-			    Clocks.Clock[i].Name);
+			    Clocks->Clock[i].Name);
 			SC_PRINT("%s: FAIL", BIT_p->Name);
 			return 0;
 		}
@@ -123,7 +125,12 @@ XSDB_BIT(void *Arg)
 	BIT_t *BIT_p = Arg;
 	char Output[STRLEN_MAX] = { 0 };
 
-	if (Plat_XSDB_Ops(BIT_p->TCL_File, Output, STRLEN_MAX) != 0) {
+	if (Plat_Ops->XSDB_Op == NULL) {
+		SC_ERR("xsdb operation is not supported");
+		return -1;
+	}
+
+	if (Plat_Ops->XSDB_Op(BIT_p->TCL_File, Output, STRLEN_MAX) != 0) {
 		SC_PRINT("%s: FAIL", BIT_p->Name);
 	} else {
 		SC_PRINT("%s: PASS", BIT_p->Name);
@@ -139,18 +146,25 @@ int
 EBM_EEPROM_Check(void *Arg)
 {
 	BIT_t *BIT_p = Arg;
+	Daughter_Card_t *Daughter_Card;
 	int FD;
 
-	FD = open(Daughter_Card.I2C_Bus, O_RDWR);
+	Daughter_Card = Plat_Devs->Daughter_Card;
+	if (Daughter_Card == NULL) {
+		SC_ERR("EBM operation is not supported");
+		return -1;
+	}
+
+	FD = open(Daughter_Card->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		SC_ERR("unable to open I2C bus %s: %m", Daughter_Card.I2C_Bus);
+		SC_ERR("unable to open I2C bus %s: %m", Daughter_Card->I2C_Bus);
 		SC_PRINT("%s: FAIL", BIT_p->Name);
 		return -1;
 	}
 
-	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card.I2C_Address) < 0) {
+	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card->I2C_Address) < 0) {
 		SC_ERR("unable to access EEPROM device %#x",
-		       Daughter_Card.I2C_Address);
+		       Daughter_Card->I2C_Address);
 		SC_PRINT("%s: FAIL", BIT_p->Name);
 		(void) close(FD);
 		return -1;
@@ -170,20 +184,27 @@ DIMM_EEPROM_Check(void *Arg)
 {
 	BIT_t *BIT_p = Arg;
 	int FD;
+	DIMM_t *DIMM;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
 
-	FD = open(Dimm1.I2C_Bus, O_RDWR);
+	DIMM = Plat_Devs->DIMM;
+	if (DIMM == NULL) {
+		SC_ERR("ddr operation is not supported");
+		return -1;
+	}
+
+	FD = open(DIMM->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		SC_ERR("unable to open I2C bus %s: %m", Dimm1.I2C_Bus);
+		SC_ERR("unable to open I2C bus %s: %m", DIMM->I2C_Bus);
 		SC_PRINT("%s: FAIL", BIT_p->Name);
 		return -1;
 	}
 
-	if (ioctl(FD, I2C_SLAVE_FORCE, Dimm1.Spd.Bus_addr) < 0) {
+	if (ioctl(FD, I2C_SLAVE_FORCE, DIMM->Spd.Bus_addr) < 0) {
 		SC_ERR("unable to access EEPROM device %#x: %m",
-		       Dimm1.Spd.Bus_addr);
+		       DIMM->Spd.Bus_addr);
 		SC_PRINT("%s: FAIL", BIT_p->Name);
 		(void) close(FD);
 		return -1;
@@ -192,7 +213,7 @@ DIMM_EEPROM_Check(void *Arg)
 	(void) memset(Out_Buffer, 0, STRLEN_MAX);
 	(void) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x2;	// Byte 2: DRAM Device Type
-	I2C_READ(FD, Dimm1.Spd.Bus_addr, 1, Out_Buffer, In_Buffer, Ret);
+	I2C_READ(FD, DIMM->Spd.Bus_addr, 1, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
 		SC_PRINT("%s: FAIL", BIT_p->Name);
 		(void) close(FD);
@@ -219,11 +240,18 @@ int
 Voltages_Check(void *Arg)
 {
 	BIT_t *BIT_p = Arg;
+	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;
 
-	for (int i = 0; i < Voltages.Numbers; i++) {
-		Regulator = &Voltages.Voltage[i];
+	Voltages = Plat_Devs->Voltages;
+	if (Voltages == NULL) {
+		SC_ERR("voltage operation is not supported");
+		return -1;
+	}
+
+	for (int i = 0; i < Voltages->Numbers; i++) {
+		Regulator = &Voltages->Voltage[i];
 		SC_INFO("Voltage: %s", Regulator->Name);
 		if (Access_Regulator(Regulator, &Voltage, 0) != 0) {
 			SC_ERR("failed to get voltage for %s",

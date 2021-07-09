@@ -4,7 +4,147 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdio.h>
+#include <unistd.h>
 #include "sc_app.h"
+
+extern int GPIO_Set(char *, int);
+
+/*
+ * Boot Modes
+ */
+typedef enum {
+	JTAG,
+	QSPI24,
+	QSPI32,
+	SD0_LS,
+	SD1,
+	EMMC,
+	USB,
+	OSPI,
+	SMAP,
+	DFT,
+	SD1_LS,
+	BOOTMODE_MAX,
+} BootMode_Index;
+
+BootModes_t VPK120_BootModes = {
+	.Numbers = BOOTMODE_MAX,
+	.Mode_Lines = {
+		"SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+		"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"
+	},
+	.BootMode[JTAG] = {
+		.Name = "jtag",
+		.Value = 0x0,
+	},
+	.BootMode[QSPI24] = {
+		.Name = "qspi24",
+		.Value = 0x1,
+	},
+	.BootMode[QSPI32] = {
+		.Name = "qspi32",
+		.Value = 0x2,
+	},
+	.BootMode[SD0_LS] = {
+		.Name = "sd0_ls",
+		.Value = 0x3,
+	},
+	.BootMode[SD1] = {
+		.Name = "sd1",
+		.Value = 0x5,
+	},
+	.BootMode[EMMC] = {
+		.Name = "emmc",
+		.Value = 0x6,
+	},
+	.BootMode[USB] = {
+		.Name = "usb",
+		.Value = 0x7,
+	},
+	.BootMode[OSPI] = {
+		.Name = "ospi",
+		.Value = 0x8,
+	},
+	.BootMode[SMAP] = {
+		.Name = "smap",
+		.Value = 0xa,
+	},
+	.BootMode[DFT] = {
+		.Name = "dft",
+		.Value = 0xd,
+	},
+	.BootMode[SD1_LS] = {
+		.Name = "sd1_ls",
+		.Value = 0xe,
+	},
+};
+
+/*
+ * Clocks
+ */
+typedef enum {
+	SI570_USER1_FMC,
+	SI570_VERSAL_SYS,
+	SI570_LPDDR4_CLK1,
+	SI570_LPDDR4_CLK2,
+	SI570_LPDDR4_CLK3,
+	CLOCK_MAX,
+} Clock_Index;
+
+Clocks_t VPK120_Clocks = {
+	.Numbers = CLOCK_MAX,
+	.Clock[SI570_USER1_FMC] = {
+		.Name = "User1 FMC Si570",// Name of the device referenced by application
+		.Type = Si570,		// Clock generators accessible through sysfs
+		.Sysfs_Path = "/sys/devices/platform/si570_user1_fmc_clk/set_rate",
+		.Default_Freq = 100.0,	// Factory default frequency in MHz
+		.Upper_Freq = 810.0,	// Upper-bound frequency in MHz
+		.Lower_Freq = 10.0,	// Lower-bound frequency in MHz
+		.I2C_Bus = "/dev/i2c-9",// I2C bus address behind the mux
+		.I2C_Address = 0x5f,	// I2C device address
+	},
+	.Clock[SI570_VERSAL_SYS] = {
+		.Name = "Versal Sys Clk Si570",
+		.Type = Si570,
+		.Sysfs_Path = "/sys/devices/platform/si570_ref_clk/set_rate",
+		.Default_Freq = 33.333,
+		.Upper_Freq = 160.0,
+		.Lower_Freq = 10.0,
+		.I2C_Bus = "/dev/i2c-11",
+		.I2C_Address = 0x5d,
+	},
+	.Clock[SI570_LPDDR4_CLK1] = {
+		.Name = "LPDDR4 Clk1 Si570",
+		.Type = Si570,
+		.Sysfs_Path = "/sys/devices/platform/si570_lpddr4_clk1/set_rate",
+		.Default_Freq = 200.0,
+		.Upper_Freq = 810.0,
+		.Lower_Freq = 10.0,
+		.I2C_Bus = "/dev/i2c-16",
+		.I2C_Address = 0x60,
+	},
+	.Clock[SI570_LPDDR4_CLK2] = {
+		.Name = "LPDDR4 Clk2 Si570",
+		.Type = Si570,
+		.Sysfs_Path = "/sys/devices/platform/si570_lpddr4_clk2/set_rate",
+		.Default_Freq = 200.0,
+		.Upper_Freq = 810.0,
+		.Lower_Freq = 10.0,
+		.I2C_Bus = "/dev/i2c-15",
+		.I2C_Address = 0x60,
+	},
+	.Clock[SI570_LPDDR4_CLK3] = {
+		.Name = "LPDDR4 Clk3 Si570",
+		.Type = Si570,
+		.Sysfs_Path = "/sys/devices/platform/si570_lpddr4_clk3/set_rate",
+		.Default_Freq = 200.0,
+		.Upper_Freq = 810.0,
+		.Lower_Freq = 10.0,
+		.I2C_Bus = "/dev/i2c-14",
+		.I2C_Address = 0x60,
+	},
+};
 
 /*
  * INA226
@@ -394,6 +534,8 @@ OnBoard_EEPROM_t VPK120_OnBoard_EEPROM = {
  * Board-specific Devices
  */
 Plat_Devs_t VPK120_Devs = {
+	.BootModes = &VPK120_BootModes,
+	.Clocks = &VPK120_Clocks,
 	.Ina226s = &VPK120_Ina226s,
 	.Voltages = &VPK120_Voltages,
 	.OnBoard_EEPROM = &VPK120_OnBoard_EEPROM,
@@ -406,9 +548,45 @@ VPK120_Version_Op(int *Major, int *Minor)
 	*Minor = 0;
 }
 
+int
+VPK120_BootMode_Op(BootMode_t *BootMode, int Op)
+{
+	for (int i = 0; i < 4; i++) {
+		if (GPIO_Set(VPK120_BootModes.Mode_Lines[i],
+		    ((BootMode->Value >> i) & 0x1)) != 0) {
+			SC_ERR("failed to set GPIO line %s",
+			       VPK120_BootModes.Mode_Lines[i]);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int
+VPK120_Reset_Op(void)
+{
+	/* Assert POR */
+	if (GPIO_Set("SYSCTLR_POR_B_LS", 0) != 0) {
+		SC_ERR("failed to assert power-on-reset");
+		return -1;
+	}
+
+	sleep(1);
+
+	/* De-assert POR */
+	if (GPIO_Set("SYSCTLR_POR_B_LS", 1) != 0) {
+		SC_ERR("failed to de-assert power-on-reset");
+		return -1;
+	}
+
+	return 0;
+}
 /*
  * Board-specific Operations
  */
 Plat_Ops_t VPK120_Ops = {
 	.Version_Op = VPK120_Version_Op,
+	.BootMode_Op = VPK120_BootMode_Op,
+	.Reset_Op = VPK120_Reset_Op,
 };

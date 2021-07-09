@@ -303,6 +303,7 @@ typedef struct {
  */
 typedef struct {
 	void (*Version_Op)(int *, int *);
+	int (*BootMode_Op)(BootMode_t *, int);
 	int (*Reset_Op)(void);
 	int (*IDCODE_Op)(char *, int);
 	int (*XSDB_Op)(const char *, char *, int);

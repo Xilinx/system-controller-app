@@ -939,7 +939,34 @@ Workaround_Vccaux(void *Arg)
 }
 
 int
-VCK190_BootMode_Op(int Value)
+VCK190_BootMode_Op(BootMode_t *BootMode, int Op)
+{
+	FILE *FP;
+	char Buffer[STRLEN_MAX];
+
+	/* Only set boot mode is supported */
+	if (Op != 1) {
+		SC_ERR("invalid boot mode operation");
+		return -1;
+	}
+
+	/* Record the boot mode */
+	FP = fopen(BOOTMODEFILE, "w");
+	if (FP == NULL) {
+		SC_ERR("failed to open boot_mode file %s: %m", BOOTMODEFILE);
+		return -1;
+	}
+
+	(void) sprintf(Buffer, "%s\n", BootMode->Name);
+	SC_INFO("Boot Mode: %s", Buffer);
+	(void) fputs(Buffer, FP);
+	(void) fclose(FP);
+
+	return 0;
+}
+
+int
+VCK190_SetBootMode(int Value)
 {
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
@@ -1025,7 +1052,7 @@ VCK190_Reset_Op(void)
 		for (int i = 0; i < BootModes->Numbers; i++) {
 			BootMode = &BootModes->BootMode[i];
 			if (strcmp(Buffer, (char *)BootMode->Name) == 0) {
-				if (VCK190_BootMode_Op(BootMode->Value) != 0) {
+				if (VCK190_SetBootMode(BootMode->Value) != 0) {
 					SC_ERR("failed to set the boot mode");
 					return -1;
 				}
@@ -1342,6 +1369,7 @@ VCK190_IDT_8A34001_Reset(void)
  * VCK190-specific Operations
 */
 Plat_Ops_t VCK190_Ops = {
+	.BootMode_Op = VCK190_BootMode_Op,
 	.Reset_Op = VCK190_Reset_Op,
 	.IDCODE_Op = VCK190_IDCODE_Op,
 	.XSDB_Op = VCK190_XSDB_Op,

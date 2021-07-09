@@ -453,13 +453,11 @@ int
 BootMode_Ops(void)
 {
 	int Target_Index = -1;
-	FILE *FP;
 	BootModes_t *BootModes;
 	BootMode_t *BootMode;
-	char Buffer[STRLEN_MAX];
 
 	BootModes = Plat_Devs->BootModes;
-	if (BootModes == NULL) {
+	if ((BootModes == NULL) || (Plat_Ops->BootMode_Op == NULL)) {
 		SC_ERR("bootmode operation is not supported");
 		return -1;
 	}
@@ -494,18 +492,7 @@ BootMode_Ops(void)
 
 	switch (Command.CmdId) {
 	case SETBOOTMODE:
-		/* Record the boot mode */
-		FP = fopen(BOOTMODEFILE, "w");
-		if (FP == NULL) {
-			SC_ERR("failed to open boot_mode file %s: %m", BOOTMODEFILE);
-			return -1;
-		}
-
-		(void) sprintf(Buffer, "%s\n", BootMode->Name);
-		SC_INFO("Boot Mode: %s", Buffer);
-		(void) fputs(Buffer, FP);
-		(void) fclose(FP);
-		break;
+		return Plat_Ops->BootMode_Op(BootMode, 1);
 	default:
 		SC_ERR("invalid bootmode command");
 		break;

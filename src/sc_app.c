@@ -255,7 +255,7 @@ main(int argc, char **argv)
 	}
 
 	if (Board_Identification() != 0) {
-		goto Out;
+		goto Unlock;
 	}
 
 	if (Parse_Options(argc, argv) != 0) {

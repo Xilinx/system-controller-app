@@ -296,6 +296,7 @@ typedef struct {
 	QSFPs_t *QSFPs;
 	FMCs_t *FMCs;
 	Workarounds_t *Workarounds;
+	BITs_t *BITs;
 } Plat_Devs_t;
 
 /*

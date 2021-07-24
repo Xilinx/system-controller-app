@@ -41,7 +41,6 @@
 
 extern Plat_Devs_t *Plat_Devs;
 extern Plat_Ops_t *Plat_Ops;
-extern BITs_t BITs;
 
 int Parse_Options(int argc, char **argv);
 int Create_Lockfile(void);
@@ -1237,10 +1236,18 @@ int Workaround_Ops(void)
 int BIT_Ops(void)
 {
 	int Target_Index = -1;
+	BITs_t *BITs;
+	BIT_t *BIT;
+
+	BITs = Plat_Devs->BITs;
+	if (BITs == NULL) {
+		SC_ERR("BIT operation is not supported");
+		return -1;
+	}
 
 	if (Command.CmdId == LISTBIT) {
-		for (int i = 0; i < BITs.Numbers; i++) {
-			SC_PRINT("%s", BITs.BIT[i].Name);
+		for (int i = 0; i < BITs->Numbers; i++) {
+			SC_PRINT("%s", BITs->BIT[i].Name);
 		}
 
 		return 0;
@@ -1252,9 +1259,10 @@ int BIT_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < BITs.Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)BITs.BIT[i].Name) == 0) {
+	for (int i = 0; i < BITs->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)BITs->BIT[i].Name) == 0) {
 			Target_Index = i;
+			BIT = &BITs->BIT[Target_Index];
 			break;
 		}
 	}
@@ -1264,7 +1272,7 @@ int BIT_Ops(void)
 		return -1;
 	}
 
-	return (*BITs.BIT[Target_Index].Plat_BIT_Op)(&BITs.BIT[Target_Index]);
+	return BIT->Plat_BIT_Op(BIT);
 }
 
 /*

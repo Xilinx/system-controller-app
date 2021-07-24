@@ -14,55 +14,7 @@
 extern Plat_Devs_t *Plat_Devs;
 extern Plat_Ops_t *Plat_Ops;
 
-int Clocks_Check(void *);
-int XSDB_BIT(void *);
-int EBM_EEPROM_Check(void *);
-int DIMM_EEPROM_Check(void *);
-int Voltages_Check(void *);
 extern int Access_Regulator(Voltage_t *, float *, int);
-
-/*
- * BITs
- */
-typedef enum {
-	BIT_CLOCKS_CHECK,
-	BIT_IDCODE_CHECK,
-	BIT_EFUSE_CHECK,
-	BIT_EBM_EEPROM_CHECK,
-	BIT_DIMM_EEPROM_CHECK,
-	BIT_VOLTAGES_CHECK,
-	BIT_MAX,
-} BIT_Index;
-
-BITs_t BITs = {
-	.Numbers = BIT_MAX,
-	.BIT[BIT_CLOCKS_CHECK] = {
-		.Name = "Check Clocks",		// Name of BIT to run
-		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
-	},
-	.BIT[BIT_IDCODE_CHECK] = {
-		.Name = "IDCODE Check",
-		.TCL_File = "idcode/idcode_check.tcl",
-		.Plat_BIT_Op = XSDB_BIT,
-	},
-	.BIT[BIT_EFUSE_CHECK] = {
-		.Name = "EFUSE Check",
-		.TCL_File = "efuse/read_efuse.tcl",
-		.Plat_BIT_Op = XSDB_BIT,
-	},
-	.BIT[BIT_EBM_EEPROM_CHECK] = {
-		.Name = "X-EBM EEPROM Check",
-		.Plat_BIT_Op = EBM_EEPROM_Check,
-	},
-	.BIT[BIT_DIMM_EEPROM_CHECK] = {
-		.Name = "DIMM EEPROM Check",
-		.Plat_BIT_Op = DIMM_EEPROM_Check,
-	},
-	.BIT[BIT_VOLTAGES_CHECK] = {
-		.Name = "Check Voltages",
-		.Plat_BIT_Op = Voltages_Check,
-	},
-};
 
 /*
  * This test validates whether the current clock frequency is

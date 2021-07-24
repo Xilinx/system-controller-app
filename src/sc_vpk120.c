@@ -533,6 +533,23 @@ OnBoard_EEPROM_t VPK120_OnBoard_EEPROM = {
 };
 
 /*
+ * FMC Cards
+ */
+typedef enum {
+	FMC_1,
+	FMC_MAX,
+} FMC_Index;
+
+FMCs_t VPK120_FMCs = {
+	.Numbers = FMC_MAX,
+	.FMC[FMC_1] = {
+		.Name = "FMC",
+		.I2C_Bus = "/dev/i2c-11",
+		.I2C_Address = 0x50,
+	},
+};
+
+/*
  * Board Interface Tests
  */
 typedef enum {
@@ -562,6 +579,7 @@ Plat_Devs_t VPK120_Devs = {
 	.Ina226s = &VPK120_Ina226s,
 	.Voltages = &VPK120_Voltages,
 	.OnBoard_EEPROM = &VPK120_OnBoard_EEPROM,
+	.FMCs = &VPK120_FMCs,
 	.BITs = &VPK120_BITs,
 };
 

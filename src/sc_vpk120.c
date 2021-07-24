@@ -9,6 +9,8 @@
 #include "sc_app.h"
 
 extern int GPIO_Set(char *, int);
+extern int Clocks_Check(void *);
+extern int Voltages_Check(void *);
 
 /*
  * Boot Modes
@@ -531,6 +533,27 @@ OnBoard_EEPROM_t VPK120_OnBoard_EEPROM = {
 };
 
 /*
+ * Board Interface Tests
+ */
+typedef enum {
+	BIT_CLOCKS_CHECK,
+	BIT_VOLTAGES_CHECK,
+	BIT_MAX,
+} BIT_Index;
+
+BITs_t VPK120_BITs = {
+	.Numbers = BIT_MAX,
+	.BIT[BIT_CLOCKS_CHECK] = {
+		.Name = "Check Clocks",		// Name of BIT to run
+		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
+	},
+	.BIT[BIT_VOLTAGES_CHECK] = {
+		.Name = "Check Voltages",
+		.Plat_BIT_Op = Voltages_Check,
+	},
+};
+
+/*
  * Board-specific Devices
  */
 Plat_Devs_t VPK120_Devs = {
@@ -539,6 +562,7 @@ Plat_Devs_t VPK120_Devs = {
 	.Ina226s = &VPK120_Ina226s,
 	.Voltages = &VPK120_Voltages,
 	.OnBoard_EEPROM = &VPK120_OnBoard_EEPROM,
+	.BITs = &VPK120_BITs,
 };
 
 void

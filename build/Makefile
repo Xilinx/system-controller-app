@@ -12,7 +12,7 @@ BOARD_OBJS	= sc_vck190.o sc_vpk120.o
 BIT_OBJS	= sc_BIT.o
 COMMON_OBJS	= sc_common.o
 APP_OBJS	= $(APP).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
-APPD_OBJS	= $(APPD).o $(COMMON_OBJS) $(BOARD_OBJS)
+APPD_OBJS	= $(APPD).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
 
 CFLAGS		= -I../src
 LDFLAGS 	?= -L../src

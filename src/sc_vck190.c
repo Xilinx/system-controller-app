@@ -30,6 +30,11 @@ extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int FMC_Vadj_Range(FMC_t *, float *, float *);
 extern int GPIO_Get(char *, int *);
 extern int GPIO_Set(char *, int);
+extern int Clocks_Check(void *);
+extern int XSDB_BIT(void *);
+extern int EBM_EEPROM_Check(void *);
+extern int DIMM_EEPROM_Check(void *);
+extern int Voltages_Check(void *);
 
 /*
  * Boot Modes
@@ -875,6 +880,49 @@ Workarounds_t VCK190_Workarounds = {
 };
 
 /*
+ * Board Interface Tests
+ */
+typedef enum {
+	BIT_CLOCKS_CHECK,
+	BIT_IDCODE_CHECK,
+	BIT_EFUSE_CHECK,
+	BIT_EBM_EEPROM_CHECK,
+	BIT_DIMM_EEPROM_CHECK,
+	BIT_VOLTAGES_CHECK,
+	BIT_MAX,
+} BIT_Index;
+
+BITs_t VCK190_BITs = {
+	.Numbers = BIT_MAX,
+	.BIT[BIT_CLOCKS_CHECK] = {
+		.Name = "Check Clocks",		// Name of BIT to run
+		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
+	},
+	.BIT[BIT_IDCODE_CHECK] = {
+		.Name = "IDCODE Check",
+		.TCL_File = "idcode/idcode_check.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
+	},
+	.BIT[BIT_EFUSE_CHECK] = {
+		.Name = "EFUSE Check",
+		.TCL_File = "efuse/read_efuse.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
+	},
+	.BIT[BIT_EBM_EEPROM_CHECK] = {
+		.Name = "X-EBM EEPROM Check",
+		.Plat_BIT_Op = EBM_EEPROM_Check,
+	},
+	.BIT[BIT_DIMM_EEPROM_CHECK] = {
+		.Name = "DIMM EEPROM Check",
+		.Plat_BIT_Op = DIMM_EEPROM_Check,
+	},
+	.BIT[BIT_VOLTAGES_CHECK] = {
+		.Name = "Check Voltages",
+		.Plat_BIT_Op = Voltages_Check,
+	},
+};
+
+/*
  * VCK190-sepcific Devices
  */
 Plat_Devs_t VCK190_Devs = {
@@ -892,6 +940,7 @@ Plat_Devs_t VCK190_Devs = {
 	.QSFPs = &VCK190_QSFPs,
 	.FMCs = &VCK190_FMCs,
 	.Workarounds = &VCK190_Workarounds,
+	.BITs = &VCK190_BITs,
 };
 
 int

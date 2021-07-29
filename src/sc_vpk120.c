@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 #include "sc_app.h"
 
 extern int GPIO_Set(char *, int);
@@ -715,6 +717,45 @@ VPK120_Reset_Op(void)
 
 	return 0;
 }
+
+/*
+ * Get the board temperature
+ */
+int
+VPK120_Temperature_Op(void)
+{
+	FILE *FP;
+	char Output[STRLEN_MAX];
+	char Command[] = "/usr/bin/sensors ff0b0000ethernetffffffff00-mdio-0";
+	double Temperature;
+
+	SC_INFO("Command: %s", Command);
+	FP = popen(Command, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to execute sensors command %s: %m", Command);
+		return -1;
+	}
+
+	/* Temperature is on the 3rd line */
+	for (int i = 0; i < 3; i++) {
+		(void) fgets(Output, sizeof(Output), FP);
+	}
+
+	pclose(FP);
+	SC_INFO("Output: %s", Output);
+	if (strstr(Output, "temp1:") == NULL) {
+		SC_ERR("failed to get board temperature");
+		return -1;
+	}
+
+	(void) strtok(Output, ":");
+	(void) strcpy(Output, strtok(NULL, "C"));
+	Temperature = atof(Output);
+	SC_PRINT("Temperature(C):\t%.1f", Temperature);
+
+	return 0;
+}
+
 /*
  * Board-specific Operations
  */
@@ -722,4 +763,5 @@ Plat_Ops_t VPK120_Ops = {
 	.Version_Op = VPK120_Version_Op,
 	.BootMode_Op = VPK120_BootMode_Op,
 	.Reset_Op = VPK120_Reset_Op,
+	.Temperature_Op = VPK120_Temperature_Op,
 };

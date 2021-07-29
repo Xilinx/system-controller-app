@@ -12,7 +12,8 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
-#define ITEMS_MAX	50
+#define ITEMS_MAX	24
+#define LITEMS_MAX	64
 #define STRLEN_MAX	64
 #define SYSCMD_MAX	1024
 
@@ -275,7 +276,7 @@ typedef struct {
 
 typedef struct GPIOs {
 	int Numbers;
-	GPIO_t GPIO[ITEMS_MAX];
+	GPIO_t GPIO[LITEMS_MAX];
 } GPIOs_t;
 
 /*

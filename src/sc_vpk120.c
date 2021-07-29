@@ -10,6 +10,11 @@
 #include <string.h>
 #include "sc_app.h"
 
+extern Plat_Devs_t *Plat_Devs;
+extern Plat_Ops_t *Plat_Ops;
+
+int VPK120_IDT_8A34001_Reset(void);
+extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int GPIO_Set(char *, int);
 extern int Clocks_Check(void *);
 extern int Voltages_Check(void *);
@@ -87,8 +92,40 @@ BootModes_t VPK120_BootModes = {
 /*
  * Clocks
  */
+IDT_8A34001_Data_t VPK120_IDT_8A34001_Data = {
+	.Number_Label = 12,
+	.Display_Label = { "Q0 - From 8A34001 Q0 to 8A34001 CLK0", \
+			   "Q1 - From Bank 703 to Bank 206 GTM RX2", \
+			   "Q2 - From Bank 206 GTM TX2 to Bank 703", \
+			   "Q3 - From 8A34001 Q4 to SMA J339", \
+			   "Q4 - From SMA J330-331 to 8A34001 CLK3", \
+			   "Q5 - From Bank 202/204 GTM REFCLK1 to J328", \
+			   "Q6 - From Bank 206 GTM REFCLK1 to Bank 711", \
+			   "Q7 - From FMC REFCLK M2C to Bank 206 GTM REFCLK0", \
+			   "Q8 - To Bank 204/205 GTM REFCLKP0", \
+			   "Q9 - To Bank 202/203 GTM REFCLKP0", \
+			   "Q10 - To SMA J328", \
+			   "Q11 - To N.C.", \
+	},
+	.Internal_Label = { "OUT0DesiredFrequency", \
+			    "OUT1DesiredFrequency", \
+			    "OUT2DesiredFrequency", \
+			    "OUT3DesiredFrequency", \
+			    "OUT4DesiredFrequency", \
+			    "OUT5DesiredFrequency", \
+			    "OUT6DesiredFrequency", \
+			    "OUT7DesiredFrequency", \
+			    "OUT8DesiredFrequency", \
+			    "OUT9DesiredFrequency", \
+			    "OUT10DesiredFrequency", \
+			    "OUT11DesiredFrequency", \
+	},
+	.Chip_Reset = VPK120_IDT_8A34001_Reset,
+};
+
 typedef enum {
 	SI570_USER1_FMC,
+	IDT_8A34001_FMC,
 	SI570_VERSAL_SYS,
 	SI570_LPDDR4_CLK1,
 	SI570_LPDDR4_CLK2,
@@ -117,6 +154,13 @@ Clocks_t VPK120_Clocks = {
 		.Lower_Freq = 10.0,
 		.I2C_Bus = "/dev/i2c-10",
 		.I2C_Address = 0x5d,
+	},
+	.Clock[IDT_8A34001_FMC] = {
+		.Name = "8A34001 FMC",
+		.Type = IDT_8A34001,
+		.Type_Data = &VPK120_IDT_8A34001_Data,
+		.I2C_Bus = "/dev/i2c-17",
+		.I2C_Address = 0x5b,
 	},
 	.Clock[SI570_LPDDR4_CLK1] = {
 		.Name = "LPDDR4 Clk1 Si570",
@@ -752,6 +796,36 @@ VPK120_Temperature_Op(void)
 	(void) strcpy(Output, strtok(NULL, "C"));
 	Temperature = atof(Output);
 	SC_PRINT("Temperature(C):\t%.1f", Temperature);
+
+	return 0;
+}
+
+int
+VPK120_IDT_8A34001_Reset(void)
+{
+	IO_Exp_t *IO_Exp;
+	unsigned int Value;
+
+	IO_Exp = Plat_Devs->IO_Exp;
+
+	/*
+	 * The '8A34001_EXP_RST_B' line is controlled by bit 5 of register
+	 * offset 3.  The output register pair (offsets 2 & 3) are written
+	 * at once.
+	 */
+	Value = 0x0;    // Assert reset - active low
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to assert reset of 8A34001 chip");
+		return -1;
+	}
+
+	sleep (1);
+
+	Value = 0x20;   // De-assert reset
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to de-assert reset of 8A34001 chip");
+		return -1;
+	}
 
 	return 0;
 }

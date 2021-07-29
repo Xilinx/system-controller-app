@@ -1535,11 +1535,17 @@ int GPIO_Ops(void)
 		for (int i = 0; i < GPIOs->Numbers; i++) {
 			SC_PRINT("%s", GPIOs->GPIO[i].Display_Name);
 		}
-	} else {
-		return Gpio_get();
+
+		return 0;
 	}
 
-	return 0;
+	/* A target argument is required */
+	if (T_Flag == 0) {
+		SC_ERR("no gpio target");
+		return -1;
+	}
+
+	return Gpio_get();
 }
 
 /*

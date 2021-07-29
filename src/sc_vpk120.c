@@ -587,6 +587,34 @@ GPIOs_t VPK120_GPIOs = {
 	.GPIO[56] = { 88, "44 - SYSCTLR_IIC_MUX1_RESET_B", "SYSCTLR_IIC_MUX1_RESET_B" },
 };
 
+/*
+ * IO Expander
+ */
+IO_Exp_t VPK120_IO_Exp = {
+	.Name = "TCA6416A",
+	.Numbers = 16,
+	.Labels = { "Port 0(7) - MAX6643 FULLSPD (AH)",
+		    "Port 0(6) - N.C.",
+		    "Port 0(5) - N.C.",
+		    "Port 0(4) - PMBUS2 INA226 Alert (AL)",
+		    "Port 0(3) - QSFPDD2_MODSELL (AL)",
+		    "Port 0(2) - QSFPDD1_MODSELL (AL)",
+		    "Port 0(1) - MAX6643 Fan Fail (AL)",
+		    "Port 0(0) - MAX6643 Fan Over Temp (AL)",
+		    "Port 1(7) - PMBUS1 INA226 Alert (AL)",
+		    "Port 1(6) - PMBUS Alert (AL)",
+		    "Port 1(5) - 8A34001_EXP_RST_B (AL)",
+		    "Port 1(4) - VCCINT VRHOT B (AL)",
+		    "Port 1(3) - N.C.",
+		    "Port 1(2) - FMCP1 FMCP PRSNT M2C B (AL)",
+		    "Port 1(1) - N.C.",
+		    "Port 1(0) - FMCP1 FMC PRSNT M2C B (AL)" },
+	.Directions = { 0, -1, -1, 1, 0, 0, 1, 1,
+			1, 1, 0, 1, -1, 1, -1, 1 },
+	.I2C_Bus = "/dev/i2c-0",
+	.I2C_Address = 0x20,
+};
+
 OnBoard_EEPROM_t VPK120_OnBoard_EEPROM = {
 	.Name = "EEPROM",
 	.I2C_Bus = "/dev/i2c-10",
@@ -640,6 +668,7 @@ Plat_Devs_t VPK120_Devs = {
 	.Ina226s = &VPK120_Ina226s,
 	.Voltages = &VPK120_Voltages,
 	.GPIOs = &VPK120_GPIOs,
+	.IO_Exp = &VPK120_IO_Exp,
 	.OnBoard_EEPROM = &VPK120_OnBoard_EEPROM,
 	.FMCs = &VPK120_FMCs,
 	.BITs = &VPK120_BITs,

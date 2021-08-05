@@ -180,7 +180,7 @@ typedef struct {
 } Daughter_Card_t;
 
 /*
- * SFP Connectors
+ * SFP Transceivers
  */
 typedef struct {
 	char	Name[STRLEN_MAX];
@@ -194,10 +194,16 @@ typedef struct SFPs {
 } SFPs_t;
 
 /*
- * QSFP Connectors
+ * QSFP Transceivers
  */
+typedef enum {
+	qsfp,
+	qsfpdd,
+} QSFP_Type;
+
 typedef struct {
 	char	Name[STRLEN_MAX];
+	QSFP_Type	Type;
 	char	I2C_Bus[STRLEN_MAX];
 	int	I2C_Address;
 } QSFP_t;
@@ -310,7 +316,7 @@ typedef struct {
 	int (*IDCODE_Op)(char *, int);
 	int (*XSDB_Op)(const char *, char *, int);
 	int (*Temperature_Op)(void);
-	int (*QSFP_Init_Op)(void);
+	int (*QSFP_ModuleSelect_Op)(QSFP_t *, int);
 	int (*FMCAutoVadj_Op)(void);
 } Plat_Ops_t;
 

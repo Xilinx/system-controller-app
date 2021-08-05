@@ -25,8 +25,8 @@
  * 1.3 - Support for reading gpio lines.
  * 1.4 - Support for getting total power of different power domains.
  * 1.5 - Support for IO expander.
- * 1.6 - Support for SFP connectors.
- * 1.7 - Support for QSFP connectors.
+ * 1.6 - Support for SFP transceivers.
+ * 1.7 - Support for QSFP transceivers.
  * 1.8 - Support for reading EBM's EEPROM.
  * 1.9 - Support for getting board temperature.
  * 1.10 - Support for setting VOUT of voltage regulators.
@@ -109,11 +109,11 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	getioexp - get IO expander <target> of either 'all', 'input', or 'output'\n\
 	setioexp - set IO expander <target> of either 'direction' or 'output' to <value>\n\
 	restoreioexp - restore IO expander to default values\n\
-	listSFP - list the plugged SFP connectors\n\
+	listSFP - list the plugged SFP transceivers\n\
 	getSFP - get the connector information of <target> SFP\n\
 	getpwmSFP - get the power mode value of <target> SFP\n\
 	setpwmSFP - set the power mode value of <target> SFP to <value>\n\
-	listQSFP - list the plugged QSFP connectors\n\
+	listQSFP - list the plugged QSFP transceivers\n\
 	getQSFP - get the connector information of <target> QSFP\n\
 	getpwmQSFP - get the power mode value of <target> QSFP\n\
 	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
@@ -1794,7 +1794,7 @@ int SFP_Ops(void)
 	case GETSFP:
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x14;	// 0x14-0x23: SFP Vendor Name
+		Out_Buffer[0] = 0x14;	// 0x14-0x23: Vendor Name
 		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
@@ -1924,13 +1924,13 @@ int QSFP_List(void)
 	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 
-	if (Plat_Ops->QSFP_Init_Op() != 0) {
-		return -1;
-	}
-
 	QSFPs = Plat_Devs->QSFPs;
 	for (int i = 0; i < QSFPs->Numbers; i++) {
 		QSFP = &QSFPs->QSFP[i];
+		if (Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 1) != 0) {
+			return -1;
+		}
+
 		FD = open(QSFP->I2C_Bus, O_RDWR);
 		if (FD < 0) {
 			SC_ERR("failed to access I2C bus %s: %m", QSFP->I2C_Bus);
@@ -1958,12 +1958,7 @@ int QSFP_List(void)
 		SC_PRINT("%s", QSFP->Name);
 	}
 Out:
-	/*
-	 * The QSFP_Init_Op() call may change the current boot mode to JTAG
-	 * to download a PDI.  Calling Reset_Op() restores the current
-	 * boot mode.
-	 */
-	(void) Plat_Ops->Reset_Op();
+	(void) Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 0);
 	(void) close(FD);
 	return Ret;
 }
@@ -2011,7 +2006,7 @@ int QSFP_Ops(void)
 		return -1;
 	}
 
-	if (Plat_Ops->QSFP_Init_Op() != 0) {
+	if (Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 1) != 0) {
 		return -1;
 	}
 
@@ -2026,7 +2021,16 @@ int QSFP_Ops(void)
 	case GETQSFP:
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x94;	// 0x94-0xA3: QSFP Vendor Name
+		if (QSFP->Type == qsfp) {
+			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Vendor Name
+		} else if (QSFP->Type == qsfpdd) {
+			Out_Buffer[0] = 0x81;	// 0x81-0x90: Vendor Name
+		} else {
+			SC_ERR("Unsupported QSFP");
+			Ret = -1;
+			goto Out;
+		}
+
 		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
@@ -2036,7 +2040,16 @@ int QSFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
+		if (QSFP->Type == qsfp) {
+			Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
+		} else if (QSFP->Type == qsfpdd) {
+			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Part Number
+		} else {
+			SC_ERR("Unsupported QSFP");
+			Ret = -1;
+			goto Out;
+		}
+
 		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
@@ -2046,7 +2059,16 @@ int QSFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
+		if (QSFP->Type == qsfp) {
+			Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
+		} else if (QSFP->Type == qsfpdd) {
+			Out_Buffer[0] = 0xA6;	// 0xA6-0xB5: Serial Number
+		} else {
+			SC_ERR("Unsupported QSFP");
+			Ret = -1;
+			goto Out;
+		}
+
 		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
@@ -2054,23 +2076,113 @@ int QSFP_Ops(void)
 
 		SC_PRINT("Serial Number:\t%s", In_Buffer);
 
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature Monitor
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
+		if (QSFP->Type == qsfp) {
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature Sensor
+			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			Value = (In_Buffer[0] << 8) | In_Buffer[1];
+			SC_INFO("Temperature Sensor(0x16-0x17): %#x", Value);
+			Value = (Value & 0x7FFF) - (Value & 0x8000);
+			/* Each bit of low byte is equivalent to 1/256 celsius */
+			SC_PRINT("Internal Temperature(C):\t%.3f", ((float)Value / 256));
+		} else if (QSFP->Type == qsfpdd) {
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0xC;	// 0xC-0xD: Temperature Sensor 1
+			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			Value = (In_Buffer[0] << 8) | In_Buffer[1];
+			SC_INFO("Temperature Sensor 1(0xC-0xD): %#x", Value);
+			Value = (Value & 0x7FFF) - (Value & 0x8000);
+			/* Each bit of low byte is equivalent to 1/256 celsius */
+			SC_PRINT("Internal Temperature 1(C):\t%.3f", ((float)Value / 256));
+
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0xE;	// 0xE-0xF: Temperature Sensor 2
+			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			Value = (In_Buffer[0] << 8) | In_Buffer[1];
+			SC_INFO("Temperature Sensor 2(0xE-0xF): %#x", Value);
+			Value = (Value & 0x7FFF) - (Value & 0x8000);
+			/* Each bit of low byte is equivalent to 1/256 celsius */
+			SC_PRINT("Internal Temperature 2(C):\t%.3f", ((float)Value / 256));
+
+			/* Temperature Sensors 3 & 4 are recorded on Page 3 */
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x7E;	// 0x7E-0x7F: Bank & Page Select
+			Out_Buffer[1] = 0;
+			Out_Buffer[2] = 0x3;
+			I2C_WRITE(FD, QSFP->I2C_Address, 3, Out_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x98;	// 0x98-0x99: Temperature Sensor 3
+			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			Value = (In_Buffer[0] << 8) | In_Buffer[1];
+			SC_INFO("Temperature Sensor 3(Page 3, 0x98-0x99): %#x", Value);
+			Value = (Value & 0x7FFF) - (Value & 0x8000);
+			/* Each bit of low byte is equivalent to 1/256 celsius */
+			SC_PRINT("Internal Temperature 3(C):\t%.3f", ((float)Value / 256));
+
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x9A;	// 0x9A-0x9B: Temperature Sensor 4
+			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			Value = (In_Buffer[0] << 8) | In_Buffer[1];
+			SC_INFO("Temperature Sensor 4(Page 3, 0x9A-0x9B): %#x", Value);
+			Value = (Value & 0x7FFF) - (Value & 0x8000);
+			/* Each bit of low byte is equivalent to 1/256 celsius */
+			SC_PRINT("Internal Temperature 4(C):\t%.3f", ((float)Value / 256));
+
+			/* Reset back to Page 0 */
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x7E;	// 0x7E-0x7F: Bank & Page Select
+			I2C_WRITE(FD, QSFP->I2C_Address, 3, Out_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+		} else {
+			SC_ERR("Unsupported QSFP");
+			Ret = -1;
 			goto Out;
 		}
 
-		Value = (In_Buffer[0] << 8) | In_Buffer[1];
-		SC_INFO("Temperature Monitor(0x16-0x17): %#x", Value);
-		Value = (Value & 0x7FFF) - (Value & 0x8000);
-		/* Each bit of low byte is equivalent to 1/256 celsius */
-		SC_PRINT("Internal Temperature(C):\t%.3f", ((float)Value / 256));
-
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
+		if (QSFP->Type == qsfp) {
+			Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
+		} else if (QSFP->Type == qsfpdd) {
+			Out_Buffer[0] = 0x10;	// 0x10-0x11: Supply Voltage
+		} else {
+			SC_ERR("Unsupported QSFP");
+			Ret = -1;
+			goto Out;
+		}
+
 		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
@@ -2200,12 +2312,7 @@ int QSFP_Ops(void)
 	}
 
 Out:
-	/*
-	 * The QSFP_Init_Op() call may change the current boot mode to JTAG
-	 * to download a PDI.  Calling Reset_Op() restores the current
-	 * boot mode.
-	 */
-	(void) Plat_Ops->Reset_Op();
+	(void) Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 0);
 	(void) close(FD);
 	return Ret;
 }

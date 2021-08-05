@@ -668,6 +668,31 @@ OnBoard_EEPROM_t VPK120_OnBoard_EEPROM = {
 };
 
 /*
+ * QSFP Transceivers
+ */
+typedef enum {
+	QSFPDD_0,
+	QSFPDD_1,
+	QSFP_MAX,
+} QSFP_Index;
+
+QSFPs_t VPK120_QSFPs = {
+	.Numbers = QSFP_MAX,
+	.QSFP[QSFPDD_0] = {
+		.Name = "QSFPDD1",
+		.Type = qsfpdd,
+		.I2C_Bus = "/dev/i2c-16",
+		.I2C_Address = 0x50,
+	},
+	.QSFP[QSFPDD_1] = {
+		.Name = "QSFPDD2",
+		.Type = qsfpdd,
+		.I2C_Bus = "/dev/i2c-16",
+		.I2C_Address = 0x50,
+	},
+};
+
+/*
  * FMC Cards
  */
 typedef enum {
@@ -716,6 +741,7 @@ Plat_Devs_t VPK120_Devs = {
 	.GPIOs = &VPK120_GPIOs,
 	.IO_Exp = &VPK120_IO_Exp,
 	.OnBoard_EEPROM = &VPK120_OnBoard_EEPROM,
+	.QSFPs = &VPK120_QSFPs,
 	.FMCs = &VPK120_FMCs,
 	.BITs = &VPK120_BITs,
 };
@@ -801,6 +827,51 @@ VPK120_Temperature_Op(void)
 }
 
 int
+VPK120_QSFP_ModuleSelect_Op(QSFP_t *QSFP, int State)
+{
+	IO_Exp_t *IO_Exp;
+	unsigned int Value;
+
+	if (State != 0 && State != 1) {
+		SC_ERR("invalid QSFP module select state");
+		return -1;
+	}
+
+	/* Nothing to do for 'State == 0' */
+	if (State == 0) {
+		return 0;
+	}
+
+	/* State == 1 */
+	IO_Exp = Plat_Devs->IO_Exp;
+
+	/* Set direction */
+	Value = 0x73DF;
+	if (Access_IO_Exp(IO_Exp, 1, 0x6, &Value) != 0) {
+		SC_ERR("failed to set IO expander direction");
+		return -1;
+	}
+
+	/*
+	 * Only one QSFP-DD can be referenced at a time since both
+	 * have address 0x50 and are on the same I2C bus, so make
+	 * sure the other QSFP-DD is not selected.
+	 */
+	if (strcmp(QSFP->Name, "QSFPDD1") == 0) {
+		Value = 0x820;
+	} else {
+		Value = 0x420;
+	}
+
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to set IO expander output");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
 VPK120_IDT_8A34001_Reset(void)
 {
 	IO_Exp_t *IO_Exp;
@@ -838,4 +909,5 @@ Plat_Ops_t VPK120_Ops = {
 	.BootMode_Op = VPK120_BootMode_Op,
 	.Reset_Op = VPK120_Reset_Op,
 	.Temperature_Op = VPK120_Temperature_Op,
+	.QSFP_ModuleSelect_Op = VPK120_QSFP_ModuleSelect_Op,
 };

@@ -800,7 +800,7 @@ Daughter_Card_t VCK190_Daughter_Card = {
 };
 
 /*
- * SFP Connectors
+ * SFP Transceivers
  */
 typedef enum {
 	SFP_0,
@@ -823,7 +823,7 @@ SFPs_t VCK190_SFPs = {
 };
 
 /*
- * QSFP Connectors
+ * QSFP Transceivers
  */
 typedef enum {
 	QSFP_0,
@@ -834,6 +834,7 @@ QSFPs_t VCK190_QSFPs = {
 	.Numbers = QSFP_MAX,
 	.QSFP[QSFP_0] = {
 		.Name = "zQSFP1",
+		.Type = qsfp,
 		.I2C_Bus = "/dev/i2c-21",
 		.I2C_Address = 0x50,
 	},
@@ -1251,12 +1252,28 @@ VCK190_Temperature_Op(void)
  * programmed to drive QSFP1_MODSKLL_LS low, the QSFP will not respond.
  */
 int
-VCK190_QSFP_Init_Op(void)
+VCK190_QSFP_ModuleSelect_Op(QSFP_t *Arg, int State)
 {
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
 
+	if (State != 0 && State != 1) {
+		SC_ERR("invalid QSFP module select state");
+		return -1;
+	}
+
+	/*
+	 * Call with 'State == 1' may change the current boot mode to JTAG
+	 * to download a PDI.  Calling VCK190_Reset_Op() restores the current
+	 * boot mode.
+	 */
+	if (State == 0) {
+		(void) VCK190_Reset_Op();
+		return 0;
+	}
+
+	/* State == 1 */
 	(void) VCK190_JTAG_Op(1);
 	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
 	    QSFP_MODSEL_TCL);
@@ -1423,6 +1440,6 @@ Plat_Ops_t VCK190_Ops = {
 	.IDCODE_Op = VCK190_IDCODE_Op,
 	.XSDB_Op = VCK190_XSDB_Op,
 	.Temperature_Op = VCK190_Temperature_Op,
-	.QSFP_Init_Op = VCK190_QSFP_Init_Op,
+	.QSFP_ModuleSelect_Op = VCK190_QSFP_ModuleSelect_Op,
 	.FMCAutoVadj_Op = VCK190_FMCAutoVadj_Op,
 };

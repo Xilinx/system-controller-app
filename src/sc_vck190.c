@@ -15,7 +15,6 @@
 #include "sc_app.h"
 
 #define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"
-#define IDCODE_TCL	"idcode/idcode_check.tcl"
 #define QSFP_MODSEL_TCL	"qsfp_set_modsel/qsfp_download.tcl"
 
 extern Plat_Devs_t *Plat_Devs;

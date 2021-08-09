@@ -384,6 +384,8 @@ typedef struct {
 #define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
 #define BIT_PATH	"/usr/share/system-controller-app/BIT/"
 
+#define IDCODE_TCL	"idcode/idcode_check.tcl"
+
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))
 

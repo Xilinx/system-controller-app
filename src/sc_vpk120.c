@@ -15,6 +15,7 @@ extern Plat_Ops_t *Plat_Ops;
 
 int VPK120_IDT_8A34001_Reset(void);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
+extern int GPIO_Get(char *, int *);
 extern int GPIO_Set(char *, int);
 extern int Clocks_Check(void *);
 extern int Voltages_Check(void *);
@@ -788,6 +789,98 @@ VPK120_Reset_Op(void)
 	return 0;
 }
 
+int
+VPK120_JTAG_Op(int Select)
+{
+	int State;
+
+	switch (Select) {
+	case 1:
+		/* Overwrite the default JTAG switch */
+		if (GPIO_Set("SYSCTLR_JTAG_S0", 0) != 0) {
+			SC_ERR("failed to set JTAG 0");
+			return -1;
+		}
+
+		if (GPIO_Set("SYSCTLR_JTAG_S1", 0) != 0) {
+			SC_ERR("failed to set JTAG 1");
+			return -1;
+		}
+
+		break;
+	case 0:
+		/*
+		 * Reading the gpio lines causes ZU4 to tri-state the select
+		 * lines and that allows the switch to set back the default
+		 * values.  The value of 'State' is ignored.
+		 */
+		if (GPIO_Get("SYSCTLR_JTAG_S0", &State) != 0) {
+			SC_ERR("failed to release JTAG 0");
+			return -1;
+		}
+
+		if (GPIO_Get("SYSCTLR_JTAG_S1", &State) != 0) {
+			SC_ERR("failed to release JTAG 1");
+			return -1;
+		}
+
+		break;
+	default:
+		SC_ERR("invalid JTAG select option");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+VPK120_XSDB_Op(const char *TCL_File, char *Output, int Length)
+{
+	FILE *FP;
+	char System_Cmd[SYSCMD_MAX];
+	int Ret = 0;
+
+	(void) sprintf(System_Cmd, "%s%s", BIT_PATH, TCL_File);
+	if (access(System_Cmd, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", System_Cmd);
+		return -1;
+	}
+
+	if (Output == NULL) {
+		SC_ERR("unallocated output buffer");
+		return -1;
+	}
+
+	(void) VPK120_JTAG_Op(1);
+	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD,
+		       BIT_PATH, TCL_File);
+	SC_INFO("Command: %s", System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke xsdb");
+		Ret = -1;
+		goto Out;
+	}
+
+	(void) fgets(Output, Length, FP);
+	(void) pclose(FP);
+	SC_INFO("XSDB Output: %s", Output);
+	if (strstr(Output, "no targets found") != NULL) {
+		SC_ERR("could not connect to Versal through jtag");
+		Ret = -1;
+	}
+
+Out:
+	(void) VPK120_JTAG_Op(0);
+	return Ret;
+}
+
+int
+VPK120_IDCODE_Op(char *Output, int Length)
+{
+	return VPK120_XSDB_Op(IDCODE_TCL, Output, Length);
+}
+
 /*
  * Get the board temperature
  */
@@ -908,6 +1001,8 @@ Plat_Ops_t VPK120_Ops = {
 	.Version_Op = VPK120_Version_Op,
 	.BootMode_Op = VPK120_BootMode_Op,
 	.Reset_Op = VPK120_Reset_Op,
+	.IDCODE_Op = VPK120_IDCODE_Op,
+	.XSDB_Op = VPK120_XSDB_Op,
 	.Temperature_Op = VPK120_Temperature_Op,
 	.QSFP_ModuleSelect_Op = VPK120_QSFP_ModuleSelect_Op,
 };

@@ -18,6 +18,7 @@ extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int GPIO_Get(char *, int *);
 extern int GPIO_Set(char *, int);
 extern int Clocks_Check(void *);
+extern int XSDB_BIT(void *);
 extern int Voltages_Check(void *);
 
 /*
@@ -715,6 +716,8 @@ FMCs_t VPK120_FMCs = {
  */
 typedef enum {
 	BIT_CLOCKS_CHECK,
+	BIT_IDCODE_CHECK,
+	BIT_EFUSE_CHECK,
 	BIT_VOLTAGES_CHECK,
 	BIT_MAX,
 } BIT_Index;
@@ -724,6 +727,16 @@ BITs_t VPK120_BITs = {
 	.BIT[BIT_CLOCKS_CHECK] = {
 		.Name = "Check Clocks",		// Name of BIT to run
 		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
+	},
+	.BIT[BIT_IDCODE_CHECK] = {
+		.Name = "IDCODE Check",
+		.TCL_File = "idcode/idcode_check.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
+	},
+	.BIT[BIT_EFUSE_CHECK] = {
+		.Name = "EFUSE Check",
+		.TCL_File = "efuse/read_efuse.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
 	},
 	.BIT[BIT_VOLTAGES_CHECK] = {
 		.Name = "Check Voltages",

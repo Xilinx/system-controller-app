@@ -266,9 +266,10 @@ struct i2c_info {
 
 /* DDR DIMM */
 typedef struct {
-	char I2C_Bus[STRLEN_MAX];
-	struct i2c_info Spd;
-	struct i2c_info Therm;
+	char	Name[STRLEN_MAX];
+	char	I2C_Bus[STRLEN_MAX];
+	struct i2c_info	Spd;
+	struct i2c_info	Therm;
 } DIMM_t;
 
 /*

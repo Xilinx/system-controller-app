@@ -706,6 +706,7 @@ Voltages_t VCK190_Voltages = {
  *  addr=0x18, reg_addr=5 len=2:    DIMM's temp sensor
  */
 DIMM_t VCK190_DIMM = {
+	.Name = "DIMM1",
 	.I2C_Bus = "/dev/i2c-14",
 	.Spd   = { .Bus_addr = 0x50, .Reg_addr = 0, .Read_len = 16 },
 	.Therm = { .Bus_addr = 0x18, .Reg_addr = 5, .Read_len = 2 }
@@ -784,7 +785,7 @@ IO_Exp_t VCK190_IO_Exp = {
  * On-board EEPROM
  */
 OnBoard_EEPROM_t VCK190_OnBoard_EEPROM = {
-	.Name = "EEPROM",
+	.Name = "onboard",
 	.I2C_Bus = "/dev/i2c-11",
 	.I2C_Address = 0x54,
 };
@@ -793,7 +794,7 @@ OnBoard_EEPROM_t VCK190_OnBoard_EEPROM = {
  * Daughter Card
  */
 Daughter_Card_t VCK190_Daughter_Card = {
-	.Name = "EBM",
+	.Name = "X-EBM",
 	.I2C_Bus = "/dev/i2c-11",
 	.I2C_Address = 0x52,
 };

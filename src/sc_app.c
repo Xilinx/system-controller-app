@@ -32,9 +32,10 @@
  * 1.10 - Support for setting VOUT of voltage regulators.
  * 1.11 - Add 'geteeprom' command to get the entire content of on-board's EEPROM.
  * 1.12 - Support for FPGA Mezzanine Cards (FMCs).
+ * 1.13 - Add 'list' command for features that didn't have that option.
  */
 #define MAJOR	1
-#define MINOR	12
+#define MINOR	13
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -78,62 +79,86 @@ static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
 	version - version and compatibility information\n\
+	reset - apply power-on-reset\n\
+\n\
+	listeeprom - list the supported EEPROM targets\n\
+	geteeprom - get the content of <target> EEPROM for either <value>:\n\
+		    'summary', 'all', 'common', 'board', or 'multirecord'\n\
+\n\
+	listtemp - list the supported temperature sensor targets\n\
+	gettemp - get the reading of <target> temperature sensor\n\
+\n\
 	listbootmode - list the supported boot mode targets\n\
 	setbootmode - set boot mode to <target>\n\
-	reset - apply power-on-reset\n\
-	eeprom - list the selected content of on-board EEPROM\n\
-	geteeprom - get the content of on-board EEPROM from either <target>:\n\
-		    'all', 'common', 'board', or 'multirecord'\n\
-	temperature - get the board temperature\n\
+\n\
 	listclock - list the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
 	setbootclock - set <target> to <value> frequency at boot time\n\
 	restoreclock - restore <target> to default value\n\
+\n\
 	listvoltage - list the supported voltage targets\n\
 	getvoltage - get the voltage of <target>, with optional <value> of 'all'\n\
 	setvoltage - set <target> to <value> volts\n\
 	setbootvoltage - set <target> to <value> volts at boot time\n\
 	restorevoltage - restore <target> to default value\n\
+\n\
 	listpower - list the supported power targets\n\
 	getpower - get the voltage, current, and power of <target>\n\
+\n\
 	listpowerdomain - list the supported power domain targets\n\
 	powerdomain - get the power used by <target> power domain\n\
+\n\
 	listworkaround - list the applicable workaround targets\n\
 	workaround - apply <target> workaround (may requires <value>)\n\
+\n\
 	listBIT - list the supported Board Interface Test targets\n\
 	BIT - run BIT target\n\
-	ddr - get DDR DIMM information: <target> is either 'spd' or 'temp'\n\
-	listgpio - list the supported gpio lines\n\
+\n\
+	listddr - list the supported DDR DIMM targets\n\
+	getddr - get <target> DDR DIMM information for either <value>:\n\
+		 'spd' or 'temp'\n\
+\n\
+	listgpio - list the supported gpio line targets\n\
 	getgpio - get the state of <target> gpio\n\
-	getioexp - get IO expander <target> of either 'all', 'input', or 'output'\n\
-	setioexp - set IO expander <target> of either 'direction' or 'output' to <value>\n\
+\n\
+	listioexp - list the supported IO expander targets\n\
+	getioexp - get the state of <target> IO expander for either <value>:\n\
+		   'all', 'input', or 'output'\n\
+	setdirioexp - set direction of <target> IO expander to <value>\n\
+	setoutioexp - set output of <target> IO expander to <value>\n\
 	restoreioexp - restore IO expander to default values\n\
-	listSFP - list the plugged SFP transceivers\n\
-	getSFP - get the connector information of <target> SFP\n\
+\n\
+	listSFP - list the plugged SFP transceiver targets\n\
+	getSFP - get the transceiver information of <target> SFP\n\
 	getpwmSFP - get the power mode value of <target> SFP\n\
 	setpwmSFP - set the power mode value of <target> SFP to <value>\n\
-	listQSFP - list the plugged QSFP transceivers\n\
-	getQSFP - get the connector information of <target> QSFP\n\
+\n\
+	listQSFP - list the plugged QSFP transceiver targets\n\
+	getQSFP - get the transceiver information of <target> QSFP\n\
 	getpwmQSFP - get the power mode value of <target> QSFP\n\
 	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
 	getpwmoQSFP - get the power mode override value of <target> QSFP\n\
 	setpwmoQSFP - set the power mode override value of <target> QSFP to <value>\n\
-	getEBM - get the content of EEPROM on EBM card from either <target>:\n\
+\n\
+	listEBM - list the plugged EBM daughter card targets\n\
+	getEBM - get the content of EEPROM on <target> EBM card for either <value>:\n\
 		 'all', 'common', 'board', or 'multirecord'\n\
+\n\
 	listFMC - list the plugged FMCs\n\
-	getFMC - get the content of EEPROM on FMC from a plugged <target>.  The <value>\n\
-		 should be either: 'all', 'common', 'board', or 'multirecord'\n\
+	getFMC - get the content of EEPROM on <target> FMC for either <value>:\n\
+		 'all', 'common', 'board', or 'multirecord'\n\
 ";
 
 typedef enum {
 	VERSION,
+	RESET,
+	LISTEEPROM,
+	GETEEPROM,
+	LISTTEMP,
+	GETTEMP,
 	LISTBOOTMODE,
 	SETBOOTMODE,
-	RESET,
-	EEPROM,
-	GETEEPROM,
-	TEMPERATURE,
 	LISTCLOCK,
 	GETCLOCK,
 	SETCLOCK,
@@ -152,11 +177,14 @@ typedef enum {
 	WORKAROUND,
 	LISTBIT,
 	BIT,
-	DDR,
+	LISTDDR,
+	GETDDR,
 	LISTGPIO,
 	GETGPIO,
+	LISTIOEXP,
 	GETIOEXP,
-	SETIOEXP,
+	SETDIRIOEXP,
+	SETOUTIOEXP,
 	RESTOREIOEXP,
 	LISTSFP,
 	GETSFP,
@@ -168,6 +196,7 @@ typedef enum {
 	SETPWMQSFP,
 	GETPWMOQSFP,
 	SETPWMOQSFP,
+	LISTEBM,
 	GETEBM,
 	LISTFMC,
 	GETFMC,
@@ -182,12 +211,13 @@ typedef struct {
 
 static Command_t Commands[] = {
 	{ .CmdId = VERSION, .CmdStr = "version", .CmdOps = Version_Ops, },
+	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Ops, },
+	{ .CmdId = LISTEEPROM, .CmdStr = "listeeprom", .CmdOps = EEPROM_Ops, },
+	{ .CmdId = GETEEPROM, .CmdStr = "geteeprom", .CmdOps = EEPROM_Ops, },
+	{ .CmdId = LISTTEMP, .CmdStr = "listtemp", .CmdOps = Temperature_Ops, },
+	{ .CmdId = GETTEMP, .CmdStr = "gettemp", .CmdOps = Temperature_Ops, },
 	{ .CmdId = LISTBOOTMODE, .CmdStr = "listbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
-	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Ops, },
-	{ .CmdId = EEPROM, .CmdStr = "eeprom", .CmdOps = EEPROM_Ops, },
-	{ .CmdId = GETEEPROM, .CmdStr = "geteeprom", .CmdOps = EEPROM_Ops, },
-	{ .CmdId = TEMPERATURE, .CmdStr = "temperature", .CmdOps = Temperature_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },
@@ -206,11 +236,14 @@ static Command_t Commands[] = {
 	{ .CmdId = WORKAROUND, .CmdStr = "workaround", .CmdOps = Workaround_Ops, },
 	{ .CmdId = LISTBIT, .CmdStr = "listBIT", .CmdOps = BIT_Ops, },
 	{ .CmdId = BIT, .CmdStr = "BIT", .CmdOps = BIT_Ops, },
-	{ .CmdId = DDR, .CmdStr = "ddr", .CmdOps = DDR_Ops, },
+	{ .CmdId = LISTDDR, .CmdStr = "listddr", .CmdOps = DDR_Ops, },
+	{ .CmdId = GETDDR, .CmdStr = "getddr", .CmdOps = DDR_Ops, },
 	{ .CmdId = LISTGPIO, .CmdStr = "listgpio", .CmdOps = GPIO_Ops, },
 	{ .CmdId = GETGPIO, .CmdStr = "getgpio", .CmdOps = GPIO_Ops, },
+	{ .CmdId = LISTIOEXP, .CmdStr = "listioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = GETIOEXP, .CmdStr = "getioexp", .CmdOps = IO_Exp_Ops, },
-	{ .CmdId = SETIOEXP, .CmdStr = "setioexp", .CmdOps = IO_Exp_Ops, },
+	{ .CmdId = SETDIRIOEXP, .CmdStr = "setdirioexp", .CmdOps = IO_Exp_Ops, },
+	{ .CmdId = SETOUTIOEXP, .CmdStr = "setoutioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = RESTOREIOEXP, .CmdStr = "restoreioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = LISTSFP, .CmdStr = "listSFP", .CmdOps = SFP_Ops, },
 	{ .CmdId = GETSFP, .CmdStr = "getSFP", .CmdOps = SFP_Ops, },
@@ -222,6 +255,7 @@ static Command_t Commands[] = {
 	{ .CmdId = SETPWMQSFP, .CmdStr = "setpwmQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = GETPWMOQSFP, .CmdStr = "getpwmoQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = SETPWMOQSFP, .CmdStr = "setpwmoQSFP", .CmdOps = QSFP_Ops, },
+	{ .CmdId = LISTEBM, .CmdStr = "listEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = GETEBM, .CmdStr = "getEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = LISTFMC, .CmdStr = "listFMC", .CmdOps = FMC_Ops, },
 	{ .CmdId = GETFMC, .CmdStr = "getFMC", .CmdOps = FMC_Ops, },
@@ -550,33 +584,45 @@ EEPROM_Ops(void)
 	time_t Time;
 	int Offset, Length;
 
-	if (Command.CmdId == EEPROM) {
-		Target = EEPROM_SUMMARY;
-	}
-
-	if (Command.CmdId == GETEEPROM) {
-		if (T_Flag == 0) {
-			SC_ERR("no geteeprom target");
-			return -1;
-		}
-
-		if (strcmp(Target_Arg, "all") == 0) {
-			Target = EEPROM_ALL;
-		} else if (strcmp(Target_Arg, "common") == 0) {
-			Target = EEPROM_COMMON;
-		} else if (strcmp(Target_Arg, "board") == 0) {
-			Target = EEPROM_BOARD;
-		} else if (strcmp(Target_Arg, "multirecord") == 0) {
-			Target = EEPROM_MULTIRECORD;
-		} else {
-			SC_ERR("invalid geteeprom target");
-			return -1;
-		}
-	}
-
 	OnBoard_EEPROM = Plat_Devs->OnBoard_EEPROM;
 	if (OnBoard_EEPROM == NULL) {
 		SC_ERR("eeprom operation is not supported");
+		return -1;
+	}
+
+	if (Command.CmdId == LISTEEPROM) {
+		SC_PRINT("%s", OnBoard_EEPROM->Name);
+		return 0;
+	}
+
+	/* Validate the target for geteeprom command */
+	if (T_Flag == 0) {
+		SC_ERR("no geteeprom target");
+		return -1;
+	}
+
+	if (strcmp(Target_Arg, OnBoard_EEPROM->Name) != 0) {
+		SC_ERR("invalid geteeprom target");
+		return -1;
+	}
+
+	if (V_Flag == 0) {
+		SC_ERR("no value is provided for geteeprom");
+		return -1;
+	}
+
+	if (strcmp(Value_Arg, "summary") == 0) {
+		Target = EEPROM_SUMMARY;
+	} else if (strcmp(Value_Arg, "all") == 0) {
+		Target = EEPROM_ALL;
+	} else if (strcmp(Value_Arg, "common") == 0) {
+		Target = EEPROM_COMMON;
+	} else if (strcmp(Value_Arg, "board") == 0) {
+		Target = EEPROM_BOARD;
+	} else if (strcmp(Value_Arg, "multirecord") == 0) {
+		Target = EEPROM_MULTIRECORD;
+	} else {
+		SC_ERR("invalid geteeprom value");
 		return -1;
 	}
 
@@ -694,6 +740,22 @@ Temperature_Ops(void)
 {
 	if (Plat_Ops->Temperature_Op == NULL) {
 		SC_ERR("temperature operation is not supported");
+		return -1;
+	}
+
+	if (Command.CmdId == LISTTEMP) {
+		SC_PRINT("MDIO");
+		return 0;
+	}
+
+	/* Validate the target for gettemp command */
+	if (T_Flag == 0) {
+		SC_ERR("no gettemp target");
+		return -1;
+	}
+
+	if (strcmp(Target_Arg, "MDIO") != 0) {
+		SC_ERR("invalid gettemp target");
 		return -1;
 	}
 
@@ -1398,19 +1460,34 @@ int DDR_Ops(void)
 	DIMM_t *DIMM;
 	int FD, Ret = 0;
 
-	if (T_Flag == 0) {
-		SC_ERR("no target is provided");
-		return -1;
-	}
-
-	if (strcmp(Target_Arg, "spd") != 0 && strcmp(Target_Arg, "temp") != 0) {
-		SC_ERR("%s is not a valid target", Target_Arg);
-		return -1;
-	}
-
 	DIMM = Plat_Devs->DIMM;
 	if (DIMM == NULL) {
 		SC_ERR("ddr operation is not supported");
+		return -1;
+	}
+
+	if (Command.CmdId == LISTDDR) {
+		SC_PRINT("%s", DIMM->Name);
+		return 0;
+	}
+
+	if (T_Flag == 0) {
+		SC_ERR("no target is provided for getddr command");
+		return -1;
+	}
+
+	if (strcmp(Target_Arg, DIMM->Name) != 0) {
+		SC_ERR("invalid getddr target");
+		return -1;
+	}
+
+	if (V_Flag == 0) {
+		SC_ERR("no value is provided for getddr command");
+		return -1;
+	}
+
+	if (strcmp(Value_Arg, "spd") != 0 && strcmp(Value_Arg, "temp") != 0) {
+		SC_ERR("%s is not a valid value", Value_Arg);
 		return -1;
 	}
 
@@ -1420,7 +1497,7 @@ int DDR_Ops(void)
 		return -1;
 	}
 
-	if (Target_Arg[0] == 't') {
+	if (Value_Arg[0] == 't') {
 		Ret = DIMM_temperature(FD);
 	} else {
 		Ret = DIMM_spd(FD);
@@ -1562,20 +1639,30 @@ int IO_Exp_Ops(void)
 		return -1;
 	}
 
-	if (strcmp(IO_Exp->Name, "TCA6416A") != 0) {
-		SC_ERR("unsupported IO expander chip");
+	if (Command.CmdId == LISTIOEXP) {
+		SC_PRINT("%s", IO_Exp->Name);
+		return 0;
+	}
+
+	if (T_Flag == 0) {
+		SC_ERR("no IO expander target");
+		return -1;
+	}
+
+	if (strcmp(Target_Arg, IO_Exp->Name) != 0) {
+		SC_ERR("invalid IO expander target");
 		return -1;
 	}
 
 	switch (Command.CmdId) {
 	case GETIOEXP:
-		/* A target argument is required */
-		if (T_Flag == 0) {
-			SC_ERR("no IO expander target");
+		/* A value argument is required */
+		if (V_Flag == 0) {
+			SC_ERR("no IO expander value");
 			return -1;
 		}
 
-		if (strcmp(Target_Arg, "all") == 0) {
+		if (strcmp(Value_Arg, "all") == 0) {
 			if (Access_IO_Exp(IO_Exp, 0, 0x0,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read input");
@@ -1600,7 +1687,7 @@ int IO_Exp_Ops(void)
 
 			SC_PRINT("Direction:\t%#x", Value);
 
-		} else if (strcmp(Target_Arg, "input") == 0) {
+		} else if (strcmp(Value_Arg, "input") == 0) {
 			if (Access_IO_Exp(IO_Exp, 0, 0x0,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read input");
@@ -1614,7 +1701,7 @@ int IO_Exp_Ops(void)
 				}
 			}
 
-		} else if (strcmp(Target_Arg, "output") == 0) {
+		} else if (strcmp(Value_Arg, "output") == 0) {
 			if (Access_IO_Exp(IO_Exp, 0, 0x2,
 					  (unsigned int *)&Value) != 0) {
 				SC_ERR("failed to read output");
@@ -1629,19 +1716,13 @@ int IO_Exp_Ops(void)
 			}
 
 		} else {
-			SC_ERR("invalid getioexp target");
+			SC_ERR("invalid getioexp value");
 			return -1;
 		}
 
 		break;
 
-	case SETIOEXP:
-		/* A target argument is required */
-		if (T_Flag == 0) {
-			SC_ERR("no IO expander target");
-			return -1;
-		}
-
+	case SETDIRIOEXP:
 		/* Validate the value argument */
 		if (V_Flag == 0) {
 			SC_ERR("no IO expander value");
@@ -1649,22 +1730,23 @@ int IO_Exp_Ops(void)
 		}
 
 		Value = strtol(Value_Arg, NULL, 16);
-		if (strcmp(Target_Arg, "direction") == 0) {
-			if (Access_IO_Exp(IO_Exp, 1, 0x6,
-					  (unsigned int *)&Value) != 0) {
-				SC_ERR("failed to set direction");
-				return -1;
-			}
+		if (Access_IO_Exp(IO_Exp, 1, 0x6, (unsigned int *)&Value) != 0) {
+			SC_ERR("failed to set direction");
+			return -1;
+		}
 
-		} else if (strcmp(Target_Arg, "output") == 0) {
-			if (Access_IO_Exp(IO_Exp, 1, 0x2,
-					  (unsigned int *)&Value) != 0) {
-				SC_ERR("failed to set output");
-				return -1;
-			}
+		break;
 
-		} else {
-			SC_ERR("invalid setioexp target");
+	case SETOUTIOEXP:
+		/* Validate the value argument */
+		if (V_Flag == 0) {
+			SC_ERR("no IO expander value");
+			return -1;
+		}
+
+		Value = strtol(Value_Arg, NULL, 16);
+		if (Access_IO_Exp(IO_Exp, 1, 0x2, (unsigned int *)&Value) != 0) {
+			SC_ERR("failed to set output");
 			return -1;
 		}
 
@@ -2317,6 +2399,39 @@ Out:
 	return Ret;
 }
 
+int EBM_List(void)
+{
+	Daughter_Card_t *Daughter_Card;
+	int FD;
+	char Buffer[STRLEN_MAX];
+
+	Daughter_Card = Plat_Devs->Daughter_Card;
+	FD = open(Daughter_Card->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		SC_ERR("failed to access I2C bus %s: %m", Daughter_Card->I2C_Bus);
+		return -1;
+	}
+
+	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card->I2C_Address) < 0) {
+		SC_ERR("failed to configure I2C bus for access to "
+		       "device address %#x: %m", Daughter_Card->I2C_Address);
+		return -1;
+	}
+
+	/*
+	 * If the read operation fails, it indicates that there is
+	 * no daughter card plugged into the motherboard referenced by
+	 * the I2C device address.
+	 */
+	if (read(FD, Buffer, 1) != 1) {
+		(void) close(FD);
+		return 0;
+	}
+
+	SC_PRINT("%s", Daughter_Card->Name);
+	return 0;
+}
+
 /*
  * EBM Operations
  */
@@ -2330,28 +2445,42 @@ int EBM_Ops(void)
 	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 
+	Daughter_Card = Plat_Devs->Daughter_Card;
+	if (Daughter_Card == NULL) {
+		SC_ERR("EBM card operation is not supported");
+		return -1;
+	}
+
+	if (Command.CmdId == LISTEBM) {
+		return EBM_List();
+	}
+
 	/* Validate the EBM target */
 	if (T_Flag == 0) {
 		SC_ERR("no EBM target");
 		return -1;
 	}
 
-	if (strcmp(Target_Arg, "all") == 0) {
-		Target = EEPROM_ALL;
-	} else if (strcmp(Target_Arg, "common") == 0) {
-		Target = EEPROM_COMMON;
-	} else if (strcmp(Target_Arg, "board") == 0) {
-		Target = EEPROM_BOARD;
-	} else if (strcmp(Target_Arg, "multirecord") == 0) {
-		Target = EEPROM_MULTIRECORD;
-	} else {
-		SC_ERR("invalid EBM target");
+	if (strcmp(Target_Arg, Daughter_Card->Name) != 0) {
+		SC_ERR("invalid getEBM target");
 		return -1;
 	}
 
-	Daughter_Card = Plat_Devs->Daughter_Card;
-	if (Daughter_Card == NULL) {
-		SC_ERR("EBM card operation is not supported");
+	if (V_Flag == 0) {
+		SC_ERR("no value is provided for getEBM");
+		return -1;
+	}
+
+	if (strcmp(Value_Arg, "all") == 0) {
+		Target = EEPROM_ALL;
+	} else if (strcmp(Value_Arg, "common") == 0) {
+		Target = EEPROM_COMMON;
+	} else if (strcmp(Value_Arg, "board") == 0) {
+		Target = EEPROM_BOARD;
+	} else if (strcmp(Value_Arg, "multirecord") == 0) {
+		Target = EEPROM_MULTIRECORD;
+	} else {
+		SC_ERR("invalid getEBM value");
 		return -1;
 	}
 

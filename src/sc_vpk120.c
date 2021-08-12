@@ -664,7 +664,7 @@ IO_Exp_t VPK120_IO_Exp = {
 };
 
 OnBoard_EEPROM_t VPK120_OnBoard_EEPROM = {
-	.Name = "EEPROM",
+	.Name = "onboard",
 	.I2C_Bus = "/dev/i2c-10",
 	.I2C_Address = 0x54,
 };

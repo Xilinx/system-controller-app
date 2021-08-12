@@ -33,9 +33,10 @@
  * 1.11 - Add 'geteeprom' command to get the entire content of on-board's EEPROM.
  * 1.12 - Support for FPGA Mezzanine Cards (FMCs).
  * 1.13 - Add 'list' command for features that didn't have that option.
+ * 1.14 - Add 'listfeature' command to print supported features of the board.
  */
 #define MAJOR	1
-#define MINOR	13
+#define MINOR	14
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -49,6 +50,7 @@ int Destroy_Lockfile(void);
 int Version_Ops(void);
 int BootMode_Ops(void);
 int Reset_Ops(void);
+int Feature_Ops(void);
 int EEPROM_Ops(void);
 int Temperature_Ops(void);
 int Clock_Ops(void);
@@ -80,6 +82,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
 	version - version and compatibility information\n\
 	reset - apply power-on-reset\n\
+\n\
+	listfeature - list the supported features for this board\n\
 \n\
 	listeeprom - list the supported EEPROM targets\n\
 	geteeprom - get the content of <target> EEPROM for either <value>:\n\
@@ -153,6 +157,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 typedef enum {
 	VERSION,
 	RESET,
+	LISTFEATURE,
 	LISTEEPROM,
 	GETEEPROM,
 	LISTTEMP,
@@ -212,6 +217,7 @@ typedef struct {
 static Command_t Commands[] = {
 	{ .CmdId = VERSION, .CmdStr = "version", .CmdOps = Version_Ops, },
 	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Ops, },
+	{ .CmdId = LISTFEATURE, .CmdStr = "listfeature", .CmdOps = Feature_Ops, },
 	{ .CmdId = LISTEEPROM, .CmdStr = "listeeprom", .CmdOps = EEPROM_Ops, },
 	{ .CmdId = GETEEPROM, .CmdStr = "geteeprom", .CmdOps = EEPROM_Ops, },
 	{ .CmdId = LISTTEMP, .CmdStr = "listtemp", .CmdOps = Temperature_Ops, },
@@ -543,6 +549,24 @@ Reset_Ops(void)
 	}
 
 	return Plat_Ops->Reset_Op();
+}
+
+int
+Feature_Ops(void)
+{
+	FeatureList_t *FeatureList;
+
+	if (Plat_Devs->FeatureList == NULL) {
+		SC_ERR("no feature list!");
+		return -1;
+	}
+
+	FeatureList = Plat_Devs->FeatureList;
+	for (int i = 0; i < FeatureList->Numbers; i++) {
+		SC_PRINT("%s", FeatureList->Feature[i]);
+	}
+
+	return 0;
 }
 
 void

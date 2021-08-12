@@ -36,6 +36,18 @@ extern int DIMM_EEPROM_Check(void *);
 extern int Voltages_Check(void *);
 
 /*
+ * Feature List
+ */
+FeatureList_t VCK190_FeatureList = {
+	.Numbers = 15,
+	.Feature = { \
+		"eeprom", "temp", "bootmode", "clock", "voltage", "power", \
+		"powerdomain", "BIT", "ddr", "gpio", "ioexp", "SFP", "QSFP", \
+		"EBM", "FMC", \
+	 },
+};
+
+/*
  * Boot Modes
  */
 typedef enum {
@@ -927,6 +939,7 @@ BITs_t VCK190_BITs = {
  * VCK190-sepcific Devices
  */
 Plat_Devs_t VCK190_Devs = {
+	.FeatureList = &VCK190_FeatureList,
 	.BootModes = &VCK190_BootModes,
 	.Clocks = &VCK190_Clocks,
 	.Ina226s = &VCK190_Ina226s,

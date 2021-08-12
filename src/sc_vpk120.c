@@ -22,6 +22,17 @@ extern int XSDB_BIT(void *);
 extern int Voltages_Check(void *);
 
 /*
+ * Feature List
+ */
+FeatureList_t VPK120_FeatureList = {
+        .Numbers = 11,
+        .Feature = { \
+                "eeprom", "temp", "bootmode", "clock", "voltage", "power", \
+                "BIT", "gpio", "ioexp", "QSFP", "FMC", \
+         },
+};
+
+/*
  * Boot Modes
  */
 typedef enum {
@@ -748,6 +759,7 @@ BITs_t VPK120_BITs = {
  * Board-specific Devices
  */
 Plat_Devs_t VPK120_Devs = {
+	.FeatureList = &VPK120_FeatureList,
 	.BootModes = &VPK120_BootModes,
 	.Clocks = &VPK120_Clocks,
 	.Ina226s = &VPK120_Ina226s,

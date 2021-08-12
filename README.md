@@ -8,6 +8,8 @@
 		version - version and compatibility information
 		reset - apply power-on-reset
 
+		listfeature - list the supported features for this board
+
 		listeeprom - list the supported EEPROM targets
 		geteeprom - get the content of <target> EEPROM for either <value>:
 			    'summary', 'all', 'common', 'board', or 'multirecord'

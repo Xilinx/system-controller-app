@@ -46,6 +46,14 @@
 	} while (0)
 
 /*
+ * Feature List
+ */
+typedef struct {
+	int	Numbers;
+	char	*Feature[STRLEN_MAX];
+} FeatureList_t;
+
+/*
  * Boot Modes
  */
 typedef struct {
@@ -290,6 +298,7 @@ typedef struct GPIOs {
  * Board-specific Devices
  */
 typedef struct {
+	FeatureList_t *FeatureList;
 	BootModes_t *BootModes;
 	Clocks_t *Clocks;
 	Ina226s_t *Ina226s;

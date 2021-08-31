@@ -730,6 +730,7 @@ typedef enum {
 	BIT_IDCODE_CHECK,
 	BIT_EFUSE_CHECK,
 	BIT_VOLTAGES_CHECK,
+	BIT_PL_UART_TEST,
 	BIT_MAX,
 } BIT_Index;
 
@@ -752,6 +753,19 @@ BITs_t VPK120_BITs = {
 	.BIT[BIT_VOLTAGES_CHECK] = {
 		.Name = "Check Voltages",
 		.Plat_BIT_Op = Voltages_Check,
+	},
+	.BIT[BIT_PL_UART_TEST] = {
+		.Name = "PL UART Test",
+		.Manual = 1,
+		.Instruction = "\n" \
+			"1- Connect to the 2nd com port (PL console), baud rate 9600\n" \
+			"2- The following output should be displayed on the console:\n\n" \
+			"	Testing UART\n" \
+			"	9600,8,N,1\n" \
+			"	Hello world!\n" \
+			"	UART 02 Test Passed\n",
+		.TCL_File = "pl_uart/pl_uart_download.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
 	},
 };
 

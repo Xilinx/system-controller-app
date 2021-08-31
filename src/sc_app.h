@@ -254,6 +254,8 @@ typedef struct Workarounds {
  */
 typedef struct {
 	char	Name[STRLEN_MAX];
+	int	Manual;
+	char	Instruction[2 * SYSCMD_MAX];
 	char	TCL_File[SYSCMD_MAX];
 	int	(*Plat_BIT_Op)(void *);
 } BIT_t;

@@ -76,15 +76,28 @@ XSDB_BIT(void *Arg)
 {
 	BIT_t *BIT_p = Arg;
 	char Output[STRLEN_MAX] = { 0 };
+	int Ret;
 
 	if (Plat_Ops->XSDB_Op == NULL) {
 		SC_ERR("xsdb operation is not supported");
 		return -1;
 	}
 
-	if (Plat_Ops->XSDB_Op(BIT_p->TCL_File, Output, STRLEN_MAX) != 0) {
-		SC_PRINT("%s: FAIL", BIT_p->Name);
-	} else {
+	if (BIT_p->Manual) {
+		SC_PRINT("%s", BIT_p->Instruction);
+	}
+
+	Ret = Plat_Ops->XSDB_Op(BIT_p->TCL_File, Output, STRLEN_MAX);
+	if (Ret != 0) {
+		SC_ERR("failed the xsdb operation");
+		if (!BIT_p->Manual) {
+			SC_PRINT("%s: FAIL", BIT_p->Name);
+		}
+
+		return -1;
+	}
+
+	if (!BIT_p->Manual) {
 		SC_PRINT("%s: PASS", BIT_p->Name);
 	}
 

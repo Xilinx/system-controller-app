@@ -1333,7 +1333,11 @@ int BIT_Ops(void)
 
 	if (Command.CmdId == LISTBIT) {
 		for (int i = 0; i < BITs->Numbers; i++) {
-			SC_PRINT("%s", BITs->BIT[i].Name);
+			if (BITs->BIT[i].Manual) {
+				SC_PRINT("%s - Manual Test", BITs->BIT[i].Name);
+			} else {
+				SC_PRINT("%s", BITs->BIT[i].Name);
+			}
 		}
 
 		return 0;

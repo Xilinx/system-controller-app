@@ -730,6 +730,7 @@ typedef enum {
 	BIT_IDCODE_CHECK,
 	BIT_EFUSE_CHECK,
 	BIT_VOLTAGES_CHECK,
+	BIT_RTC_CLOCK_TEST,
 	BIT_PL_UART_TEST,
 	BIT_MAX,
 } BIT_Index;
@@ -753,6 +754,28 @@ BITs_t VPK120_BITs = {
 	.BIT[BIT_VOLTAGES_CHECK] = {
 		.Name = "Check Voltages",
 		.Plat_BIT_Op = Voltages_Check,
+	},
+	.BIT[BIT_RTC_CLOCK_TEST] = {
+		.Name = "RTC Clock Test",
+		.Manual = 1,
+		.Instruction = "\n" \
+			"1- Connect to the 1st com port (Versal console), baud rate 115200\n" \
+			"2- A similar output should be displayed on the console:\n\n" \
+			"	Day Convention : 0-Fri, 1-Sat, 2-Sun, 3-Mon, 4-Tue, 5-Wed, 6-Thur\n" \
+			"	Last set time for RTC is..\n" \
+			"	YEAR:MM:DD HR:MM:SS 	 2016:10:17 00:00:01	 Day = 3\n\n" \
+			"	Current RTC time is..\n" \
+			"	YEAR:MM:DD HR:MM:SS 	 2016:10:17 00:08:39	 Day = 3\n\n" \
+			"	Setting Time = 2016:10:17 00:00:00\n" \
+			"	RTC time after set is..\n" \
+			"	YEAR:MM:DD HR:MM:SS 	 2016:10:17 00:00:00	 Day = 3\n\n" \
+			"	RTC time after delay_1 is..\n" \
+			"	YEAR:MM:DD HR:MM:SS 	 2016:10:17 00:00:02	 Day = 3\n\n" \
+			"	RTC time after delay_2 is..\n" \
+			"	YEAR:MM:DD HR:MM:SS 	 2016:10:17 00:00:04	 Day = 3\n" \
+			"	Successfully ran RTC Set time Example Test\n",
+		.TCL_File = "rtc_clock/rtc_clock_download.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
 	},
 	.BIT[BIT_PL_UART_TEST] = {
 		.Name = "PL UART Test",

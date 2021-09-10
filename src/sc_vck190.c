@@ -1350,13 +1350,13 @@ VCK190_FMCAutoVadj_Op(void)
 
 	SC_INFO("IO Expander input: %#x", Value);
 
-	/* If bit[0] and bit[2] are 0, then FMC1 is connected */
-	if ((~Value & 0x5) == 0x5) {
+	/* If bit[0] is 0, then FMC1 is connected */
+	if ((~Value & 0x1) == 0x1) {
 		FMC1 = 1;
 	}
 
-	/* If bit[1] and bit[3] are 0, then FMC2 is connected */
-	if ((~Value & 0xA) == 0xA) {
+	/* If bit[1] is 0, then FMC2 is connected */
+	if ((~Value & 0x2) == 0x2) {
 		FMC2 = 1;
 	}
 

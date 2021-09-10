@@ -14,7 +14,9 @@ extern Plat_Devs_t *Plat_Devs;
 extern Plat_Ops_t *Plat_Ops;
 
 int VPK120_IDT_8A34001_Reset(void);
+extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
+extern int FMC_Vadj_Range(FMC_t *, float *, float *);
 extern int GPIO_Get(char *, int *);
 extern int GPIO_Set(char *, int);
 extern int Clocks_Check(void *);
@@ -25,11 +27,11 @@ extern int Voltages_Check(void *);
  * Feature List
  */
 FeatureList_t VPK120_FeatureList = {
-        .Numbers = 11,
-        .Feature = { \
-                "eeprom", "temp", "bootmode", "clock", "voltage", "power", \
-                "BIT", "gpio", "ioexp", "QSFP", "FMC", \
-         },
+	.Numbers = 11,
+	.Feature = { \
+		"eeprom", "temp", "bootmode", "clock", "voltage", "power", \
+		"BIT", "gpio", "ioexp", "QSFP", "FMC", \
+	},
 };
 
 /*
@@ -1027,6 +1029,83 @@ VPK120_QSFP_ModuleSelect_Op(QSFP_t *QSFP, int State)
 }
 
 int
+VPK120_FMCAutoVadj_Op(void)
+{
+	int Target_Index = -1;
+	IO_Exp_t *IO_Exp;
+	unsigned int Value;
+	Voltages_t *Voltages;
+	Voltage_t *Regulator;
+	FMCs_t *FMCs;
+	FMC_t *FMC;
+	int Plugged = 0;
+	float Voltage = 0;
+	float Min_Voltage = 0;
+	float Max_Voltage = 0;
+
+	IO_Exp = Plat_Devs->IO_Exp;
+	if (Access_IO_Exp(IO_Exp, 0, 0x0, &Value) != 0) {
+		SC_ERR("failed to read input of IO Expander");
+		return -1;
+	}
+
+	SC_INFO("IO Expander input: %#x", Value);
+
+	/* If bit[0] is 0, then a FMC module is connected */
+	if ((~Value & 0x1) == 0x1) {
+		Plugged = 1;
+	}
+
+	Voltages  = Plat_Devs->Voltages;
+	for (int i = 0; i < Voltages->Numbers; i++) {
+		if (strcmp("VADJ_FMC", (char *)Voltages->Voltage[i].Name) == 0) {
+			Target_Index = i;
+			Regulator = &Voltages->Voltage[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		SC_ERR("no regulator exists for VADJ_FMC");
+		return -1;
+	}
+
+	if (Plugged == 1) {
+		FMCs = Plat_Devs->FMCs;
+		FMC = &FMCs->FMC[0];
+		if (FMC_Vadj_Range(FMC, &Min_Voltage, &Max_Voltage) != 0) {
+			SC_ERR("failed to get Voltage Adjust range for FMC");
+			return -1;
+		}
+	} else {
+		Min_Voltage = 0;
+		Max_Voltage = 1.5;
+	}
+
+	SC_INFO("Voltage Min: %.2f, Voltage Max: %.2f",
+		Min_Voltage, Max_Voltage);
+
+	/*
+	 * Start with satisfying the lower target voltage and then see
+	 * if it does also satisfy the higher voltage.
+	 */
+	if (Min_Voltage <= 1.2 && Max_Voltage >= 1.2) {
+		Voltage = 1.2;
+	}
+
+	if (Min_Voltage <= 1.5 && Max_Voltage >= 1.5) {
+		Voltage = 1.5;
+	}
+
+	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
+		SC_ERR("failed to set voltage of VADJ_FMC regulator");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
 VPK120_IDT_8A34001_Reset(void)
 {
 	IO_Exp_t *IO_Exp;
@@ -1067,4 +1146,5 @@ Plat_Ops_t VPK120_Ops = {
 	.XSDB_Op = VPK120_XSDB_Op,
 	.Temperature_Op = VPK120_Temperature_Op,
 	.QSFP_ModuleSelect_Op = VPK120_QSFP_ModuleSelect_Op,
+	.FMCAutoVadj_Op = VPK120_FMCAutoVadj_Op,
 };

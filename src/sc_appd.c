@@ -21,7 +21,6 @@
 #endif /* DEBUG */
 
 #define GPIOLINE	"ZU4_TRIGGER"
-#define VADJ_FMC_RETRIES	5
 
 /*
  * Default configurable variables.  They can be modified in 'config' file.
@@ -153,7 +152,7 @@ Monitor_GPIO(struct gpiod_line *GPIO_Line)
 #ifdef DEBUG
 	fprintf(FP, "%d:\t%lld(s).%.3ld(ms)\n", State,
 	    (long long)GPIO_Event.ts.tv_sec, (GPIO_Event.ts.tv_nsec/1000000));
-	fclose(FP);
+	(void) fclose(FP);
 #endif /* DEBUG */
 
 	return State;
@@ -252,7 +251,7 @@ VCK190_GPIO(void)
 		}
 	}
 
-	fclose(FP);
+	(void) fclose(FP);
 
 	if (WDT_Enable == 0) {
 		return 0;
@@ -555,7 +554,6 @@ Set_Voltages(void)
 	char Buffer[SYSCMD_MAX];
 	char Value[STRLEN_MAX];
 	float Voltage, Current_Voltage;
-	int Retries;
 
 	/* If there is no voltage file, there is nothing to do */
 	if (access(VOLTAGEFILE, F_OK) != 0) {
@@ -580,30 +578,6 @@ Set_Voltages(void)
 			}
 		}
 
-		/*
-		 * XXX - This is a special handling of 'VADJ_FMC' custom setting.
-		 * As long as Board Framework is in the picture, we will wait
-		 * until it is done with its Auto Vadj before we change the
-		 * voltage to a custom setting.  We will wait an finite amount
-		 * of time for that opertion to complete.
-		 */
-		if (strcmp(Regulator->Name, "VADJ_FMC") == 0) {
-			Retries = VADJ_FMC_RETRIES;
-			Current_Voltage = 0;
-			while (Current_Voltage < 1.0 && Retries > 0) {
-				if (Access_Regulator(Regulator, &Current_Voltage, 0) != 0) {
-					SC_ERR("failed to get voltage of VADJ_FMC regulator");
-					(void) fclose(FP);
-					return -1;
-				}
-
-				SC_INFO("Current_Voltage: %f, Retries: %d", Current_Voltage,
-					Retries);
-				sleep(1);
-				Retries--;
-			}
-		}
-
 		Voltage = strtof(Value, NULL);
 		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
 			SC_ERR("failed to set voltage on regulator");
@@ -613,6 +587,79 @@ Set_Voltages(void)
 	}
 
 	(void) fclose(FP);
+	return 0;
+}
+
+int
+FMC_Autodetect_Vadj()
+{
+	FILE *FP;
+	char Buffer[SYSCMD_MAX];
+	char Value[STRLEN_MAX];
+	int Autodetect;
+	int Found = 0;
+
+	/*
+	 * XXX - The FMC Autodetect Vadj task is currently performed by
+	 * the Board Framework.  At this time, this feature is not performed
+	 * by sc_appd by default.  If there is no 'FMC_Autodetect' variable
+	 * defined in CONFIGFILE, add one and set it to 0.  If this variable
+	 * already exists in CONFIGFILE and it is set to 1, it overrides
+	 * the current default behavior.
+	 */
+
+	/* If there is no config file, create one and add 'FMC_Autodetect: 0' */
+	if (access(CONFIGFILE, F_OK) != 0) {
+		(void) sprintf(Buffer, "echo \"FMC_Autodetect: 0\" > %s; "
+			       "sync", CONFIGFILE);
+		SC_INFO("Command: %s", Buffer);
+		system(Buffer);
+		return 0;
+	}
+
+	FP = fopen(CONFIGFILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read file %s: %m", CONFIGFILE);
+		return -1;
+	}
+
+	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		if (strstr(Buffer, "FMC_Autodetect:") != NULL) {
+			SC_INFO("%s: %s", CONFIGFILE, Buffer);
+			(void) strtok(Buffer, ":");
+			if (strcmp(Buffer, "FMC_Autodetect") != 0) {
+				continue;
+			}
+
+			(void) strcpy(Value, strtok(NULL, "\n"));
+			Autodetect = atoi(Value);
+			Found = 1;
+			break;
+		}
+	}
+
+	(void) fclose(FP);
+
+	if (!Found) {
+		(void) sprintf(Buffer, "echo \"FMC_Autodetect: 0\" >> %s; "
+			       "sync", CONFIGFILE);
+		SC_INFO("Command: %s", Buffer);
+		system(Buffer);
+		return 0;
+	}
+
+	if (Autodetect == 1) {
+		if (Plat_Ops->FMCAutoVadj_Op == NULL) {
+			SC_ERR("FMC autodetect vadj operation is not supported");
+			return -1;
+		}
+
+		if (Plat_Ops->FMCAutoVadj_Op() != 0) {
+			SC_ERR("failed to autodetect FMC vadj");
+			return -1;
+		}
+	}
+
 	return 0;
 }
 
@@ -638,14 +685,11 @@ main()
 		goto Out;
 	}
 
-	/* Detect FMC cards and auto adjust voltage */
-	/* XXX - Currently it is done by Board Framework */
-#ifdef FMC_AUTO_VADJ
-	if (Plat_Ops->FMCAutoVadj_Op() != 0) {
-		SC_ERR("failed to auto adjust FMC cards");
+	/* Detect FMC modules and auto adjust voltage */
+	if (FMC_Autodetect_Vadj() != 0) {
+		SC_ERR("failed to FMC autodetect vadj");
 		goto Out;
 	}
-#endif
 
 	/* Set custom clock frequency */
 	if (Set_Clocks() != 0) {

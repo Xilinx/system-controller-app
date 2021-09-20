@@ -903,6 +903,7 @@ typedef enum {
 	BIT_DIMM_EEPROM_CHECK,
 	BIT_VOLTAGES_CHECK,
 	BIT_PL_UART_TEST,
+	BIT_PROGRAM_QSPI,
 	BIT_MAX,
 } BIT_Index;
 
@@ -945,6 +946,20 @@ BITs_t VCK190_BITs = {
 			"	Hello world!\n" \
 			"	UART 02 Test Passed\n",
 		.TCL_File = "pl_uart/pl_uart_download.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
+	},
+	.BIT[BIT_PROGRAM_QSPI] = {
+		.Name = "Program QSPI",
+		.Manual = 1,
+		.Instruction = "\n" \
+			"1- Connect to the 1st com port (Versal console), baud rate 115200\n" \
+			"2- The following output should be displayed on the console:\n\n" \
+			"	SF: Detected n25q00a with page size 512 Bytes, erase size 128 KiB, total 256 MiB\n" \
+			"	SF: 5242880 bytes @ 0x0 Erased: OK\n" \
+			"	device 0 offset 0x0, size 0x500000\n" \
+			"	SF: 5242880 bytes @ 0x0 Written: OK\n" \
+			"	Versal> \n",
+		.TCL_File = "qspi/program_qspi_download.tcl",
 		.Plat_BIT_Op = XSDB_BIT,
 	},
 };

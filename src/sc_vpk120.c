@@ -160,6 +160,13 @@ Clocks_t VPK120_Clocks = {
 		.I2C_Bus = "/dev/i2c-8",// I2C bus address behind the mux
 		.I2C_Address = 0x5f,	// I2C device address
 	},
+	.Clock[IDT_8A34001_FMC] = {
+		.Name = "8A34001 FMC",
+		.Type = IDT_8A34001,
+		.Type_Data = &VPK120_IDT_8A34001_Data,
+		.I2C_Bus = "/dev/i2c-17",
+		.I2C_Address = 0x5b,
+	},
 	.Clock[SI570_VERSAL_SYS] = {
 		.Name = "Versal Sys Clk Si570",
 		.Type = Si570,
@@ -169,13 +176,6 @@ Clocks_t VPK120_Clocks = {
 		.Lower_Freq = 10.0,
 		.I2C_Bus = "/dev/i2c-10",
 		.I2C_Address = 0x5d,
-	},
-	.Clock[IDT_8A34001_FMC] = {
-		.Name = "8A34001 FMC",
-		.Type = IDT_8A34001,
-		.Type_Data = &VPK120_IDT_8A34001_Data,
-		.I2C_Bus = "/dev/i2c-17",
-		.I2C_Address = 0x5b,
 	},
 	.Clock[SI570_LPDDR4_CLK1] = {
 		.Name = "LPDDR4 Clk1 Si570",
@@ -734,6 +734,7 @@ typedef enum {
 	BIT_VOLTAGES_CHECK,
 	BIT_RTC_CLOCK_TEST,
 	BIT_PL_UART_TEST,
+	BIT_PROGRAM_QSPI,
 	BIT_MAX,
 } BIT_Index;
 
@@ -790,6 +791,20 @@ BITs_t VPK120_BITs = {
 			"	Hello world!\n" \
 			"	UART 02 Test Passed\n",
 		.TCL_File = "pl_uart/pl_uart_download.tcl",
+		.Plat_BIT_Op = XSDB_BIT,
+	},
+	.BIT[BIT_PROGRAM_QSPI] = {
+		.Name = "Program QSPI",
+		.Manual = 1,
+		.Instruction = "\n" \
+			"1- Connect to the 1st com port (Versal console), baud rate 115200\n" \
+			"2- The following output should be displayed on the console:\n\n" \
+			"	SF: Detected n25q00a with page size 512 Bytes, erase size 128 KiB, total 256 MiB\n" \
+			"	SF: 5242880 bytes @ 0x0 Erased: OK\n" \
+			"	device 0 offset 0x0, size 0x500000\n" \
+			"	SF: 5242880 bytes @ 0x0 Written: OK\n" \
+			"	Versal> \n",
+		.TCL_File = "qspi/program_qspi_download.tcl",
 		.Plat_BIT_Op = XSDB_BIT,
 	},
 };

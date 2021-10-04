@@ -14,7 +14,7 @@ The `uboot.bif` file is input to bootgen and it contains:
 
 	the_ROM_image:
 	{
-       		id_code = 0x14ca8093
+        	id_code = 0x14ca8093
         	extended_id_code = 0x01
 
         	image {

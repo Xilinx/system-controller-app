@@ -809,7 +809,14 @@ Clock_Ops(void)
 
 	if (Command.CmdId == LISTCLOCK) {
 		for (int i = 0; i < Clocks->Numbers; i++) {
-			SC_PRINT("%s", Clocks->Clock[i].Name);
+			if (Clocks->Clock[i].Type == IDT_8A34001) {
+				SC_PRINT("%s", Clocks->Clock[i].Name);
+			} else {
+				SC_PRINT("%s - (%.3f MHz - %.3f MHz)",
+					 Clocks->Clock[i].Name,
+					 Clocks->Clock[i].Lower_Freq,
+					 Clocks->Clock[i].Upper_Freq);
+			}
 		}
 
 		return 0;

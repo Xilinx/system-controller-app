@@ -421,6 +421,11 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
 
+	if (Op == 1 && *Data > 0xFFFF) {
+		SC_ERR("invalid data, valid value is between 0 and 0xFFFF");
+		return -1;
+	}
+
 	FD = open(IO_Exp->I2C_Bus, O_RDWR);
 	if (FD < 0) {
 		SC_ERR("unable to access I2C bus %s: %m", IO_Exp->I2C_Bus);

@@ -29,11 +29,12 @@ extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int FMC_Vadj_Range(FMC_t *, float *, float *);
 extern int GPIO_Get(char *, int *);
 extern int GPIO_Set(char *, int);
-extern int Clocks_Check(void *);
-extern int XSDB_BIT(void *);
-extern int EBM_EEPROM_Check(void *);
-extern int DIMM_EEPROM_Check(void *);
-extern int Voltages_Check(void *);
+extern int Clocks_Check(void *, void *);
+extern int XSDB_BIT(void *, void *);
+extern int EBM_EEPROM_Check(void *, void *);
+extern int DIMM_EEPROM_Check(void *, void *);
+extern int Voltages_Check(void *, void *);
+extern int Display_Instruction(void *, void *);
 
 /*
  * Feature List
@@ -904,6 +905,7 @@ typedef enum {
 	BIT_VOLTAGES_CHECK,
 	BIT_PL_UART_TEST,
 	BIT_PROGRAM_QSPI,
+	BIT_QSPI_TEST,
 	BIT_MAX,
 } BIT_Index;
 
@@ -911,56 +913,105 @@ BITs_t VCK190_BITs = {
 	.Numbers = BIT_MAX,
 	.BIT[BIT_CLOCKS_CHECK] = {
 		.Name = "Check Clocks",		// Name of BIT to run
-		.Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
+		.Manual = 0,			// Manual or software validated
+		.Level[0].Plat_BIT_Op = Clocks_Check,	// BIT routine to invoke
 	},
 	.BIT[BIT_IDCODE_CHECK] = {
 		.Name = "IDCODE Check",
-		.TCL_File = "idcode/idcode_check.tcl",
-		.Plat_BIT_Op = XSDB_BIT,
+		.Manual = 0,
+		.Level[0].Plat_BIT_Op = XSDB_BIT,
+		.Level[0].TCL_File = "idcode/idcode_check.tcl",
 	},
 	.BIT[BIT_EFUSE_CHECK] = {
 		.Name = "EFUSE Check",
-		.TCL_File = "efuse/read_efuse.tcl",
-		.Plat_BIT_Op = XSDB_BIT,
+		.Manual = 0,
+		.Level[0].Plat_BIT_Op = XSDB_BIT,
+		.Level[0].TCL_File = "efuse/read_efuse.tcl",
 	},
 	.BIT[BIT_EBM_EEPROM_CHECK] = {
 		.Name = "X-EBM EEPROM Check",
-		.Plat_BIT_Op = EBM_EEPROM_Check,
+		.Manual = 0,
+		.Level[0].Plat_BIT_Op = EBM_EEPROM_Check,
 	},
 	.BIT[BIT_DIMM_EEPROM_CHECK] = {
 		.Name = "DIMM EEPROM Check",
-		.Plat_BIT_Op = DIMM_EEPROM_Check,
+		.Manual = 0,
+		.Level[0].Plat_BIT_Op = DIMM_EEPROM_Check,
 	},
 	.BIT[BIT_VOLTAGES_CHECK] = {
 		.Name = "Check Voltages",
-		.Plat_BIT_Op = Voltages_Check,
+		.Manual = 0,
+		.Level[0].Plat_BIT_Op = Voltages_Check,
 	},
 	.BIT[BIT_PL_UART_TEST] = {
 		.Name = "PL UART Test",
 		.Manual = 1,
-		.Instruction = "\n" \
+		.Levels = 1,
+		.Level[0].Instruction = "\n" \
 			"1- Connect to the 2nd com port (PL console), baud rate 115200\n" \
 			"2- The following output should be displayed on the console:\n\n" \
 			"	Testing UART\n" \
 			"	115200,8,N,1\n" \
 			"	Hello world!\n" \
-			"	UART 02 Test Passed\n",
-		.TCL_File = "pl_uart/pl_uart_download.tcl",
-		.Plat_BIT_Op = XSDB_BIT,
+			"	UART 02 Test Passed\n\n" \
+			"3- Click 'Pass' if you observe it.\n",
+		.Level[0].Plat_BIT_Op = XSDB_BIT,
+		.Level[0].TCL_File = "pl_uart/pl_uart_download.tcl",
 	},
 	.BIT[BIT_PROGRAM_QSPI] = {
 		.Name = "Program QSPI",
 		.Manual = 1,
-		.Instruction = "\n" \
+		.Levels = 1,
+		.Level[0].Instruction = "\n" \
 			"1- Connect to the 1st com port (Versal console), baud rate 115200\n" \
 			"2- The following output should be displayed on the console:\n\n" \
 			"	SF: Detected n25q00a with page size 512 Bytes, erase size 128 KiB, total 256 MiB\n" \
 			"	SF: 5242880 bytes @ 0x0 Erased: OK\n" \
 			"	device 0 offset 0x0, size 0x500000\n" \
 			"	SF: 5242880 bytes @ 0x0 Written: OK\n" \
-			"	Versal> \n",
-		.TCL_File = "qspi/program_qspi_download.tcl",
-		.Plat_BIT_Op = XSDB_BIT,
+			"	Versal> \n\n" \
+			"3- Click 'Pass' if you observe it.\n",
+		.Level[0].Plat_BIT_Op = XSDB_BIT,
+		.Level[0].TCL_File = "qspi/program_qspi_download.tcl",
+	},
+	.BIT[BIT_QSPI_TEST] = {
+		.Name = "QSPI Test",
+		.Manual = 1,
+		.Levels = 7,
+		.Level[0].Instruction = "\n" \
+			"1- Connect to the 1st com port (Versal console), baud rate 115200\n" \
+			"2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n" \
+			"3- Cycle Board Power.\n" \
+			"4- Click 'Pass' when this is done.\n",
+		.Level[0].Plat_BIT_Op = Display_Instruction,
+		.Level[1].Instruction = "\n" \
+			"1- Observe PL LEDs blinking, then PL LED3 and PL LED2 turn on in sequence.\n" \
+			"2- PL LED1 should be blinking.\n" \
+			"3- Click 'Pass' if you observe it.\n",
+		.Level[1].Plat_BIT_Op = Display_Instruction,
+		.Level[2].Instruction = "\n" \
+			"1- Do you see the PL LEDs 3 and 2 both on?\n" \
+			"2- Click 'Pass' if you observe it.\n",
+		.Level[2].Plat_BIT_Op = Display_Instruction,
+		.Level[3].Instruction = "\n" \
+			"1- Set PL DIP, SW6 to '1111' (All Up).\n" \
+			"2- Set PL DIP, SW6 to '0000' (All Down).\n" \
+			"3- Observe PL LED1 turn on and PL LED0 blinking.\n" \
+			"4- Click 'Pass' if you observe it.\n",
+		.Level[3].Plat_BIT_Op = Display_Instruction,
+		.Level[4].Instruction = "\n" \
+			"1- Press the 2 Push buttons (SW4 and SW5) in any order.\n" \
+			"2- Click 'Pass' when this is done.\n",
+		.Level[4].Plat_BIT_Op = Display_Instruction,
+		.Level[5].Instruction = "\n" \
+			"1- Do you see the PL LEDs 3 through 0 all on?\n" \
+			"2- Click 'Pass' if you observe it.\n",
+		.Level[5].Plat_BIT_Op = Display_Instruction,
+		.Level[6].Instruction = "\n" \
+			"1- The following output should be displayed on the console:\n\n" \
+			"	BlinkBIST results = F\n\n" \
+			"2- Click 'Pass' if you observe it.\n",
+		.Level[6].Plat_BIT_Op = Display_Instruction,
 	},
 };
 

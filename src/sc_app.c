@@ -1324,6 +1324,8 @@ int BIT_Ops(void)
 	int Target_Index = -1;
 	BITs_t *BITs;
 	BIT_t *BIT;
+	unsigned long int Value;
+	int Level = 0;
 
 	BITs = Plat_Devs->BITs;
 	if (BITs == NULL) {
@@ -1334,7 +1336,8 @@ int BIT_Ops(void)
 	if (Command.CmdId == LISTBIT) {
 		for (int i = 0; i < BITs->Numbers; i++) {
 			if (BITs->BIT[i].Manual) {
-				SC_PRINT("%s - Manual Test", BITs->BIT[i].Name);
+				SC_PRINT("%s - Manual Test(%d)", BITs->BIT[i].Name,
+					 BITs->BIT[i].Levels);
 			} else {
 				SC_PRINT("%s", BITs->BIT[i].Name);
 			}
@@ -1362,7 +1365,23 @@ int BIT_Ops(void)
 		return -1;
 	}
 
-	return BIT->Plat_BIT_Op(BIT);
+	if (!BIT->Manual || BIT->Levels == 1) {
+		return BIT->Level[0].Plat_BIT_Op(BIT, &Level);
+	}
+
+	if (V_Flag == 0) {
+		SC_ERR("no value is provided for multi-level BIT");
+		return -1;
+	}
+
+	Value = strtol(Value_Arg, NULL, 16);
+	if (Value == 0 || Value > BIT->Levels) {
+		SC_ERR("invalid value for multi-level BIT");
+		return -1;
+	}
+
+	Level = Value - 1;
+	return BIT->Level[Level].Plat_BIT_Op(BIT, &Level);
 }
 
 /*

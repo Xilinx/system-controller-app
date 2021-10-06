@@ -21,11 +21,12 @@ extern int Access_Regulator(Voltage_t *, float *, int);
  * the same as default value.
  */
 int
-Clocks_Check(void *Arg)
+Clocks_Check(void *Arg1, void *Arg2)
 {
-	Clocks_t *Clocks;
-	BIT_t *BIT_p = Arg;
+	BIT_t *BIT_p = Arg1;
+	void *Ignore = Arg2;
 	int FD;
+	Clocks_t *Clocks;
 	char ReadBuffer[STRLEN_MAX];
 	double Freq, Lower, Upper, Delta;
 
@@ -72,9 +73,10 @@ Clocks_Check(void *Arg)
  * Run the test using XSDB.
  */
 int
-XSDB_BIT(void *Arg)
+XSDB_BIT(void *Arg1, void *Arg2)
 {
-	BIT_t *BIT_p = Arg;
+	BIT_t *BIT_p = Arg1;
+	int Level = *(int *)Arg2;
 	char Output[STRLEN_MAX] = { 0 };
 	int Ret;
 
@@ -83,11 +85,16 @@ XSDB_BIT(void *Arg)
 		return -1;
 	}
 
-	if (BIT_p->Manual) {
-		SC_PRINT("%s", BIT_p->Instruction);
+	if (Level > BIT_p->Levels) {
+		SC_ERR("Invalid level invocation");
+		return -1;
 	}
 
-	Ret = Plat_Ops->XSDB_Op(BIT_p->TCL_File, Output, STRLEN_MAX);
+	if (BIT_p->Manual) {
+		SC_PRINT("%s", BIT_p->Level[Level].Instruction);
+	}
+
+	Ret = Plat_Ops->XSDB_Op(BIT_p->Level[Level].TCL_File, Output, STRLEN_MAX);
 	if (Ret != 0) {
 		SC_ERR("failed the xsdb operation");
 		if (!BIT_p->Manual) {
@@ -108,9 +115,10 @@ XSDB_BIT(void *Arg)
  * This routine checks whether EEPROM of EBM daughter card is accessible.
  */
 int
-EBM_EEPROM_Check(void *Arg)
+EBM_EEPROM_Check(void *Arg1, void *Arg2)
 {
-	BIT_t *BIT_p = Arg;
+	BIT_t *BIT_p = Arg1;
+	void *Ignore = Arg2;
 	Daughter_Card_t *Daughter_Card;
 	int FD;
 
@@ -145,9 +153,10 @@ EBM_EEPROM_Check(void *Arg)
  * it is accessible.
  */
 int
-DIMM_EEPROM_Check(void *Arg)
+DIMM_EEPROM_Check(void *Arg1, void *Arg2)
 {
-	BIT_t *BIT_p = Arg;
+	BIT_t *BIT_p = Arg1;
+	void *Ignore = Arg2;
 	int FD;
 	DIMM_t *DIMM;
 	char In_Buffer[STRLEN_MAX];
@@ -202,9 +211,10 @@ DIMM_EEPROM_Check(void *Arg)
  * expected minimum and maximum values.
  */
 int
-Voltages_Check(void *Arg)
+Voltages_Check(void *Arg1, void *Arg2)
 {
-	BIT_t *BIT_p = Arg;
+	BIT_t *BIT_p = Arg1;
+	void *Ignore = Arg2;
 	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;
@@ -235,5 +245,29 @@ Voltages_Check(void *Arg)
 	}
 
 	SC_PRINT("%s: PASS", BIT_p->Name);
+	return 0;
+}
+
+/*
+ * This routine is used by manual tests that require displaying
+ * instructions without performing any action.
+ */
+int
+Display_Instruction(void *Arg1, void *Arg2)
+{
+	BIT_t *BIT_p = Arg1;
+	int Level = *(int *)Arg2;
+
+	if (!BIT_p->Manual) {
+		SC_ERR("BIT is not a manual test");
+		return -1;
+	}
+
+	if (Level > BIT_p->Levels) {
+		SC_ERR("invalid level invocation for a multi-level manual BIT");
+		return -1;
+	}
+
+	SC_PRINT("%s", BIT_p->Level[Level].Instruction);
 	return 0;
 }

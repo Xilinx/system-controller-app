@@ -12,6 +12,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
+#define LEVELS_MAX	10
 #define ITEMS_MAX	24
 #define LITEMS_MAX	64
 #define STRLEN_MAX	64
@@ -253,11 +254,16 @@ typedef struct Workarounds {
  * Board Interface Tests (BITs)
  */
 typedef struct {
+	char	Instruction[SYSCMD_MAX];
+	int	(*Plat_BIT_Op)(void *, void *);
+	char	TCL_File[SYSCMD_MAX];
+} BIT_Level_t;
+
+typedef struct {
 	char	Name[STRLEN_MAX];
 	int	Manual;
-	char	Instruction[2 * SYSCMD_MAX];
-	char	TCL_File[SYSCMD_MAX];
-	int	(*Plat_BIT_Op)(void *);
+	int	Levels;
+	BIT_Level_t	Level[LEVELS_MAX];
 } BIT_t;
 
 typedef struct BITs {

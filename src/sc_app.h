@@ -20,6 +20,7 @@
 
 #define APPDIR		"/home/root/.sc_app"
 #define LOCKFILE	APPDIR"/lock"
+#define CONFIGFILE	APPDIR"/config"
 #define BOOTMODEFILE	APPDIR"/boot_mode"
 #define SILICONFILE	APPDIR"/silicon"
 #define CLOCKFILE	APPDIR"/clock"

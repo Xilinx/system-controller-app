@@ -15,171 +15,32 @@
 #include <sys/stat.h>
 #include "sc_app.h"
 
-#define CONFIGFILE	APPDIR"/config"
-#ifdef DEBUG
-#define LOGFILE		APPDIR"/gpio.log"
-#endif /* DEBUG */
-
 #define GPIOLINE	"ZU4_TRIGGER"
 
-/*
- * Default configurable variables.  They can be modified in 'config' file.
- */
-int WDT_Timeout = 200;		// Milliseconds
-int WDT_Edge = 1;		// 0 - Falling Edge
-				// 1 - Rising Edge	
-				// 2 - Either Edge
-int Training_Interval = 1000;	// Milliseconds
-
-struct itimerspec Timer_Start;
-struct itimerspec Timer_Off = { 0 };
-timer_t Timer_Id;
-
-typedef enum {
-	Unknown,
-	Workaround,
-	Watchdog,
-} GPIO_Behavior_t;
-
-GPIO_Behavior_t GPIO_Behavior = Unknown;
-time_t GPIO_First_Time = 0;
-int GPIO_State;
+extern Plat_Devs_t *Plat_Devs;
+extern Plat_Ops_t *Plat_Ops;
 
 int (*Workaround_Op)(void *);
 extern int Board_Identification(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Set_IDT_8A34001(Clock_t *, char *, int);
 
-extern Plat_Devs_t *Plat_Devs;
-extern Plat_Ops_t *Plat_Ops;
-
-static int
-Is_Silicon_ES1(void)
-{
-	FILE *FP;
-	char Buffer[STRLEN_MAX];
-
-	if (access(SILICONFILE, F_OK) == 0) {
-		FP = fopen(SILICONFILE, "r");
-		if (FP == NULL) {
-			SC_ERR("failed to open file %s: %m", SILICONFILE);
-			return -1;
-		}
-
-		(void) fgets(Buffer, sizeof (Buffer), FP);
-		(void) fclose(FP);
-		if (strcmp("ES1\n", Buffer) == 0) {
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
 /*
- * The real timer signal handler.
- */
-static void
-Timer_Handler(int Signal, siginfo_t *Signal_Info, void *Arg)
-{
-	time_t Now;
-	double MSeconds;
-
-	if (GPIO_Behavior == Unknown) {
-		/*
-		 * Regardless of WDT_Timeout, wait until Training_Interval
-		 * time passes before setting GPIO behavior to Workaround.
-		 */
-		MSeconds = (difftime(time(&Now), GPIO_First_Time) * 1000);
-		if (MSeconds < Training_Interval) {
-			return;
-		}
-
-		GPIO_Behavior = Workaround;
-
-		/* Cancel the timer */
-		if (timer_settime(Timer_Id, 0, &Timer_Off, NULL) == -1) {
-			SC_ERR("failed to set the timer: %m");
-		}
-
-		if (Is_Silicon_ES1() == 1) {
-			(void)(*Workaround_Op)(&GPIO_State);
-		}
-
-		return;
-	}
-
-	if (GPIO_Behavior != Watchdog) {
-		SC_ERR("invalid GPIO behavior");
-	}
-
-	/* Cancel the timer */
-	if (timer_settime(Timer_Id, 0, &Timer_Off, NULL) == -1) {
-		SC_ERR("failed to set the timer: %m");
-	}
-
-	(void) Plat_Ops->Reset_Op();
-}
-
-int
-Monitor_GPIO(struct gpiod_line *GPIO_Line)
-{
-	struct timespec Timeout = { 1, 0 };
-	struct gpiod_line_event GPIO_Event;
-	int State;
-
-#ifdef DEBUG
-	FILE *FP = NULL;
-
-	FP = fopen(LOGFILE, "a");
-	if (FP == NULL) {
-		SC_ERR("failed to create %s: %m", LOGFILE);
-		return -1;
-	}
-#endif /* DEBUG */
-
-	/* Wait here until we receive an event */
-	while (gpiod_line_event_wait(GPIO_Line, &Timeout) != 1);
-
-	State = gpiod_line_event_read(GPIO_Line, &GPIO_Event);
-	if (State == -1) {
-		SC_ERR("failed to read the last event notification");
-		return -1;
-	}
-
-	State = (GPIO_Event.event_type == 1) ? 1 : 0;
-
-#ifdef DEBUG
-	fprintf(FP, "%d:\t%lld(s).%.3ld(ms)\n", State,
-	    (long long)GPIO_Event.ts.tv_sec, (GPIO_Event.ts.tv_nsec/1000000));
-	(void) fclose(FP);
-#endif /* DEBUG */
-
-	return State;
-}
-
-/*
- * On VCK190, GPIO line 11 is used to apply vccaux workaround for ES1 Versal,
- * and to use as watchdog timer kicker for Production version of Versal.  Which
- * version of Versal used in VCK190 is determined by how this GPIO line behaves.
+ * On VCK190/VMK180 boards, the GPIO line 11 is used to determine when to apply
+ * the vccaux workaround for ES1 part.
  */ 
 int
 VCK190_GPIO(void)
 {
 	FILE *FP;
 	Workarounds_t *Workarounds;
-	char Buffer[SYSCMD_MAX];
-	char Config_Token[STRLEN_MAX];
-	struct sigaction Sig_Action;
-	struct sigevent Sig_Event;
-	sigset_t Sig_Mask;
 	struct gpiod_chip *GPIO_Chip;
 	struct gpiod_line *GPIO_Line;
 	char GPIO_ChipName[STRLEN_MAX];
+	int GPIO_State;
 	unsigned int GPIO_Offset;
-	time_t Now;
-	double MSeconds;
-	int WDT_Enable = 0;
+	struct timespec Timeout = { 1, 0 };
+	struct gpiod_line_event GPIO_Event;
 	
 	/* Find the vccaux workaround function */
 	Workarounds = Plat_Devs->Workarounds;
@@ -195,96 +56,10 @@ VCK190_GPIO(void)
 		return -1;
 	}
 
-	/* WDT feature is enabled only if there is 'config' file */
-	if (access(CONFIGFILE, F_OK) != 0) {
-		return 0;
-	}
-
-	/* Check for any custom configurable variables */
-	FP = fopen(CONFIGFILE, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to read file %s: %m", CONFIGFILE);
-		return -1;
-	}
-
-	while (fgets(Buffer, SYSCMD_MAX, FP)) {
-		if (strstr(Buffer, "WDT_Enable:") != NULL) {
-			(void) strtok(Buffer, ":");
-			if (strcmp(Buffer, "WDT_Enable") != 0) {
-				continue;
-			}
-
-			(void) strcpy(Config_Token, strtok(NULL, "\n"));
-			if (atoi(Config_Token) == 1) {
-				WDT_Enable = 1;
-			}
-		}
-
-		if (strstr(Buffer, "WDT_Timeout:") != NULL) {
-			(void) strtok(Buffer, ":");
-			if (strcmp(Buffer, "WDT_Timeout") != 0) {
-				continue;
-			}
-
-			(void) strcpy(Config_Token, strtok(NULL, "\n"));
-			WDT_Timeout = atoi(Config_Token);
-		}
-
-		if (strstr(Buffer, "WDT_Edge:") != NULL) {
-			(void) strtok(Buffer, ":");
-			if (strcmp(Buffer, "WDT_Edge") != 0) {
-				continue;
-			}
-
-			(void) strcpy(Config_Token, strtok(NULL, "\n"));
-			WDT_Edge = atoi(Config_Token);
-		}
-
-		if (strstr(Buffer, "Training_Interval:") != NULL) {
-			(void) strtok(Buffer, ":");
-			if (strcmp(Buffer, "Training_Interval") != 0) {
-				continue;
-			}
-
-			(void) strcpy(Config_Token, strtok(NULL, "\n"));
-			Training_Interval = atoi(Config_Token);
-		}
-	}
-
-	(void) fclose(FP);
-
-	if (WDT_Enable == 0) {
-		return 0;
-	}
-
-	/* Initialize the real timer signal */
-	Sig_Action.sa_flags = SA_SIGINFO;
-	Sig_Action.sa_sigaction = Timer_Handler;
-	sigemptyset(&Sig_Action.sa_mask);
-	if (sigaction(SIGRTMIN, &Sig_Action, NULL) == -1) {
-		SC_ERR("failed to set sigaction: %m");
-		return -1;
-	}
-
-	/* Create the real timer */
-	Sig_Event.sigev_notify = SIGEV_SIGNAL;
-	Sig_Event.sigev_signo = SIGRTMIN;
-	Sig_Event.sigev_value.sival_ptr = &Timer_Id;
-	if (timer_create(CLOCK_REALTIME, &Sig_Event, &Timer_Id) == -1) {
-		SC_ERR("failed to create timer: %m");
-		return -1;
-	}
-
-	Timer_Start.it_value.tv_sec = (WDT_Timeout / 1000);
-	Timer_Start.it_value.tv_nsec =
-	    ((WDT_Timeout - (Timer_Start.it_value.tv_sec * 1000)) * 1000000);
-	Timer_Start.it_interval.tv_sec = Timer_Start.it_value.tv_sec;
-	Timer_Start.it_interval.tv_nsec = Timer_Start.it_value.tv_nsec;
-
-	/* Find the GPIO chip name that handles WDT line */
+	/* Find the GPIO chip name that handles GPIO line */
 	if (gpiod_ctxless_find_line(GPIOLINE, GPIO_ChipName, STRLEN_MAX,
 	    &GPIO_Offset) != 1) {
-		SC_ERR("failed to find GPIO line");
+		SC_ERR("failed to find gpio line");
 		return -1;
 	}
 
@@ -307,79 +82,34 @@ VCK190_GPIO(void)
 	}
 
 	/*
-	 * If we are late for the party and Versal has already asserted
+	 * If we are late to the party and Versal has already asserted
 	 * GPIO line high and it is waiting for the workaround, apply it.
 	 */
-	if (Is_Silicon_ES1() == 1) {
-		GPIO_State = gpiod_line_get_value(GPIO_Line);
-		if (GPIO_State == -1) {
-			SC_ERR("failed to get current state of gpio line");
-			return -1;
-		}
+	GPIO_State = gpiod_line_get_value(GPIO_Line);
+	if (GPIO_State == -1) {
+		SC_ERR("failed to get current state of gpio line");
+		return -1;
+	}
 
-		if (GPIO_State == 1) {
-			(void)(*Workaround_Op)(&GPIO_State);
-		}
+	SC_INFO("GPIO line state at boot time: %d", GPIO_State);
+	if (GPIO_State == 1) {
+		(void)(*Workaround_Op)(&GPIO_State);
 	}
 
 	while (1) {
-		/* GPIO line 11 is connected to PMC MIO37 */
-		GPIO_State = Monitor_GPIO(GPIO_Line);
-		if (GPIO_State == -1) {
-			SC_ERR("failed to monitor gpio line");
+		/* Wait here until we receive an event */
+		while (gpiod_line_event_wait(GPIO_Line, &Timeout) != 1);
+
+		if (gpiod_line_event_read(GPIO_Line, &GPIO_Event) < 0) {
+			SC_ERR("failed to read the last event notification");
 			return -1;
 		}
-#ifdef DEBUG
-		printf("%d", GPIO_State); fflush(NULL);
-#endif /* DEBUG */
 
-		switch (GPIO_Behavior) {
-		case Unknown:
-			/* Training starts with detection of first rising edge */
-			if (GPIO_State == 0 && GPIO_First_Time == 0) {
-				break;
-			}
+		GPIO_State = (GPIO_Event.event_type == 1) ? 1 : 0;
+		SC_INFO("GPIO line state: %d", GPIO_State);
 
-			if (GPIO_First_Time == 0) {
-				time(&GPIO_First_Time);
-			} else {
-				/*
-				 * If transitions arrive earlier than WDT_Timeout,
-				 * the GPIO behavior is Watchdog.
-				 */
-				MSeconds = (difftime(time(&Now), GPIO_First_Time) * 1000);
-				if (MSeconds < Training_Interval) {
-					GPIO_Behavior = Watchdog;
-				}
-			}
-
-			/* Workaround behavior is determined in timer handler */
-			if (timer_settime(Timer_Id, 0, &Timer_Start, NULL) == -1) {
-				SC_ERR("failed to set the timer: %m");
-			}
-
-			break;
-
-		case Watchdog:
-			/* Reset the timer */
-			if ((WDT_Edge == 2) ||
-			    (WDT_Edge == 1 && GPIO_State == 1) ||
-			    (WDT_Edge == 0 && GPIO_State == 0)) {
-				if (timer_settime(Timer_Id, 0, &Timer_Start, NULL) == -1) {
-					SC_ERR("failed to set the timer: %m");
-				}
-			}
-
-			break;
-
-		case Workaround:
-			if (Is_Silicon_ES1() == 1) {
-				(void)(*Workaround_Op)(&GPIO_State);
-			}
-			break;
-
-		default:
-			SC_ERR("invalid GPIO behavior!");
+		if (GPIO_State == 1) {
+			(void)(*Workaround_Op)(&GPIO_State);
 		}
 	}
 
@@ -388,12 +118,16 @@ VCK190_GPIO(void)
 }
 
 int
-VCK190_Version(void)
+Vccaux_Workaround(void)
 {
 	FILE *FP;
 	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;
+	char Buffer[SYSCMD_MAX];
+	char Value[STRLEN_MAX];
+	int Workaround;
+	int Found = 0;
 
 	/* Remove previous 'silicon' file, if any */
 	(void) remove(SILICONFILE);
@@ -414,11 +148,10 @@ VCK190_Version(void)
 	SC_INFO("VCC_RAM is %.2f", Voltage);
 
 	/*
-	 * The VCC_RAM regulator is programmed to be off at board power on
-	 * for ES1 part.  Boards for production silicon will power on with
-	 * VCC_RAM at 0.78V in low range.  Since on production boards, we
-	 * may not read exactly 0.78V, compare the read value with 5% off
-	 * margin to be safe.
+	 * The VCC_RAM regulator is programmed to be off when the board powers
+	 * on with ES1 part.  A board for production silicon powers on with
+	 * VCC_RAM at 0.78V or higher.  Since on a production board, we may not
+	 * read exactly 0.78V, compare the read value with 5% off of that value.
 	 */
 	if (Voltage < (0.78f - 0.04f)) {
 		FP = fopen(SILICONFILE, "w");
@@ -429,16 +162,73 @@ VCK190_Version(void)
 
 		(void) fputs("ES1\n", FP);
 		(void) fclose(FP);
+	} else {
+		SC_INFO("Running on a board with production silicon. "
+			"No workaround is required.");
+		return 0;
+	}
+
+	/*
+	 * XXX - The task of applying the vccaux workaround is currently
+	 * performed by the Board Framework.  At this time, this task is
+	 * not performed by sc_appd by default.  If there is no 'Vccaux_Workaround'
+	 * variable defined in CONFIGFILE, add one and set it to 0.  If this
+	 * variable already exists in CONFIGFILE and it is set to 1, it overrides
+	 * the current default behavior.
+	*/
+
+	/* If there is no config file, create one and add 'Vccaux_Workaround: 0' */
+	if (access(CONFIGFILE, F_OK) != 0) {
+		(void) sprintf(Buffer, "echo \"Vccaux_Workaround: 0\" > %s; "
+			       "sync", CONFIGFILE);
+		SC_INFO("Command: %s", Buffer);
+		system(Buffer);
+		return 0;
+	}
+
+	FP = fopen(CONFIGFILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read file %s: %m", CONFIGFILE);
+		return -1;
+	}
+
+	while (fgets(Buffer, SYSCMD_MAX, FP)) {
+		if (strstr(Buffer, "Vccaux_Workaround:") != NULL) {
+			SC_INFO("%s: %s", CONFIGFILE, Buffer);
+			(void) strtok(Buffer, ":");
+			if (strcmp(Buffer, "Vccaux_Workaround") != 0) {
+				continue;
+			}
+
+			(void) strcpy(Value, strtok(NULL, "\n"));
+			Workaround = atoi(Value);
+			Found = 1;
+			break;
+		}
+	}
+
+	(void) fclose(FP);
+
+	if (!Found) {
+		(void) sprintf(Buffer, "echo \"Vccaux_Workaround: 0\" >> %s; "
+			       "sync", CONFIGFILE);
+		SC_INFO("Command: %s", Buffer);
+		system(Buffer);
+		return 0;
+	}
+
+	if (Workaround == 1) {
+		return VCK190_GPIO();
 	}
 
 	return 0;
 }
 
 /*
- * External WDT support
+ * Apply any applicable workaround
  */
 int
-WDT_Support(void)
+Apply_Workarounds(void)
 {
 	FILE *FP;
 	char Buffer[SYSCMD_MAX] = { 0 };
@@ -457,18 +247,18 @@ WDT_Support(void)
 	(void) fgets(Buffer, SYSCMD_MAX, FP);
 	(void) fclose(FP);
 
-	/* Currently WDT is supported on VCK190/VMK180 boards */
-	if ((strcmp(Buffer, "VCK190\n") != 0) && (strcmp(Buffer, "VMK180\n") != 0)) {
-		SC_INFO("external WDT is not supported on %s", Buffer);
-		return 0;
+	/*
+	 * Current workarounds:
+	 *	vccaux: VCK190/VMK180 boards with ES1 part
+	 */
+	if ((strcmp(Buffer, "VCK190\n") == 0) || (strcmp(Buffer, "VMK180\n") == 0)) {
+		if (Vccaux_Workaround() != 0) {
+			SC_ERR("failed to determine the need for vccaux workaround");
+			return -1;
+		}
 	}
 
-	if (VCK190_Version() != 0) {
-		SC_ERR("failed to determine silicon version");
-		return -1;
-	}
-
-	return VCK190_GPIO();
+	return 0;
 }
 
 /*
@@ -706,11 +496,13 @@ main()
 	/* No pre-set boot mode is supported */
 	(void) remove(BOOTMODEFILE);
 
-	/* WDT support */
-	if (WDT_Support() != 0) {
-		SC_ERR("failed to support external WDT");
+	/* Applying any workaround */
+	if (Apply_Workarounds() != 0) {
+		SC_ERR("failed to apply workarounds");
+		goto Out;
 	}
 
+	Ret = 0;
 Out:
 	SC_INFO("<<< End(%d)", Ret);
 	return Ret;

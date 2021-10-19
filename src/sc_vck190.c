@@ -271,127 +271,144 @@ typedef enum {
 	INA226_MGTYAVTT,
 	INA226_MGTYVCCAUX,
 	INA226_MAX,
-} Ina226_Index;
+} INA226_Index;
 
-Ina226s_t VCK190_Ina226s = {
+INA226s_t VCK190_INA226s = {
 	.Numbers = INA226_MAX,
-	.Ina226[INA226_VCCINT] = {
+	.INA226[INA226_VCCINT] = {
 		.Name = "VCCINT",		// Name of the device referenced by application
 		.I2C_Bus = "/dev/i2c-4",	// I2C bus of the device
 		.I2C_Address = 0x40,		// I2C address of the device
 		.Shunt_Resistor = 500,		// Value of shunt resistor in Micro-Ohm
+		.Maximum_Current = 192000,	// Maximum current in Milli-Amp
 		.Phase_Multiplier = 6,		// Sensor for # of phases
 	},
-	.Ina226[INA226_VCC_SOC] = {
+	.INA226[INA226_VCC_SOC] = {
 		.Name = "VCC_SOC",
 		.I2C_Bus = "/dev/i2c-4",
 		.I2C_Address = 0x41,
 		.Shunt_Resistor = 500,
+		.Maximum_Current = 18000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCC_PMC] = {
+	.INA226[INA226_VCC_PMC] = {
 		.Name = "VCC_PMC",
 		.I2C_Bus = "/dev/i2c-4",
 		.I2C_Address = 0x42,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 500,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCCINT_RAM] = {
+	.INA226[INA226_VCCINT_RAM] = {
 		.Name = "VCCINT_RAM",
 		.I2C_Bus = "/dev/i2c-4",
 		.I2C_Address = 0x43,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 4000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCCINT_PSLP] = {
+	.INA226[INA226_VCCINT_PSLP] = {
 		.Name = "VCCINT_PSLP",
 		.I2C_Bus = "/dev/i2c-4",
 		.I2C_Address = 0x44,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 1000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCCINT_PSFP] = {
+	.INA226[INA226_VCCINT_PSFP] = {
 		.Name = "VCCINT_PSFP",
 		.I2C_Bus = "/dev/i2c-4",
 		.I2C_Address = 0x45,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 2000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCCAUX] = {
+	.INA226[INA226_VCCAUX] = {
 		.Name = "VCCAUX",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x40,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 3000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCCAUX_PMC] = {
+	.INA226[INA226_VCCAUX_PMC] = {
 		.Name = "VCCAUX_PMC",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x41,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 500,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCC_MIO] = {
+	.INA226[INA226_VCC_MIO] = {
 		.Name = "VCC_MIO",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x45,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 2000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCC1V8] = {
+	.INA226[INA226_VCC1V8] = {
 		.Name = "VCC1V8",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x46,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 6000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCC3V3] = {
+	.INA226[INA226_VCC3V3] = {
 		.Name = "VCC3V3",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x47,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 500,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCC1V2_DDR4] = {
+	.INA226[INA226_VCC1V2_DDR4] = {
 		.Name = "VCC1V2_DDR4",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x48,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 4000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VCC1V1_LP4] = {
+	.INA226[INA226_VCC1V1_LP4] = {
 		.Name = "VCC1V1_LP4",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x49,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 4000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_VADJ_FMC] = {
+	.INA226[INA226_VADJ_FMC] = {
 		.Name = "VADJ_FMC",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x4A,
 		.Shunt_Resistor = 2000,
+		.Maximum_Current = 10000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_MGTYAVCC] = {
+	.INA226[INA226_MGTYAVCC] = {
 		.Name = "MGTYAVCC",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x4B,
 		.Shunt_Resistor = 2000,
+		.Maximum_Current = 6000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_MGTYAVTT] = {
+	.INA226[INA226_MGTYAVTT] = {
 		.Name = "MGTYAVTT",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x4C,
 		.Shunt_Resistor = 2000,
+		.Maximum_Current = 10000,
 		.Phase_Multiplier = 1,
 	},
-	.Ina226[INA226_MGTYVCCAUX] = {
+	.INA226[INA226_MGTYVCCAUX] = {
 		.Name = "MGTYVCCAUX",
 		.I2C_Bus = "/dev/i2c-6",
 		.I2C_Address = 0x4D,
 		.Shunt_Resistor = 5000,
+		.Maximum_Current = 500,
 		.Phase_Multiplier = 1,
 	},
 };
@@ -1022,7 +1039,7 @@ Plat_Devs_t VCK190_Devs = {
 	.FeatureList = &VCK190_FeatureList,
 	.BootModes = &VCK190_BootModes,
 	.Clocks = &VCK190_Clocks,
-	.Ina226s = &VCK190_Ina226s,
+	.INA226s = &VCK190_INA226s,
 	.Power_Domains = &VCK190_Power_Domains,
 	.Voltages = &VCK190_Voltages,
 	.DIMM = &VCK190_DIMM,

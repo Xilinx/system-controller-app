@@ -34,9 +34,10 @@
  * 1.12 - Support for FPGA Mezzanine Cards (FMCs).
  * 1.13 - Add 'list' command for features that didn't have that option.
  * 1.14 - Add 'listfeature' command to print supported features of the board.
+ * 1.15 - Add support for INA226 custom calibration.
  */
 #define MAJOR	1
-#define MINOR	14
+#define MINOR	15
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -55,6 +56,7 @@ int EEPROM_Ops(void);
 int Temperature_Ops(void);
 int Clock_Ops(void);
 int Voltage_Ops(void);
+int INA226_Ops(void);
 int Power_Ops(void);
 int Power_Domain_Ops(void);
 int Workaround_Ops(void);
@@ -109,6 +111,10 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 \n\
 	listpower - list the supported power targets\n\
 	getpower - get the voltage, current, and power of <target>\n\
+	getcalpower - get the voltage, current, and power of custom calibrated <target>\n\
+	getINA226 - get the content of <target> registers\n\
+	setINA226 - set the 'Configuration', 'Calibration', 'Mask/Enable', and \n\
+		    'Alert Limit' registers of <target> to <value>\n\
 \n\
 	listpowerdomain - list the supported power domain targets\n\
 	powerdomain - get the power used by <target> power domain\n\
@@ -176,6 +182,9 @@ typedef enum {
 	RESTOREVOLTAGE,
 	LISTPOWER,
 	GETPOWER,
+	GETCALPOWER,
+	GETINA226,
+	SETINA226,
 	LISTPOWERDOMAIN,
 	POWERDOMAIN,
 	LISTWORKAROUND,
@@ -236,6 +245,9 @@ static Command_t Commands[] = {
 	{ .CmdId = RESTOREVOLTAGE, .CmdStr = "restorevoltage", .CmdOps = Voltage_Ops, },
 	{ .CmdId = LISTPOWER, .CmdStr = "listpower", .CmdOps = Power_Ops, },
 	{ .CmdId = GETPOWER, .CmdStr = "getpower", .CmdOps = Power_Ops, },
+	{ .CmdId = GETCALPOWER, .CmdStr = "getcalpower", .CmdOps = Power_Ops, },
+	{ .CmdId = GETINA226, .CmdStr = "getINA226", .CmdOps = Power_Ops, },
+	{ .CmdId = SETINA226, .CmdStr = "setINA226", .CmdOps = Power_Ops, },
 	{ .CmdId = LISTPOWERDOMAIN, .CmdStr = "listpowerdomain", .CmdOps = Power_Domain_Ops, },
 	{ .CmdId = POWERDOMAIN, .CmdStr = "powerdomain", .CmdOps = Power_Domain_Ops, },
 	{ .CmdId = LISTWORKAROUND, .CmdStr = "listworkaround", .CmdOps = Workaround_Ops, },
@@ -1063,24 +1075,51 @@ int Voltage_Ops(void)
 	return 0;
 }
 
-int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
+typedef struct {
+	unsigned short Configuration;
+	unsigned short Shunt_Voltage;
+	unsigned short Bus_Voltage;
+	unsigned short Power;
+	unsigned short Current;
+	unsigned short Calibration;
+	unsigned short Mask_Enable;
+	unsigned short Alert_Limit;
+	unsigned short Die_ID;
+} INA226_Regs_t;
+
+int
+Read_INA226(INA226_t *INA226, INA226_Regs_t *Regs)
 {
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
-	float Shunt_Voltage;
 	int Ret = 0;
 
-	FD = open(Ina226->I2C_Bus, O_RDWR);
+	FD = open(INA226->I2C_Bus, O_RDWR);
 	if (FD < 0) {
-		SC_ERR("unable to access I2C bus %s: %m", Ina226->I2C_Bus);
+		SC_ERR("unable to access I2C bus %s: %m", INA226->I2C_Bus);
 		return -1;
 	}
 
+	/* Read 'Configuration' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x0;	// Configuration Register(00h)
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	SC_INFO("Configuration Register(00h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
+	Regs->Configuration = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	/* Read 'Shunt Voltage' register */
 	(void) memset(Out_Buffer, 0, STRLEN_MAX);
 	(void) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x1;	// Shunt Voltage Register(01h)
-	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
 		(void) close(FD);
 		return Ret;
@@ -1088,20 +1127,13 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 
 	SC_INFO("Shunt Voltage Register(01h): %#x %#x", In_Buffer[0],
 		In_Buffer[1]);
-	Shunt_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
-	/* Ignore negative reading */
-	if (Shunt_Voltage >= 0x8000) {
-		Shunt_Voltage = 0;
-	}
+	Regs->Shunt_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
 
-	Shunt_Voltage *= 2.5;	// 2.5 μV per bit
-	*Current = (Shunt_Voltage / (float)Ina226->Shunt_Resistor);
-	*Current *= Ina226->Phase_Multiplier;
-
+	/* Read 'Bus Voltage' register */
 	(void) memset(Out_Buffer, 0, STRLEN_MAX);
 	(void) memset(In_Buffer, 0, STRLEN_MAX);
 	Out_Buffer[0] = 0x2;	// Bus Voltage Register(02h)
-	I2C_READ(FD, Ina226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
 		(void) close(FD);
 		return Ret;
@@ -1109,12 +1141,256 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 
 	SC_INFO("Bus Voltage Register(02h): %#x %#x", In_Buffer[0],
 		In_Buffer[1]);
-	*Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
-	*Voltage *= 1.25;	// 1.25 mV per bit
+	Regs->Bus_Voltage = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	/* Read 'Power' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x3;	// Power Register(03h)
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	SC_INFO("Power Register(03h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
+	Regs->Power = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	/* Read 'Current' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x4;	// Current Register(04h)
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	SC_INFO("Current Register(04h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
+	Regs->Current = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	/* Read 'Calibration' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x5;	// Calibration Register(05h)
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	SC_INFO("Calibration Register(05h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
+	Regs->Calibration = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	/* Read 'Mask/Enable' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x6;	// Mask/Enable Register(06h)
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	SC_INFO("Mask/Enable Register(06h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
+	Regs->Mask_Enable = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	/* Read 'Alert Limit' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x7;	// Alert Limit Register(07h)
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	SC_INFO("Alert Limit Register(07h): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
+	Regs->Alert_Limit = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	/* Read 'Die ID' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	(void) memset(In_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0xFF;	// Die ID Register(FFh)
+	I2C_READ(FD, INA226->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	SC_INFO("Die ID Register(FFh): %#x %#x", In_Buffer[0],
+		In_Buffer[1]);
+	Regs->Die_ID = ((In_Buffer[0] << 8) | In_Buffer[1]);
+
+	(void) close(FD);
+	return 0;
+}
+
+int
+Write_INA226(INA226_t *INA226, INA226_Regs_t *Regs)
+{
+	int FD;
+	char Out_Buffer[STRLEN_MAX];
+	int Ret = 0;
+
+	FD = open(INA226->I2C_Bus, O_RDWR);
+	if (FD < 0) {
+		SC_ERR("unable to access I2C bus %s: %m", INA226->I2C_Bus);
+		return -1;
+	}
+
+	/* Write 'Configuration' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x0;   // Configuration Register(00h)
+	Out_Buffer[1] = (Regs->Configuration >> 8);
+	Out_Buffer[2] = (Regs->Configuration & 0xFF);
+	SC_INFO("Configuration Register(00h): %#x %#x", Out_Buffer[1],
+		 Out_Buffer[2]);
+	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	/* Write 'Calibration' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x5;   // Calibration Register(05h)
+	Out_Buffer[1] = (Regs->Calibration >> 8);
+	Out_Buffer[2] = (Regs->Calibration & 0xFF);
+	SC_INFO("Calibration Register(05h): %#x %#x", Out_Buffer[1],
+		 Out_Buffer[2]);
+	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	/* Write 'Mask/Enable' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x6;   // Mask/Enable Register(06h)
+	Out_Buffer[1] = (Regs->Mask_Enable >> 8);
+	Out_Buffer[2] = (Regs->Mask_Enable & 0xFF);
+	SC_INFO("Mask/Enable Register(06h): %#x %#x", Out_Buffer[1],
+		 Out_Buffer[2]);
+	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	/* Write 'Alert Limit' register */
+	(void) memset(Out_Buffer, 0, STRLEN_MAX);
+	Out_Buffer[0] = 0x7;   // Alert Limit Register(07h)
+	Out_Buffer[1] = (Regs->Alert_Limit >> 8);
+	Out_Buffer[2] = (Regs->Alert_Limit & 0xFF);
+	SC_INFO("Alert Limit Register(07h): %#x %#x", Out_Buffer[1],
+		 Out_Buffer[2]);
+	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+	if (Ret != 0) {
+		(void) close(FD);
+		return Ret;
+	}
+
+	(void) close(FD);
+	return 0;
+}
+
+int
+Get_Power(INA226_t *INA226, int Mode, float *Voltage, float *Current, float *Power)
+{
+	int FD;
+	INA226_Regs_t Regs;
+	char Out_Buffer[STRLEN_MAX];
+	float Current_LSB;
+	float Calibration;
+	int Ret = 0;
+
+	if (Mode != 0 && Mode != 1) {
+		SC_ERR("invalid mode for getting power");
+		return -1;
+	}
+
+	if (Mode == 0) {
+		FD = open(INA226->I2C_Bus, O_RDWR);
+		if (FD < 0) {
+			SC_ERR("unable to access I2C bus %s: %m", INA226->I2C_Bus);
+			return -1;
+		}
+
+		/*
+		 * The per bit value for current is determined by
+		 * following equation.  The 'Maximum Expected Current'
+		 * unit is in Amps:
+		 * 	Current_LSB = Maximum Expected Current / 2^15
+		 * The unit of 'INA226->Maximum_Current' is in milli-Amps.
+		 */
+		Current_LSB = (float)INA226->Maximum_Current / (32768 * 1000);
+
+		/*
+		 * The value of Calibration register is determined by:
+		 * 	Calibration = 0.00512 / (Current_LSB * R shunt)
+		 * The unit of 'INA226->Shunt_Resistor' is in micro-Ohms,
+		 * and the unit of 'R shunt' is in Ohms.
+		 */
+		Calibration = (0.00512 * 1000000) /
+			      (Current_LSB * INA226->Shunt_Resistor);
+
+		/* Prevent the overflow of Calibration register[14:0] */
+		if (Calibration > 32767) {
+			Calibration = 32767;
+		}
+
+		/* Write 'Calibration' register */
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x5;   // Calibration Register(05h)
+		Out_Buffer[1] = ((unsigned short)Calibration >> 8);
+		Out_Buffer[2] = ((unsigned short)Calibration & 0xFF);
+		SC_INFO("Calibration Register(05h): %#x %#x", Out_Buffer[1],
+			 Out_Buffer[2]);
+		I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		(void) close(FD);
+	}
+
+	if (Read_INA226(INA226, &Regs) != 0) {
+		SC_ERR("failed to read INA226 registers");
+		return -1;
+	}
+
+	if (Regs.Calibration == 0) {
+		SC_ERR("invalid calibration register value of 0");
+		return -1;
+	}
+
+	Current_LSB = (0.00512 * 1000000) /
+		      (float)(Regs.Calibration * INA226->Shunt_Resistor);
+	SC_INFO("Calculating Current_LSB = %#x", (unsigned short)Current_LSB);
+
+	/* if Current is negative, use its absolute value */
+	if (Regs.Current > 0x7FFF) {
+		Regs.Current -= 0x10000;
+	}
+
+	*Current = ((float)Regs.Current * Current_LSB);
+	*Current *= INA226->Phase_Multiplier;
+
+	*Voltage = (float)Regs.Bus_Voltage;
+	*Voltage *= 1.25;       // 1.25 mV per bit
 	*Voltage /= 1000;
 
-	*Power = *Current * (*Voltage);
-	(void) close(FD);
+	/* The power LSB has a fixed ratio to the Current_LSB of 25 */
+	*Power = ((float)Regs.Power * Current_LSB * 25);
+	*Power *= INA226->Phase_Multiplier;
+
 	return 0;
 }
 
@@ -1124,21 +1400,24 @@ int Read_Sensor(Ina226_t *Ina226, float *Voltage, float *Current, float *Power)
 int Power_Ops(void)
 {
 	int Target_Index = -1;
-	Ina226s_t *Ina226s;
-	Ina226_t *Ina226;
+	INA226s_t *INA226s;
+	INA226_t *INA226;
+	INA226_Regs_t Regs = { -1 };
+	unsigned long int Value;
+	char *Next_Token;
 	float Voltage;
 	float Current;
 	float Power;
 
-	Ina226s = Plat_Devs->Ina226s;
-	if (Ina226s == NULL) {
+	INA226s = Plat_Devs->INA226s;
+	if (INA226s == NULL) {
 		SC_ERR("power operation is not supported");
 		return -1;
 	}
 
 	if (Command.CmdId == LISTPOWER) {
-		for (int i = 0; i < Ina226s->Numbers; i++) {
-			SC_PRINT("%s", Ina226s->Ina226[i].Name);
+		for (int i = 0; i < INA226s->Numbers; i++) {
+			SC_PRINT("%s", INA226s->INA226[i].Name);
 		}
 
 		return 0;
@@ -1150,10 +1429,10 @@ int Power_Ops(void)
 		return -1;
 	}
 
-	for (int i = 0; i < Ina226s->Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)Ina226s->Ina226[i].Name) == 0) {
+	for (int i = 0; i < INA226s->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)INA226s->INA226[i].Name) == 0) {
 			Target_Index = i;
-			Ina226 = &Ina226s->Ina226[Target_Index];
+			INA226 = &INA226s->INA226[Target_Index];
 			break;
 		}
 	}
@@ -1165,7 +1444,7 @@ int Power_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETPOWER:
-		if (Read_Sensor(Ina226, &Voltage, &Current, &Power) == -1) {
+		if (Get_Power(INA226, 0, &Voltage, &Current, &Power) != 0) {
 			SC_ERR("failed to get power");
 			return -1;
 		}
@@ -1173,6 +1452,103 @@ int Power_Ops(void)
 		SC_PRINT("Voltage(V):\t%.4f", Voltage);
 		SC_PRINT("Current(A):\t%.4f", Current);
 		SC_PRINT("Power(W):\t%.4f", Power);
+		break;
+
+	case GETCALPOWER:
+		if (Get_Power(INA226, 1, &Voltage, &Current, &Power) != 0) {
+			SC_ERR("failed to get power");
+			return -1;
+		}
+
+		SC_PRINT("Voltage(V):\t%.4f", Voltage);
+		SC_PRINT("Current(A):\t%.4f", Current);
+		SC_PRINT("Power(W):\t%.4f", Power);
+		break;
+
+	case GETINA226:
+		if (Read_INA226(INA226, &Regs) != 0) {
+			SC_ERR("failed to read INA226");
+			return -1;
+		}
+
+		SC_PRINT("Configuration:\t%#x", Regs.Configuration);
+		SC_PRINT("Shunt Voltage:\t%#x", Regs.Shunt_Voltage);
+		SC_PRINT("Bus Voltage:\t%#x", Regs.Bus_Voltage);
+		SC_PRINT("Power:\t%#x", Regs.Power);
+		SC_PRINT("Current:\t%#x", Regs.Current);
+		SC_PRINT("Calibration:\t%#x", Regs.Calibration);
+		SC_PRINT("Mask/Enable:\t%#x", Regs.Mask_Enable);
+		SC_PRINT("Alert Limit:\t%#x", Regs.Alert_Limit);
+		SC_PRINT("Die ID:\t%#x", Regs.Die_ID);
+		break;
+
+	case SETINA226:
+		if (V_Flag == 0) {
+			SC_ERR("no INA226 value");
+			return -1;
+		}
+
+		Next_Token = strtok(Value_Arg, " ");
+		if (Next_Token == NULL) {
+			SC_ERR("invalid value for 'Configuration' register");
+			return -1;
+		}
+
+		Value = strtol(Next_Token, NULL, 16);
+		if (Value > 0xFFFF) {
+			SC_ERR("invalid value for 'Configuration' register");
+			return -1;
+		}
+
+		Regs.Configuration = Value;
+
+		Next_Token = strtok(NULL, " ");
+		if (Next_Token == NULL) {
+			SC_ERR("invalid value for 'Calibration' register");
+			return -1;
+		}
+
+		Value = strtol(Next_Token, NULL, 16);
+		if (Value > 0xFFFF || Value == 0) {
+			SC_ERR("invalid value for 'Calibration' register");
+			return -1;
+		}
+
+		Regs.Calibration = Value;
+
+		Next_Token = strtok(NULL, " ");
+		if (Next_Token == NULL) {
+			SC_ERR("invalid value for 'Mask/Enable' register");
+			return -1;
+		}
+
+		Value = strtol(Next_Token, NULL, 16);
+		if (Value > 0xFFFF) {
+			SC_ERR("invalid value for 'Mask/Enable' register");
+			return -1;
+		}
+
+		Regs.Mask_Enable = Value;
+
+		Next_Token = strtok(NULL, "\n");
+		if (Next_Token == NULL) {
+			SC_ERR("invalid value for 'Alert Limit' register");
+			return -1;
+		}
+
+		Value = strtol(Next_Token, NULL, 16);
+		if (Value > 0xFFFF) {
+			SC_ERR("invalid value for 'Alert Limit' register");
+			return -1;
+		}
+
+		Regs.Alert_Limit = Value;
+
+		if (Write_INA226(INA226, &Regs) != 0) {
+			SC_ERR("failed to write to INA226 registers");
+			return -1;
+		}
+
 		break;
 
 	default:
@@ -1191,8 +1567,8 @@ int Power_Domain_Ops(void)
 	int Target_Index = -1;
 	Power_Domains_t *Power_Domains;
 	Power_Domain_t *Power_Domain;
-	Ina226s_t *Ina226s;
-	Ina226_t *Ina226;
+	INA226s_t *INA226s;
+	INA226_t *INA226;
 	float Voltage;
 	float Current;
 	float Power;
@@ -1233,10 +1609,10 @@ int Power_Domain_Ops(void)
 
 	switch (Command.CmdId) {
 	case POWERDOMAIN:
-		Ina226s = Plat_Devs->Ina226s;
+		INA226s = Plat_Devs->INA226s;
 		for (int i = 0; i < Power_Domain->Numbers; i++) {
-			Ina226 = &Ina226s->Ina226[Power_Domain->Rails[i]];
-			if (Read_Sensor(Ina226, &Voltage, &Current, &Power) == -1) {
+			INA226 = &INA226s->INA226[Power_Domain->Rails[i]];
+			if (Get_Power(INA226, 0, &Voltage, &Current, &Power) == -1) {
 				SC_ERR("failed to get total power");
 				return -1;
 			}

@@ -109,13 +109,14 @@ typedef struct {
 	char	I2C_Bus[STRLEN_MAX];
 	int	I2C_Address;
 	int	Shunt_Resistor;
+	int	Maximum_Current;
 	int	Phase_Multiplier;
-} Ina226_t;
+} INA226_t;
 
-typedef struct Ina226s {
+typedef struct INA226s {
 	int	Numbers;
-	Ina226_t	Ina226[ITEMS_MAX];
-} Ina226s_t;
+	INA226_t	INA226[ITEMS_MAX];
+} INA226s_t;
 
 /*
  * Power Domains
@@ -310,7 +311,7 @@ typedef struct {
 	FeatureList_t *FeatureList;
 	BootModes_t *BootModes;
 	Clocks_t *Clocks;
-	Ina226s_t *Ina226s;
+	INA226s_t *INA226s;
 	Power_Domains_t *Power_Domains;
 	Voltages_t *Voltages;
 	DIMM_t *DIMM;

@@ -109,6 +109,7 @@
 				"I2C_Bus" : "/dev/i2c-4",
 				"I2C_Address" : "0x40",
 				"Shunt_Resistor" : 500,
+				"Maximum_Current" : 192000,
 				"Phase_Mulitplier" : 6
 			},
 			"INA226_VCC_SOC" : {
@@ -116,6 +117,7 @@
 				"I2C_Bus" : "/dev/i2c-4",
 				"I2C_Address" : "0x41",
 				"Shunt_Resistor" : 500,
+				"Maximum_Current" : 18000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCC_PMC" : {
@@ -123,6 +125,7 @@
 				"I2C_Bus" : "/dev/i2c-4",
 				"I2C_Address" : "0x42",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 500,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCCINT_RAM" : {
@@ -130,6 +133,7 @@
 				"I2C_Bus" : "/dev/i2c-4",
 				"I2C_Address" : "0x43",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 4000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCCINT_PSLP" : {
@@ -137,6 +141,7 @@
 				"I2C_Bus" : "/dev/i2c-4",
 				"I2C_Address" : "0x44",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 1000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCCINT_PSFP" : {
@@ -144,6 +149,7 @@
 				"I2C_Bus" : "/dev/i2c-4",
 				"I2C_Address" : "0x45",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 2000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCCAUX" : {
@@ -151,6 +157,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x40",
 				"Shunt_Resistor" : 500,
+				"Maximum_Current" : 3000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCCAUX_PMC" : {
@@ -158,6 +165,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x41",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 500,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCC_MIO" : {
@@ -165,6 +173,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x45",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 2000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCC1V8" : {
@@ -172,6 +181,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x46",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 6000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCC3V3" : {
@@ -179,6 +189,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x47",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 500,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCC1V2_DDR4" : {
@@ -186,6 +197,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x48",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 4000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VCC1V1_LP4" : {
@@ -193,6 +205,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x49",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 4000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_VADJ_FMC" : {
@@ -200,6 +213,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x4A",
 				"Shunt_Resistor" : 2000,
+				"Maximum_Current" : 10000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_MGTYAVCC" : {
@@ -207,6 +221,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x48",
 				"Shunt_Resistor" : 2000,
+				"Maximum_Current" : 6000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_MGTYAVTT" : {
@@ -214,6 +229,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x4C",
 				"Shunt_Resistor" : 2000,
+				"Maximum_Current" : 10000,
 				"Phase_Mulitplier" : 1
 			},
 			"INA226_MGTYVCCAUX" : {
@@ -221,6 +237,7 @@
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x4D",
 				"Shunt_Resistor" : 5000,
+				"Maximum_Current" : 500,
 				"Phase_Mulitplier" : 1
 			}
 		},

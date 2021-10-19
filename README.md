@@ -34,6 +34,10 @@
 
 		listpower - list the supported power targets
 		getpower - get the voltage, current, and power of <target>
+		getcalpower - get the voltage, current, and power of custom calibrated <target>
+		getINA226 - get the content of <target> registers
+		setINA226 - set the 'Configuration', 'Calibration', 'Mask/Enable', and
+			    'Alert Limit' registers of <target> to <value>
 
 		listpowerdomain - list the supported power domain targets
 		powerdomain - get the power used by <target> power domain

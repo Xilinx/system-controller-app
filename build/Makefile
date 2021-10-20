@@ -10,7 +10,7 @@ DEPS		= $(APP).h
 
 BOARD_OBJS	= sc_vck190.o sc_vpk120.o
 BIT_OBJS	= sc_BIT.o
-COMMON_OBJS	= sc_common.o
+COMMON_OBJS	= sc_common.o sc_parse.o
 APP_OBJS	= $(APP).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
 APPD_OBJS	= $(APPD).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
 

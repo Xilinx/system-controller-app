@@ -146,6 +146,8 @@ Board_Identification(void)
 		Board = &Boards.Board_Info[i];
 		if (strcmp(Board->Name, Buffer) == 0) {
 			Plat_Devs = Board->Devs;
+			// This function parses JSON files.
+			// Parse_JSON(Board->Name, Plat_Devs);
 			Plat_Ops = Board->Ops;
 			break;
 		}

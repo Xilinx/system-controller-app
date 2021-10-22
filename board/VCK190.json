@@ -839,32 +839,28 @@
 			"BIT_QSPI_TEST" : {
 				"Name" : "QSPI Test",
 				"Manual" : 1,
-				"Levels" : 7,
+				"Levels" : 6,
 				"BIT Level 0" : {
 					"Plat_BIT_Op" : "Display_Instruction",
-					"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n3- Cycle Board Power.\n4- Click 'Pass' when this is done.\n"
+					"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n3- Click 'Pass' when this is done.\n"
 				},
 				"BIT Level 1" : {
-					"Plat_BIT_Op" : "Display_Instruction",
-					"Instruction" : "\n1- Observe PL LEDs blinking, then PL LED3 and PL LED2 turn on in sequence.\n2- PL LED1 should be blinking.\n3- Click 'Pass' if you observe it.\n"
+					"Plat_BIT_Op" : "Assert_Reset",
+					"Instruction" : "\n1- Observe PL LEDs blinking, then PL LED3 and PL LED2 turn on in sequence.\n2- PL LED1 should be blinking.\n3- Do you see the PL LEDs 3 and 2 both on?\n4- Click 'Pass' if you observe it.\n"
 				},
 				"BIT Level 2" : {
 					"Plat_BIT_Op" : "Display_Instruction",
-					"Instruction" : "\n1- Do you see the PL LEDs 3 and 2 both on?\n2- Click 'Pass' if you observe it.\n"
+					"Instruction" : "\n1- Set PL DIP, SW6 to '1111' (All Up).\n2- Set PL DIP, SW6 to '0000' (All Down).\n3- Observe PL LED1 turn on and PL LED0 blinking.\n4- Click 'Pass' if you observe it.\n"
 				},
 				"BIT Level 3" : {
 					"Plat_BIT_Op" : "Display_Instruction",
-					"Instruction" : "\n1- Set PL DIP, SW6 to '1111' (All Up).\n2- Set PL DIP, SW6 to '0000' (All Down).\n3- Observe PL LED1 turn on and PL LED0 blinking.\n4- Click 'Pass' if you observe it.\n"
+					"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Click 'Pass' when this is done.\n"
 				},
 				"BIT Level 4" : {
 					"Plat_BIT_Op" : "Display_Instruction",
-					"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Click 'Pass' when this is done.\n"
-				},
-				"BIT Level 5" : {
-					"Plat_BIT_Op" : "Display_Instruction",
 					"Instruction" : "\n1- Do you see the PL LEDs 3 through 0 all on?\n2- Click 'Pass' if you observe it.\n"
 				},
-				"BIT Level 6" : {
+				"BIT Level 5" : {
 					"Plat_BIT_Op" : "Display_Instruction",
 					"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tBlinkBIST results = F\n\n2- Click 'Pass' if you observe it.\n"
 				}

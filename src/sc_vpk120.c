@@ -23,6 +23,7 @@ extern int Clocks_Check(void *, void *);
 extern int XSDB_BIT(void *, void *);
 extern int Voltages_Check(void *, void *);
 extern int Display_Instruction(void *, void *);
+extern int Assert_Reset(void *, void *);
 
 /*
  * Feature List
@@ -841,41 +842,37 @@ BITs_t VPK120_BITs = {
 	.BIT[BIT_QSPI_TEST] = {
 		.Name = "QSPI Test",
 		.Manual = 1,
-		.Levels = 7,
+		.Levels = 6,
 		.Level[0].Instruction = "\n" \
 			"1- Connect to the 1st com port (Versal console), baud rate 115200\n" \
 			"2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n" \
-			"3- Cycle Board Power.\n" \
-			"4- Click 'Pass' when this is done.\n",
+			"3- Click 'Pass' when this is done.\n",
 		.Level[0].Plat_BIT_Op = Display_Instruction,
 		.Level[1].Instruction = "\n" \
 			"1- Observe PL LEDs blinking, then PL LED3 and PL LED2 turn on in sequence.\n" \
 			"2- PL LED1 should be blinking.\n" \
-			"3- Click 'Pass' if you observe it.\n",
-		.Level[1].Plat_BIT_Op = Display_Instruction,
+			"3- Do you see the PL LEDs 3 and 2 both on?\n" \
+			"4- Click 'Pass' if you observe it.\n",
+		.Level[1].Plat_BIT_Op = Assert_Reset,
 		.Level[2].Instruction = "\n" \
-			"1- Do you see the PL LEDs 3 and 2 both on?\n" \
-			"2- Click 'Pass' if you observe it.\n",
-		.Level[2].Plat_BIT_Op = Display_Instruction,
-		.Level[3].Instruction = "\n" \
 			"1- Set PL DIP, SW6 to '1111' (All Up).\n" \
 			"2- Set PL DIP, SW6 to '0000' (All Down).\n" \
 			"3- Observe PL LED1 turn on and PL LED0 blinking.\n" \
 			"4- Click 'Pass' if you observe it.\n",
-		.Level[3].Plat_BIT_Op = Display_Instruction,
-		.Level[4].Instruction = "\n" \
+		.Level[2].Plat_BIT_Op = Display_Instruction,
+		.Level[3].Instruction = "\n" \
 			"1- Press the 2 Push buttons (SW4 and SW5) in any order.\n" \
 			"2- Click 'Pass' when this is done.\n",
-		.Level[4].Plat_BIT_Op = Display_Instruction,
-		.Level[5].Instruction = "\n" \
+		.Level[3].Plat_BIT_Op = Display_Instruction,
+		.Level[4].Instruction = "\n" \
 			"1- Do you see the PL LEDs 3 through 0 all on?\n" \
 			"2- Click 'Pass' if you observe it.\n",
-		.Level[5].Plat_BIT_Op = Display_Instruction,
-		.Level[6].Instruction = "\n" \
+		.Level[4].Plat_BIT_Op = Display_Instruction,
+		.Level[5].Instruction = "\n" \
 			"1- The following output should be displayed on the console:\n\n" \
 			"	BlinkBIST results = F\n\n" \
 			"2- Click 'Pass' if you observe it.\n",
-		.Level[6].Plat_BIT_Op = Display_Instruction,
+		.Level[5].Plat_BIT_Op = Display_Instruction,
 	},
 };
 

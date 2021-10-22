@@ -271,3 +271,44 @@ Display_Instruction(void *Arg1, void *Arg2)
 	SC_PRINT("%s", BIT_p->Level[Level].Instruction);
 	return 0;
 }
+
+/*
+ * This routine asserts reset
+ */
+int
+Assert_Reset(void *Arg1, void *Arg2)
+{
+	BIT_t *BIT_p = Arg1;
+	int Level  = *(int *)Arg2;
+	int Ret = 0;
+
+	if (Plat_Ops->Reset_Op == NULL) {
+		SC_ERR("reset operation is not supported");
+		return -1;
+	}
+
+	if (Level > BIT_p->Levels) {
+		SC_ERR("Invalid level invocation");
+		return -1;
+	}
+
+	if (BIT_p->Manual) {
+		SC_PRINT("%s", BIT_p->Level[Level].Instruction);
+	}
+
+	Ret = Plat_Ops->Reset_Op();
+	if (Ret != 0) {
+		SC_ERR("failed the reset operation");
+		if (!BIT_p->Manual) {
+			SC_PRINT("%s: FAIL", BIT_p->Name);
+		}
+
+		return -1;
+	}
+
+	if (!BIT_p->Manual) {
+		SC_PRINT("%s: PASS", BIT_p->Name);
+	}
+
+	return 0;
+}

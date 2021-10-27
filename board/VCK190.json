@@ -1,13 +1,15 @@
 {
+	"License" : "Copyright (c) 2021 Xilinx, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
 	"VCK190" : {
 		"FEATURE" : {
-			"MAX" : 15,
+			"Numbers" : 15,
 			"List" : ["eeprom", "temp", "bootmode", "clock", "voltage", "power",
-				"powerdomain", "BI", "ddr", "gpio", "ioexp", "SFP", "QSFP",
+				"powerdomain", "BIT", "ddr", "gpio", "ioexp", "SFP", "QSFP",
 				"EBM", "FMC"]
 		},
 		"BOOTMODES" : {
-			"MAX" 	  : 11,
+			"Numbers" : 11,
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
 				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
 			"JTAG"   : "0x0",
@@ -23,7 +25,7 @@
 			"SD1_LS" : "0xe"
 		},
 		"CLOCK" : {
-			"MAX" : 8,
+			"Numbers" : 8,
 			"SI570_ZSFP" : {
 				"Name" : "zSFP Si570",
 				"Type" : "Si570",
@@ -103,7 +105,7 @@
 			}
 		},
 		"INA226" : {
-			"MAX" : 17,
+			"Numbers" : 17,
 			"INA226_VCCINT" : {
 				"Name" : "VCCINT",
 				"I2C_Bus" : "/dev/i2c-4",
@@ -242,7 +244,7 @@
 			}
 		},
 		"POWER DOMAIN" : {
-			"MAX" : 8,
+			"Numbers" : 8,
 			"PD_FPD" : {
 				"Name" : "FPD",
 				"Rails" : ["INA226_VCCINT_PSFP"],
@@ -291,7 +293,7 @@
 			}
 		},
 		"VOLTAGE" : {
-			"MAX" : 18,
+			"Numbers" : 18,
 			"VOLTAGE_VCCINT" : {
 				"Name" : "VCCINT",
 				"Part_Name" : "IR35215",
@@ -506,7 +508,7 @@
 			}
 		},
 		"GPIO" : {
-			"MAX" : 37,
+			"Numbers" : 37,
 			"GPIO_00" : {
 				"Line" : 7,
 				"Display_Name" : "500 - DC_SYS_CTRL0",
@@ -695,7 +697,7 @@
 		},
 		"IO Exp" : {
 			"Name" : "TCA6416A",
-			"MAX" : 16,
+			"Numbers" : 16,
 			"Labels" : ["Port 0(7) - MAX6643 FULLSPD",
 				"Port 0(6) - N.C.",
 				"Port 0(5) - N.C.",
@@ -723,12 +725,12 @@
 			"I2C_Address" : "0x54"
 		},
 		"Daughter Card" : {
-			"Nam" : "X-EBM",
+			"Name" : "X-EBM",
 			"I2C_Bus" : "/dev/i2c-11",
 			"I2C_Address" : "0x52"
 		},
 		"SFPs" : {
-			"MAX" : 2,
+			"Numbers" : 2,
 			"SFP_0" : {
 				"Name" : "zSFP-0",
 				"I2C_Bus" : "/dev/i2c-19",
@@ -741,7 +743,7 @@
 			}
 		},
 		"QSFPs" : {
-			"MAX" : 1,
+			"Numbers" : 1,
 			"QSFP_0" : {
 				"Name" : "zQSFP1",
 				"Type" : "qsfp",
@@ -750,7 +752,7 @@
 			}
 		},
 		"FMCs" : {
-			"MAX" : 2,
+			"Numbers" : 2,
 			"FMC_1" : {
 				"Name" : "FMC1",
 				"I2C_Bus" : "/dev/i2c-12",
@@ -763,7 +765,7 @@
 			}
 		},
 		"WORKAROUND" : {
-			"MAX" : 1,
+			"Numbers" : 1,
 			"WORKAROUND_VCCAUX" : {
 				"Name" : "vccaux",
 				"Arg_Needed" : 1,
@@ -771,7 +773,7 @@
 			}
 		},
 		"BITs" : {
-			"MAX" : 8,
+			"Numbers" : 9,
 			"BIT_CLOCKS_CHECK" : {
 				"Name" : "Check Clocks",
 				"Manual" : 0,

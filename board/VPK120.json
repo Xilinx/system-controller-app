@@ -1,10 +1,14 @@
 {
+	"License" : "Copyright (c) 2021 Xilinx, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
 	"VPK120": {
-		"FEATURE": ["eeprom", "temp", "bootmode", "clock", "voltage", "power",
-			"BIT", "gpio", "ioexp", "QSFP", "FMC"
-		],
+		"FEATURE": {
+			"Numbers" : 11,
+			"List" : ["eeprom", "temp", "bootmode", "clock", "voltage", "power",
+				"BIT", "gpio", "ioexp", "QSFP", "FMC"]
+		},
 		"BOOTMODES": {
-			"BOOTMODES_MAX": 11,
+			"Numbers": 11,
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
 				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"
 			],
@@ -21,7 +25,7 @@
 			"SD1_LS": "0xe"
 		},
 		"CLOCK": {
-			"MAX": 6,
+			"Numbers": 6,
 			"SI570_USER1_FMC": {
 				"Name": "User1 FMC2 Si570",
 				"Type": "Si570",
@@ -81,7 +85,7 @@
 			}
 		},
 		"INA226": {
-			"MAX": 19,
+			"Numbers": 19,
 			"INA226_VCCINT": {
 				"Name": "VCCINT",
 				"I2C_Bus": "/dev/i2c-3",
@@ -236,7 +240,7 @@
 			}
 		},
 		"VOLTAGE": {
-			"VOLTAGE_MAX": 17,
+			"Numbers": 17,
 			"VOLTAGE_VCCINT": {
 				"Name": "VCCINT",
 				"Part_Name": "IR35215",
@@ -426,7 +430,7 @@
 			}
 		},
 		"GPIO": {
-			"MAX": 57,
+			"Numbers": 57,
 			"GPIO_00": {
 				"Line": 0,
 				"Display_Name": "500 - SYSCTLR_QSPI_CLK",
@@ -715,7 +719,7 @@
 		},
 		"IO Exp": {
 			"Name": "TCA6416A",
-			"MAX": 16,
+			"Numbers": 16,
 			"Labels": ["Port 0(7) - MAX6643 FULLSPD (AH)",
 				"Port 0(6) - N.C.",
 				"Port 0(5) - N.C.",
@@ -743,7 +747,7 @@
 			"I2C_Address": "0x54"
 		},
 		"QSFPs": {
-			"MAX": 2,
+			"Numbers": 2,
 			"QSFPDD_0": {
 				"Name": "QSFPDD1",
 				"Type": "qsfpdd",
@@ -758,7 +762,7 @@
 			}
 		},
 		"FMCs": {
-			"MAX": 1,
+			"Numbers": 1,
 			"FMC_1": {
 				"Name": "FMC",
 				"I2C_Bus": "/dev/i2c-11",
@@ -766,7 +770,7 @@
 			}
 		},
 		"BITs": {
-			"MAX": 7,
+			"Numbers": 8,
 			"BIT_CLOCKS_CHECK" : {
 				"Name" : "Check Clocks",
 				"Manual" : 0,

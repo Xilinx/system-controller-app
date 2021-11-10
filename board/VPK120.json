@@ -10,24 +10,23 @@
 		"BOOTMODES": {
 			"Numbers": 11,
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
-				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"
-			],
-			"JTAG": "0x0",
-			"QSPI24": "0x1",
-			"QSPI32": "0x2",
-			"SD0_LS": "0x3",
-			"SD1": "0x5",
-			"EMMC": "0x6",
-			"USB": "0x7",
-			"OSPI": "0x8",
-			"SMAP": "0xa",
-			"DFT": "0xd",
-			"SD1_LS": "0xe"
+				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
+			"jtag" : "0x0",
+			"qspi24" : "0x1",
+			"qspi32" : "0x2",
+			"sd0_ls" : "0x3",
+			"sd1" : "0x5",
+			"emmc" : "0x6",
+			"usb" : "0x7",
+			"ospi" : "0x8",
+			"smap" : "0xa",
+			"dft" : "0xd",
+			"sd1_ls" : "0xe"
 		},
 		"CLOCK": {
 			"Numbers": 6,
 			"SI570_USER1_FMC": {
-				"Name": "User1 FMC2 Si570",
+				"Name": "User1 FMC Si570",
 				"Type": "Si570",
 				"Sysfs_Path": "/sys/devices/platform/si570_user1_fmc_clk/set_rate",
 				"Default_Freq": 100.0,
@@ -102,8 +101,8 @@
 				"Maximum_Current": 14000,
 				"Phase_Multiplier": 1
 			},
-			"INA226_VCCINT_PSFP": {
-				"Name": "VCCINT_PSFP",
+			"INA226_VCC_PSFP": {
+				"Name": "VCC_PSFP",
 				"I2C_Bus": "/dev/i2c-3",
 				"I2C_Address": "0x45",
 				"Shunt_Resistor": 5000,
@@ -740,11 +739,6 @@
 			"Directions": [0, -1, -1, 1, 0, 0, 1, 1, 1, 1, 0, 1, -1, 1, -1, 1],
 			"I2C_Bus": "/dev/i2c-0",
 			"I2C_Address": "0x20"
-		},
-		"OnBoard EEPROM": {
-			"Name": "onboard",
-			"I2C_Bus": "/dev/i2c-10",
-			"I2C_Address": "0x54"
 		},
 		"QSFPs": {
 			"Numbers": 2,

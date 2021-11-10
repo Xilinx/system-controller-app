@@ -403,6 +403,7 @@ typedef struct {
 			 export TCL_LIBRARY=/usr/local/lib/tcl8.5"
 #define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
 #define BIT_PATH	"/usr/share/system-controller-app/BIT/"
+#define BOARD_PATH  "/usr/share/system-controller-app/board/"
 
 #define IDCODE_TCL	"idcode/idcode_check.tcl"
 

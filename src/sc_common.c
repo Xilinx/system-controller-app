@@ -20,6 +20,8 @@ extern Plat_Ops_t VCK190_Ops;
 extern Plat_Devs_t VPK120_Devs;
 extern Plat_Ops_t VPK120_Ops;
 
+extern int Parse_JSON(const char *, Plat_Devs_t *);
+
 Plat_Devs_t *Plat_Devs;
 Plat_Ops_t *Plat_Ops;
 
@@ -145,9 +147,13 @@ Board_Identification(void)
 	for (int i = 0; i < Boards.Numbers; i++) {
 		Board = &Boards.Board_Info[i];
 		if (strcmp(Board->Name, Buffer) == 0) {
-			Plat_Devs = Board->Devs;
-			// This function parses JSON files.
-			// Parse_JSON(Board->Name, Plat_Devs);
+			Plat_Devs = (Plat_Devs_t *)malloc(sizeof(Plat_Devs_t));
+			Plat_Devs->OnBoard_EEPROM = Board->Devs->OnBoard_EEPROM;
+			if (Parse_JSON(Board->Name, Plat_Devs) != 0) {
+				SC_ERR("Parsing JSON file failed.");
+				return -1;
+			}
+
 			Plat_Ops = Board->Ops;
 			break;
 		}

@@ -1064,12 +1064,12 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	FILE *FP;
 	int FD;
 	char Buffer[SYSCMD_MAX];
-	int Size, Offset;
+	int Size;
 	char Data_String[SYSCMD_MAX];
-	int Data[SYSCMD_MAX];
+	char Data[SYSCMD_MAX];
 	char TXT_File[SYSCMD_MAX];
 	char *Walk;
-	int Nibble_1, Nibble_2;
+	char Offset, Nibble_1, Nibble_2;
 	int j;
 	int Ret = 0;
 

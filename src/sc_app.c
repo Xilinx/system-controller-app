@@ -2198,7 +2198,7 @@ int IO_Exp_Ops(void)
 			return -1;
 		}
 
-		Value = ~Value;
+		Value = (~Value & ((1 << IO_Exp->Numbers) - 1));
 		if (Access_IO_Exp(IO_Exp, 1, 0x2,
 				  (unsigned int *)&Value) != 0) {
 			SC_ERR("failed to set output");

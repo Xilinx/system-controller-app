@@ -429,8 +429,9 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
 
-	if (Op == 1 && *Data > 0xFFFF) {
-		SC_ERR("invalid data, valid value is between 0 and 0xFFFF");
+	if (Op == 1 && *Data > ((1 << IO_Exp->Numbers) - 1)) {
+		SC_ERR("invalid data, valid value is between 0 and %#x",
+		       ((1 << IO_Exp->Numbers) - 1));
 		return -1;
 	}
 

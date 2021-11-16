@@ -1026,7 +1026,7 @@ int Voltage_Ops(void)
 
 		Voltage = strtof(Value_Arg, NULL);
 		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-			SC_ERR("failed to set voltage on regulator");
+			SC_ERR("failed to set voltage of regulator");
 			return -1;
 		}
 
@@ -1057,7 +1057,7 @@ int Voltage_Ops(void)
 	case RESTOREVOLTAGE:
 		Voltage = Regulator->Typical_Volt;
 		if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-			SC_ERR("failed to set voltage on regulator");
+			SC_ERR("failed to set voltage of regulator");
 			return -1;
 		}
 

@@ -243,10 +243,9 @@
 			"VOLTAGE_VCCINT": {
 				"Name": "VCCINT",
 				"Part_Name": "IR35215",
-				"Supported_Volt": [0.7, 0.78, 0.8, -1],
-				"Maximum_Volt": 0.8,
+				"Maximum_Volt": 0.88,
 				"Typical_Volt": 0.8,
-				"Minimum_Volt": 0.8,
+				"Minimum_Volt": 0.7,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x46",
 				"Page_Select": 0
@@ -254,10 +253,9 @@
 			"VOLTAGE_VCC_SOC": {
 				"Name": "VCC_SOC",
 				"Part_Name": "IR35215",
-				"Supported_Volt": [0.8, -1],
-				"Maximum_Volt": 0.8,
+				"Maximum_Volt": 0.83,
 				"Typical_Volt": 0.8,
-				"Minimum_Volt": 0.8,
+				"Minimum_Volt": 0.77,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x46",
 				"Page_Select": 1
@@ -265,10 +263,9 @@
 			"VOLTAGE_VCC_PSFP": {
 				"Name": "VCC_PSFP",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [0.7, 0.8, -1],
-				"Maximum_Volt": 0.8,
+				"Maximum_Volt": 0.83,
 				"Typical_Volt": 0.8,
-				"Minimum_Volt": 0.8,
+				"Minimum_Volt": 0.77,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x47",
 				"Page_Select": 0
@@ -276,10 +273,9 @@
 			"VOLTAGE_VCCO_MIO": {
 				"Name": "VCCO_MIO",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [1.8, -1],
-				"Maximum_Volt": 1.8,
+				"Maximum_Volt": 1.86,
 				"Typical_Volt": 1.8,
-				"Minimum_Volt": 1.8,
+				"Minimum_Volt": 1.74,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x47",
 				"Page_Select": 1
@@ -287,10 +283,9 @@
 			"VOLTAGE_VCCAUX": {
 				"Name": "VCCAUX",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [1.5, -1],
-				"Maximum_Volt": 1.5,
+				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
-				"Minimum_Volt": 1.5,
+				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x47",
 				"Page_Select": 2
@@ -298,10 +293,9 @@
 			"VOLTAGE_VCC1V5": {
 				"Name": "VCC1V5",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [1.5, -1],
-				"Maximum_Volt": 1.5,
+				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
-				"Minimum_Volt": 1.5,
+				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x47",
 				"Page_Select": 3
@@ -309,10 +303,9 @@
 			"VOLTAGE_LPDMGTYAVCC": {
 				"Name": "LPDMGTYAVCC",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [0.88, -1],
-				"Maximum_Volt": 0.88,
+				"Maximum_Volt": 0.91,
 				"Typical_Volt": 0.88,
-				"Minimum_Volt": 0.88,
+				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4C",
 				"Page_Select": 0
@@ -320,10 +313,9 @@
 			"VOLTAGE_MGTVCCAUX": {
 				"Name": "MGTVCCAUX",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [1.5, -1],
-				"Maximum_Volt": 1.5,
+				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
-				"Minimum_Volt": 1.5,
+				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4C",
 				"Page_Select": 1
@@ -331,10 +323,9 @@
 			"VOLTAGE_MGTAVCC": {
 				"Name": "MGTAVCC",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [0.88, -1],
-				"Maximum_Volt": 0.88,
+				"Maximum_Volt": 0.91,
 				"Typical_Volt": 0.88,
-				"Minimum_Volt": 0.88,
+				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4C",
 				"Page_Select": 2
@@ -342,10 +333,9 @@
 			"VOLTAGE_VCCO_502": {
 				"Name": "VCCO_502",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [1.8, -1],
-				"Maximum_Volt": 1.8,
+				"Maximum_Volt": 1.86,
 				"Typical_Volt": 1.8,
-				"Minimum_Volt": 1.8,
+				"Minimum_Volt": 1.74,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4D",
 				"Page_Select": 0
@@ -353,10 +343,9 @@
 			"VOLTAGE_UTIL_2V5": {
 				"Name": "UTIL_2V5",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [2.5, -1],
-				"Maximum_Volt": 2.5,
+				"Maximum_Volt": 2.58,
 				"Typical_Volt": 2.5,
-				"Minimum_Volt": 2.5,
+				"Minimum_Volt": 2.42,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4D",
 				"Page_Select": 1
@@ -364,10 +353,9 @@
 			"VOLTAGE_VCC_PSLP_CPM5": {
 				"Name": "VCC_PSLP_CPM5",
 				"Part_Name": "IRPS5401",
-				"Supported_Volt": [0.7, 0.8, -1],
-				"Maximum_Volt": 0.8,
+				"Maximum_Volt": 0.83,
 				"Typical_Volt": 0.8,
-				"Minimum_Volt": 0.8,
+				"Minimum_Volt": 0.77,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4D",
 				"Page_Select": 2
@@ -375,10 +363,9 @@
 			"VOLTAGE_VCC_RAM_VCCINT_GT": {
 				"Name": "VCC_RAM_VCCINT_GT",
 				"Part_Name": "IR38164",
-				"Supported_Volt": [0.8, -1],
-				"Maximum_Volt": 0.8,
+				"Maximum_Volt": 0.83,
 				"Typical_Volt": 0.8,
-				"Minimum_Volt": 0.0,
+				"Minimum_Volt": 0.77,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x43",
 				"Page_Select": -1
@@ -386,8 +373,7 @@
 			"VOLTAGE_VADJ_FMC": {
 				"Name": "VADJ_FMC",
 				"Part_Name": "IR38164",
-				"Supported_Volt": [0.0, 1.2, 1.5, -1],
-				"Maximum_Volt": 1.5,
+				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
 				"Minimum_Volt": 0.0,
 				"I2C_Bus": "/dev/i2c-2",
@@ -397,10 +383,9 @@
 			"VOLTAGE_LPDMGTYAVTT": {
 				"Name": "LPDMGTYAVTT",
 				"Part_Name": "IR38164",
-				"Supported_Volt": [1.2, -1],
-				"Maximum_Volt": 1.2,
+				"Maximum_Volt": 1.24,
 				"Typical_Volt": 1.2,
-				"Minimum_Volt": 1.2,
+				"Minimum_Volt": 1.16,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x41",
 				"Page_Select": -1
@@ -408,10 +393,9 @@
 			"VOLTAGE_VCC1V1_LP4": {
 				"Name": "VCC1V1_LP4",
 				"Part_Name": "IR38164",
-				"Supported_Volt": [1.1, -1],
-				"Maximum_Volt": 1.1,
+				"Maximum_Volt": 1.14,
 				"Typical_Volt": 1.1,
-				"Minimum_Volt": 1.1,
+				"Minimum_Volt": 1.06,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4F",
 				"Page_Select": -1
@@ -419,10 +403,9 @@
 			"VOLTAGE_MGTAVTT": {
 				"Name": "MGTAVTT",
 				"Part_Name": "IR38164",
-				"Supported_Volt": [1.2, -1],
-				"Maximum_Volt": 1.2,
+				"Maximum_Volt": 1.24,
 				"Typical_Volt": 1.2,
-				"Minimum_Volt": 1.2,
+				"Minimum_Volt": 1.16,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x49",
 				"Page_Select": -1

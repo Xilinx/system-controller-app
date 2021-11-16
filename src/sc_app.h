@@ -138,7 +138,6 @@ typedef struct Power_Domains {
 typedef struct {
 	char	Name[STRLEN_MAX];
 	char	Part_Name[STRLEN_MAX];
-	float	Supported_Volt[ITEMS_MAX];
 	float	Maximum_Volt;
 	float	Typical_Volt;
 	float	Minimum_Volt;
@@ -409,9 +408,6 @@ typedef struct {
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))
-
-#define VOLT_MIN(VOLT)	(VOLT - (0.03 * VOLT))
-#define VOLT_MAX(VOLT)	(VOLT + (0.03 * VOLT))
 
 #endif	/* SC_APP_H_ */
 

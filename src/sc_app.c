@@ -1085,7 +1085,15 @@ typedef struct {
 	unsigned short Mask_Enable;
 	unsigned short Alert_Limit;
 	unsigned short Die_ID;
+	unsigned short Set_Registers;
 } INA226_Regs_t;
+
+typedef enum {
+	INA226_Configuration = 0x1,
+	INA226_Calibration = 0x2,
+	INA226_Mask_Enable = 0x4,
+	INA226_Alert_Limit = 0x8,
+} INA226_RegsMap_t;
 
 int
 Read_INA226(INA226_t *INA226, INA226_Regs_t *Regs)
@@ -1244,56 +1252,64 @@ Write_INA226(INA226_t *INA226, INA226_Regs_t *Regs)
 		return -1;
 	}
 
-	/* Write 'Configuration' register */
-	(void) memset(Out_Buffer, 0, STRLEN_MAX);
-	Out_Buffer[0] = 0x0;   // Configuration Register(00h)
-	Out_Buffer[1] = (Regs->Configuration >> 8);
-	Out_Buffer[2] = (Regs->Configuration & 0xFF);
-	SC_INFO("Configuration Register(00h): %#x %#x", Out_Buffer[1],
-		 Out_Buffer[2]);
-	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
-	if (Ret != 0) {
-		(void) close(FD);
-		return Ret;
+	if (Regs->Set_Registers & INA226_Configuration) {
+		/* Write 'Configuration' register */
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x0;   // Configuration Register(00h)
+		Out_Buffer[1] = (Regs->Configuration >> 8);
+		Out_Buffer[2] = (Regs->Configuration & 0xFF);
+		SC_INFO("Configuration Register(00h): %#x %#x", Out_Buffer[1],
+			Out_Buffer[2]);
+		I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
 	}
 
-	/* Write 'Calibration' register */
-	(void) memset(Out_Buffer, 0, STRLEN_MAX);
-	Out_Buffer[0] = 0x5;   // Calibration Register(05h)
-	Out_Buffer[1] = (Regs->Calibration >> 8);
-	Out_Buffer[2] = (Regs->Calibration & 0xFF);
-	SC_INFO("Calibration Register(05h): %#x %#x", Out_Buffer[1],
-		 Out_Buffer[2]);
-	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
-	if (Ret != 0) {
-		(void) close(FD);
-		return Ret;
+	if (Regs->Set_Registers & INA226_Calibration) {
+		/* Write 'Calibration' register */
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x5;   // Calibration Register(05h)
+		Out_Buffer[1] = (Regs->Calibration >> 8);
+		Out_Buffer[2] = (Regs->Calibration & 0xFF);
+		SC_INFO("Calibration Register(05h): %#x %#x", Out_Buffer[1],
+			Out_Buffer[2]);
+		I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
 	}
 
-	/* Write 'Mask/Enable' register */
-	(void) memset(Out_Buffer, 0, STRLEN_MAX);
-	Out_Buffer[0] = 0x6;   // Mask/Enable Register(06h)
-	Out_Buffer[1] = (Regs->Mask_Enable >> 8);
-	Out_Buffer[2] = (Regs->Mask_Enable & 0xFF);
-	SC_INFO("Mask/Enable Register(06h): %#x %#x", Out_Buffer[1],
-		 Out_Buffer[2]);
-	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
-	if (Ret != 0) {
-		(void) close(FD);
-		return Ret;
+	if (Regs->Set_Registers & INA226_Mask_Enable) {
+		/* Write 'Mask/Enable' register */
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x6;   // Mask/Enable Register(06h)
+		Out_Buffer[1] = (Regs->Mask_Enable >> 8);
+		Out_Buffer[2] = (Regs->Mask_Enable & 0xFF);
+		SC_INFO("Mask/Enable Register(06h): %#x %#x", Out_Buffer[1],
+			Out_Buffer[2]);
+		I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
 	}
 
-	/* Write 'Alert Limit' register */
-	(void) memset(Out_Buffer, 0, STRLEN_MAX);
-	Out_Buffer[0] = 0x7;   // Alert Limit Register(07h)
-	Out_Buffer[1] = (Regs->Alert_Limit >> 8);
-	Out_Buffer[2] = (Regs->Alert_Limit & 0xFF);
-	SC_INFO("Alert Limit Register(07h): %#x %#x", Out_Buffer[1],
-		 Out_Buffer[2]);
-	I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
-	if (Ret != 0) {
-		(void) close(FD);
-		return Ret;
+	if (Regs->Set_Registers & INA226_Alert_Limit) {
+		/* Write 'Alert Limit' register */
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x7;   // Alert Limit Register(07h)
+		Out_Buffer[1] = (Regs->Alert_Limit >> 8);
+		Out_Buffer[2] = (Regs->Alert_Limit & 0xFF);
+		SC_INFO("Alert Limit Register(07h): %#x %#x", Out_Buffer[1],
+			Out_Buffer[2]);
+		I2C_WRITE(FD, INA226->I2C_Address, 3, Out_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
 	}
 
 	(void) close(FD);
@@ -1402,7 +1418,7 @@ int Power_Ops(void)
 	int Target_Index = -1;
 	INA226s_t *INA226s;
 	INA226_t *INA226;
-	INA226_Regs_t Regs = { -1 };
+	INA226_Regs_t Regs = { 0 };
 	unsigned long int Value;
 	char *Next_Token;
 	float Voltage;
@@ -1490,59 +1506,89 @@ int Power_Ops(void)
 
 		Next_Token = strtok(Value_Arg, " ");
 		if (Next_Token == NULL) {
-			SC_ERR("invalid value for 'Configuration' register");
+			SC_ERR("no value given for 'Configuration' register");
 			return -1;
 		}
 
-		Value = strtol(Next_Token, NULL, 16);
-		if (Value > 0xFFFF) {
-			SC_ERR("invalid value for 'Configuration' register");
-			return -1;
-		}
+		if ((Next_Token[0] != 'x') && (Next_Token[0] != 'X')) {
+			Value = strtol(Next_Token, NULL, 16);
+			if ((Value > 0xFFFF) || (Value == 0 &&
+			    (strcmp(Next_Token, "0") != 0) &&
+			    (strcmp(Next_Token, "0x0") != 0))) {
+				SC_ERR("invalid value for 'Configuration' "
+				       "register");
+				return -1;
+			}
 
-		Regs.Configuration = Value;
+			Regs.Configuration = Value;
+			Regs.Set_Registers |= INA226_Configuration;
+		}
 
 		Next_Token = strtok(NULL, " ");
 		if (Next_Token == NULL) {
-			SC_ERR("invalid value for 'Calibration' register");
+			SC_ERR("no value given for 'Calibration' register");
 			return -1;
 		}
 
-		Value = strtol(Next_Token, NULL, 16);
-		if (Value > 0xFFFF || Value == 0) {
-			SC_ERR("invalid value for 'Calibration' register");
-			return -1;
-		}
+		if ((Next_Token[0] != 'x') && (Next_Token[0] != 'X')) {
+			Value = strtol(Next_Token, NULL, 16);
+			if ((Value > 0xFFFF) || (Value == 0 &&
+			    (strcmp(Next_Token, "0") != 0) &&
+			    (strcmp(Next_Token, "0x0") != 0))) {
+				SC_ERR("invalid value for 'Calibration' "
+				       "register");
+				return -1;
+			}
 
-		Regs.Calibration = Value;
+			if (Value == 0) {
+				SC_ERR("value 0 is invalid for 'Calibration' "
+				       "register");
+				return -1;
+			}
+
+			Regs.Calibration = Value;
+			Regs.Set_Registers |= INA226_Calibration;
+		}
 
 		Next_Token = strtok(NULL, " ");
 		if (Next_Token == NULL) {
-			SC_ERR("invalid value for 'Mask/Enable' register");
+			SC_ERR("no value given for 'Mask/Enable' register");
 			return -1;
 		}
 
-		Value = strtol(Next_Token, NULL, 16);
-		if (Value > 0xFFFF) {
-			SC_ERR("invalid value for 'Mask/Enable' register");
-			return -1;
-		}
+		if ((Next_Token[0] != 'x') && (Next_Token[0] != 'X')) {
+			Value = strtol(Next_Token, NULL, 16);
+			if ((Value > 0xFFFF) || (Value == 0 &&
+			    (strcmp(Next_Token, "0") != 0) &&
+			    (strcmp(Next_Token, "0x0") != 0))) {
+				SC_ERR("invalid value for 'Mask/Enable' "
+				       "register");
+				return -1;
+			}
 
-		Regs.Mask_Enable = Value;
+			Regs.Mask_Enable = Value;
+			Regs.Set_Registers |= INA226_Mask_Enable;
+		}
 
 		Next_Token = strtok(NULL, "\n");
 		if (Next_Token == NULL) {
-			SC_ERR("invalid value for 'Alert Limit' register");
+			SC_ERR("no value given for 'Alert Limit' register");
 			return -1;
 		}
 
-		Value = strtol(Next_Token, NULL, 16);
-		if (Value > 0xFFFF) {
-			SC_ERR("invalid value for 'Alert Limit' register");
-			return -1;
-		}
+		if ((Next_Token[0] != 'x') && (Next_Token[0] != 'X')) {
+			Value = strtol(Next_Token, NULL, 16);
+			if ((Value > 0xFFFF) || (Value == 0 &&
+			    (strcmp(Next_Token, "0") != 0) &&
+			    (strcmp(Next_Token, "0x0") != 0))) {
+				SC_ERR("invalid value for 'Alert Limit' "
+				       "register", Value);
+				return -1;
+			}
 
-		Regs.Alert_Limit = Value;
+			Regs.Alert_Limit = Value;
+			Regs.Set_Registers |= INA226_Alert_Limit;
+		}
 
 		if (Write_INA226(INA226, &Regs) != 0) {
 			SC_ERR("failed to write to INA226 registers");

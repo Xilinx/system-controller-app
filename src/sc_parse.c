@@ -406,7 +406,6 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 {
 	char *Value_Str;
 	int Voltage_Items = 0;
-	int Supported_Voltages;
 
 	SC_INFO("********************* VOLTAGES *********************");
 	*VCCs = (Voltages_t *)malloc(sizeof(Voltages_t));
@@ -428,20 +427,9 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		strcpy((*VCCs)->Voltage[Voltage_Items].Part_Name, Value_Str);
 		SC_INFO("Part Name: %s", (*VCCs)->Voltage[Voltage_Items].Part_Name);
 		*Index += 2;
-		Supported_Voltages = Tokens[*Index].size;
-		SC_INFO("Supported Volt: ");
-		for (int i = 0; i < Supported_Voltages; i++) {
-			(*Index)++;
-			Value_Str = strndup(Json_File + Tokens[*Index].start,
-			                    Tokens[*Index].end - Tokens[*Index].start);
-			(*VCCs)->Voltage[Voltage_Items].Supported_Volt[i] = atof(Value_Str);
-			SC_INFO(" %f  ", atof(Value_Str));
-		}
-
-		*Index += 2;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 		                    Tokens[*Index].end - Tokens[*Index].start);
-		(*VCCs)->Voltage[Voltage_Items].Maximum_Volt = VOLT_MAX(atof(Value_Str));
+		(*VCCs)->Voltage[Voltage_Items].Maximum_Volt = atof(Value_Str);
 		SC_INFO("\nMax Volt: %f", (*VCCs)->Voltage[Voltage_Items].Maximum_Volt);
 		*Index += 2;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
@@ -451,7 +439,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		*Index += 2;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 		                    Tokens[*Index].end - Tokens[*Index].start);
-		(*VCCs)->Voltage[Voltage_Items].Minimum_Volt = VOLT_MIN(atof(Value_Str));
+		(*VCCs)->Voltage[Voltage_Items].Minimum_Volt = atof(Value_Str);
 		SC_INFO("Min Volt: %f", (*VCCs)->Voltage[Voltage_Items].Minimum_Volt);
 		*Index += 2;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,

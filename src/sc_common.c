@@ -171,8 +171,6 @@ int
 Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 {
 	int FD;
-	int Supported = 0;
-	int Index = 0;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
 	signed int Exponent;
@@ -182,21 +180,12 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	unsigned int Vout;
 	float Over_Voltage_Limit;
 
-	/* Check if setting requested voltage is supported */
-	if (1 == Access) {
-		while (!(Index == ITEMS_MAX ||
-		    Regulator->Supported_Volt[Index] == -1)) {
-			if (*Voltage == Regulator->Supported_Volt[Index]) {
-				Supported = 1;
-				break;
-			}
-
-			Index++;
-		}
-
-		if (0 == Supported) {
-			return -1;
-		}
+	/* Check if setting the requested voltage is within range */
+	if ((1 == Access) && ((*Voltage < Regulator->Minimum_Volt) ||
+	    (*Voltage > Regulator->Maximum_Volt))) {
+		SC_ERR("valid voltage range is %.2f V - %.2f V",
+		       Regulator->Minimum_Volt, Regulator->Maximum_Volt);
+		return -1;
 	}
 
 	FD = open(Regulator->I2C_Bus, O_RDWR);

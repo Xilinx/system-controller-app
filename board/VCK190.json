@@ -816,21 +816,29 @@
 			"BIT_PL_UART_TEST" : {
 				"Name" : "PL UART Test",
 				"Manual" : 1,
-				"Levels" : 1,
+				"Levels" : 2,
 				"BIT Level 0" : {
+					"Plat_BIT_Op" : "Display_Instruction",
+					"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+				},
+				"BIT Level 1" : {
 					"Plat_BIT_Op" : "XSDB_BIT",
 					"TCL_File" : "pl_uart/pl_uart_download.tcl",
-					"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- The following output should be displayed on the console:\n\n\tTesting UART\n\t115200,8,N,1\n\tHello world!\n\tUART 02 Test Passed\n\n3- Click 'Pass' if you observe it.\n"
+					"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tTesting UART\n\t115200,8,N,1\n\tHello world!\n\tUART 02 Test Passed\n\n2- Click 'Pass' if you observe it.\n"
 				}
 			},
 			"BIT_PROGRAM_QSPI" : {
 				"Name" : "Program QSPI",
 				"Manual" : 1,
-				"Levels" : 1,
+				"Levels" : 2,
 				"BIT Level 0" : {
+					"Plat_BIT_Op" : "Display_Instruction",
+					"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+				},
+				"BIT Level 1" : {
 					"Plat_BIT_Op" : "XSDB_BIT",
 					"TCL_File" : "qspi/program_qspi_download.tcl",
-					"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- The following output should be displayed on the console:\n\n\tSF: Detected n25q00a with page size 512 Bytes, erase size 128 KiB, total 256 MiB\n\tSF: 5242880 bytes @ 0x0 Erased: OK\n\tdevice 0 offset 0x0, size 0x500000\n\tSF: 5242880 bytes @ 0x0 Written: OK\n\tVersal> \n\n3- Click 'Pass' if you observe it.\n"
+					"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tSF: Detected n25q00a with page size 512 Bytes, erase size 128 KiB, total 256 MiB\n\tSF: 5242880 bytes @ 0x0 Erased: OK\n\tdevice 0 offset 0x0, size 0x500000\n\tSF: 5242880 bytes @ 0x0 Written: OK\n\tVersal> \n\n2- Click 'Pass' if you observe it.\n"
 				}
 			},
 			"BIT_QSPI_TEST" : {

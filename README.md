@@ -64,15 +64,9 @@
 
 		listSFP - list the plugged SFP transceiver targets
 		getSFP - get the transceiver information of <target> SFP
-		getpwmSFP - get the power mode value of <target> SFP
-		setpwmSFP - set the power mode value of <target> SFP to <value>
 
 		listQSFP - list the plugged QSFP transceiver targets
 		getQSFP - get the transceiver information of <target> QSFP
-		getpwmQSFP - get the power mode value of <target> QSFP
-		setpwmQSFP - set the power mode value of <target> QSFP to <value>
-		getpwmoQSFP - get the power mode override value of <target> QSFP
-		setpwmoQSFP - set the power mode override value of <target> QSFP to <value>
 
 		listEBM - list the plugged EBM daughter card targets
 		getEBM - get the content of EEPROM on <target> EBM card for either <value>:

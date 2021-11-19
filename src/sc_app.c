@@ -141,15 +141,9 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 \n\
 	listSFP - list the plugged SFP transceiver targets\n\
 	getSFP - get the transceiver information of <target> SFP\n\
-	getpwmSFP - get the power mode value of <target> SFP\n\
-	setpwmSFP - set the power mode value of <target> SFP to <value>\n\
 \n\
 	listQSFP - list the plugged QSFP transceiver targets\n\
 	getQSFP - get the transceiver information of <target> QSFP\n\
-	getpwmQSFP - get the power mode value of <target> QSFP\n\
-	setpwmQSFP - set the power mode value of <target> QSFP to <value>\n\
-	getpwmoQSFP - get the power mode override value of <target> QSFP\n\
-	setpwmoQSFP - set the power mode override value of <target> QSFP to <value>\n\
 \n\
 	listEBM - list the plugged EBM daughter card targets\n\
 	getEBM - get the content of EEPROM on <target> EBM card for either <value>:\n\
@@ -202,14 +196,8 @@ typedef enum {
 	RESTOREIOEXP,
 	LISTSFP,
 	GETSFP,
-	GETPWMSFP,
-	SETPWMSFP,
 	LISTQSFP,
 	GETQSFP,
-	GETPWMQSFP,
-	SETPWMQSFP,
-	GETPWMOQSFP,
-	SETPWMOQSFP,
 	LISTEBM,
 	GETEBM,
 	LISTFMC,
@@ -265,14 +253,8 @@ static Command_t Commands[] = {
 	{ .CmdId = RESTOREIOEXP, .CmdStr = "restoreioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = LISTSFP, .CmdStr = "listSFP", .CmdOps = SFP_Ops, },
 	{ .CmdId = GETSFP, .CmdStr = "getSFP", .CmdOps = SFP_Ops, },
-	{ .CmdId = GETPWMSFP, .CmdStr = "getpwmSFP", .CmdOps = SFP_Ops, },
-	{ .CmdId = SETPWMSFP, .CmdStr = "setpwmSFP", .CmdOps = SFP_Ops, },
 	{ .CmdId = LISTQSFP, .CmdStr = "listQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = GETQSFP, .CmdStr = "getQSFP", .CmdOps = QSFP_Ops, },
-	{ .CmdId = GETPWMQSFP, .CmdStr = "getpwmQSFP", .CmdOps = QSFP_Ops, },
-	{ .CmdId = SETPWMQSFP, .CmdStr = "setpwmQSFP", .CmdOps = QSFP_Ops, },
-	{ .CmdId = GETPWMOQSFP, .CmdStr = "getpwmoQSFP", .CmdOps = QSFP_Ops, },
-	{ .CmdId = SETPWMOQSFP, .CmdStr = "setpwmoQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = LISTEBM, .CmdStr = "listEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = GETEBM, .CmdStr = "getEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = LISTFMC, .CmdStr = "listFMC", .CmdOps = FMC_Ops, },
@@ -2359,7 +2341,18 @@ int SFP_Ops(void)
 			return Ret;
 		}
 
-		SC_PRINT("Manufacturer:\t%s", In_Buffer);
+		SC_PRINT("Manufacturer (0x14-0x23):\t%s", In_Buffer);
+
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x28;	// 0x28-0x37: Part Number
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		SC_PRINT("Part Number (0x28-0x37):\t%s", In_Buffer);
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
@@ -2370,7 +2363,7 @@ int SFP_Ops(void)
 			return Ret;
 		}
 
-		SC_PRINT("Serial Number:\t%s", In_Buffer);
+		SC_PRINT("Serial Number (0x44-0x53):\t%s", In_Buffer);
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
@@ -2384,7 +2377,7 @@ int SFP_Ops(void)
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		Value = (Value & 0x7FFF) - (Value & 0x8000);
 		/* Each bit of low byte is equivalent to 1/256 celsius */
-		SC_PRINT("Internal Temperature(C):\t%.3f", ((float)Value / 256));
+		SC_PRINT("Temperature(C) (0x60-0x61):\t%.2f", ((float)Value / 256));
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
@@ -2397,7 +2390,7 @@ int SFP_Ops(void)
 
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
 		/* Each bit is 100 uV */
-		SC_PRINT("Supply Voltage(V):\t%.2f", ((float)Value * 0.0001));
+		SC_PRINT("Supply Voltage(V) (0x62-0x63):\t%.2f", ((float)Value * 0.0001));
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
@@ -2408,60 +2401,7 @@ int SFP_Ops(void)
 			return Ret;
 		}
 
-		SC_PRINT("Alarm:\t%x", (In_Buffer[0] << 8) | In_Buffer[1]);
-		break;
-
-	case GETPWMSFP:
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x80;	// 0x80-0x81: PWM1 & PWM2 Controller
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		SC_PRINT("Power Mode(0-2W):\t%x", (In_Buffer[0] << 8) | In_Buffer[1]);
-		break;
-
-	case SETPWMSFP:
-		/* Validate the value */
-		if (V_Flag == 0) {
-			SC_ERR("no PWM value");
-			(void) close(FD);
-			return -1;
-		}
-
-		Value = strtol(Value_Arg, NULL, 16);
-		if (Value > 0xFF) {
-			SC_ERR("invalid PWM value");
-			(void) close(FD);
-			return -1;
-		}
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x80;	// 0x80: PWM1 Controller
-		Out_Buffer[1] = (Value & 0xFF);
-		SC_INFO("Write PWM1 Controller(0x80): 0x%x%x", Out_Buffer[0],
-			Out_Buffer[1]);
-		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		/* Add a delay, since back-to-back write fails for this device. */
-		sleep(1);
-		Out_Buffer[0] = 0x81;	// 0x81: PWM2 Controller
-		Out_Buffer[1] = (Value & 0xFF);
-		SC_INFO("Write PWM2 Controller(0x81): 0x%x%x", Out_Buffer[0],
-			Out_Buffer[1]);
-		I2C_WRITE(FD, SFP->I2C_Address + 1, 2, Out_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
+		SC_PRINT("Alarm (0x70-0x71):\t%#x", (In_Buffer[0] << 8) | In_Buffer[1]);
 		break;
 
 	default:
@@ -2551,7 +2491,8 @@ int QSFP_Ops(void)
 			goto Out;
 		}
 
-		SC_PRINT("Manufacturer:\t%s", In_Buffer);
+		SC_PRINT("Manufacturer (%#x-%#x):\t%s", Out_Buffer[0],
+			 (Out_Buffer[0] + 15), In_Buffer);
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
@@ -2570,7 +2511,8 @@ int QSFP_Ops(void)
 			goto Out;
 		}
 
-		SC_PRINT("Part Number:\t%s", In_Buffer);
+		SC_PRINT("Part Number (%#x-%#x):\t%s", Out_Buffer[0],
+			 (Out_Buffer[0] + 15), In_Buffer);
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
@@ -2589,102 +2531,33 @@ int QSFP_Ops(void)
 			goto Out;
 		}
 
-		SC_PRINT("Serial Number:\t%s", In_Buffer);
+		SC_PRINT("Serial Number (%#x-%#x):\t%s", Out_Buffer[0],
+			 (Out_Buffer[0] + 15), In_Buffer);
 
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		if (QSFP->Type == qsfp) {
-			(void) memset(Out_Buffer, 0, STRLEN_MAX);
-			(void) memset(In_Buffer, 0, STRLEN_MAX);
-			Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature Sensor
-			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-			if (Ret != 0) {
-				goto Out;
-			}
-
-			Value = (In_Buffer[0] << 8) | In_Buffer[1];
-			SC_INFO("Temperature Sensor(0x16-0x17): %#x", Value);
-			Value = (Value & 0x7FFF) - (Value & 0x8000);
-			/* Each bit of low byte is equivalent to 1/256 celsius */
-			SC_PRINT("Internal Temperature(C):\t%.3f", ((float)Value / 256));
+			Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature
 		} else if (QSFP->Type == qsfpdd) {
-			(void) memset(Out_Buffer, 0, STRLEN_MAX);
-			(void) memset(In_Buffer, 0, STRLEN_MAX);
-			Out_Buffer[0] = 0xC;	// 0xC-0xD: Temperature Sensor 1
-			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-			if (Ret != 0) {
-				goto Out;
-			}
-
-			Value = (In_Buffer[0] << 8) | In_Buffer[1];
-			SC_INFO("Temperature Sensor 1(0xC-0xD): %#x", Value);
-			Value = (Value & 0x7FFF) - (Value & 0x8000);
-			/* Each bit of low byte is equivalent to 1/256 celsius */
-			SC_PRINT("Internal Temperature 1(C):\t%.3f", ((float)Value / 256));
-
-			(void) memset(Out_Buffer, 0, STRLEN_MAX);
-			(void) memset(In_Buffer, 0, STRLEN_MAX);
-			Out_Buffer[0] = 0xE;	// 0xE-0xF: Temperature Sensor 2
-			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-			if (Ret != 0) {
-				goto Out;
-			}
-
-			Value = (In_Buffer[0] << 8) | In_Buffer[1];
-			SC_INFO("Temperature Sensor 2(0xE-0xF): %#x", Value);
-			Value = (Value & 0x7FFF) - (Value & 0x8000);
-			/* Each bit of low byte is equivalent to 1/256 celsius */
-			SC_PRINT("Internal Temperature 2(C):\t%.3f", ((float)Value / 256));
-
-			/* Temperature Sensors 3 & 4 are recorded on Page 3 */
-			(void) memset(Out_Buffer, 0, STRLEN_MAX);
-			Out_Buffer[0] = 0x7E;	// 0x7E-0x7F: Bank & Page Select
-			Out_Buffer[1] = 0;
-			Out_Buffer[2] = 0x3;
-			I2C_WRITE(FD, QSFP->I2C_Address, 3, Out_Buffer, Ret);
-			if (Ret != 0) {
-				goto Out;
-			}
-
-			(void) memset(Out_Buffer, 0, STRLEN_MAX);
-			(void) memset(In_Buffer, 0, STRLEN_MAX);
-			Out_Buffer[0] = 0x98;	// 0x98-0x99: Temperature Sensor 3
-			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-			if (Ret != 0) {
-				goto Out;
-			}
-
-			Value = (In_Buffer[0] << 8) | In_Buffer[1];
-			SC_INFO("Temperature Sensor 3(Page 3, 0x98-0x99): %#x", Value);
-			Value = (Value & 0x7FFF) - (Value & 0x8000);
-			/* Each bit of low byte is equivalent to 1/256 celsius */
-			SC_PRINT("Internal Temperature 3(C):\t%.3f", ((float)Value / 256));
-
-			(void) memset(Out_Buffer, 0, STRLEN_MAX);
-			(void) memset(In_Buffer, 0, STRLEN_MAX);
-			Out_Buffer[0] = 0x9A;	// 0x9A-0x9B: Temperature Sensor 4
-			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-			if (Ret != 0) {
-				goto Out;
-			}
-
-			Value = (In_Buffer[0] << 8) | In_Buffer[1];
-			SC_INFO("Temperature Sensor 4(Page 3, 0x9A-0x9B): %#x", Value);
-			Value = (Value & 0x7FFF) - (Value & 0x8000);
-			/* Each bit of low byte is equivalent to 1/256 celsius */
-			SC_PRINT("Internal Temperature 4(C):\t%.3f", ((float)Value / 256));
-
-			/* Reset back to Page 0 */
-			(void) memset(Out_Buffer, 0, STRLEN_MAX);
-			Out_Buffer[0] = 0x7E;	// 0x7E-0x7F: Bank & Page Select
-			I2C_WRITE(FD, QSFP->I2C_Address, 3, Out_Buffer, Ret);
-			if (Ret != 0) {
-				goto Out;
-			}
-
+			Out_Buffer[0] = 0xE;	// 0xE-0xF: Temperature
 		} else {
 			SC_ERR("Unsupported QSFP");
 			Ret = -1;
 			goto Out;
 		}
+
+		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
+		Value = (In_Buffer[0] << 8) | In_Buffer[1];
+		SC_INFO("Temperature (%#x-%#x): %#x", Out_Buffer[0],
+			(Out_Buffer[0] + 1), Value);
+		Value = (Value & 0x7FFF) - (Value & 0x8000);
+		/* Each bit of low byte is equivalent to 1/256 celsius */
+		SC_PRINT("Temperature(C) (%#x-%#x):\t%.2f", Out_Buffer[0],
+			 (Out_Buffer[0] + 1), ((float)Value / 256));
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
@@ -2704,118 +2577,63 @@ int QSFP_Ops(void)
 		}
 
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
+		SC_INFO("Supply Voltage (%#x-%#x): %#x", Out_Buffer[0],
+			(Out_Buffer[0] + 1), Value);
 		/* Each bit is 100 uV */
-		SC_PRINT("Supply Voltage(V):\t%.2f", ((float)Value * 0.0001));
+		SC_PRINT("Supply Voltage(V) (%#x-%#x):\t%.2f", Out_Buffer[0],
+			 (Out_Buffer[0] + 1), ((float)Value * 0.0001));
 
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x3;	// 0x3-0x4: Alarms
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			goto Out;
-		}
+		if (QSFP->Type == qsfp) {
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x3;	// 0x3-0x4: Alarms
+			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
 
-		SC_PRINT("Alarms (Bytes 3-4):\t%x", (In_Buffer[0] << 8) |
-		    In_Buffer[1]);
+			SC_PRINT("Alarms (0x3-0x4):\t%#x", (In_Buffer[0] << 8) |
+				 In_Buffer[1]);
 
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x6;	// 0x6-0x7: Alarms
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			goto Out;
-		}
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x6;	// 0x6-0x7: Alarms
+			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
 
-		SC_PRINT("Alarms (Bytes 6-7):\t%x", (In_Buffer[0] << 8) |
-		    In_Buffer[1]);
+			SC_PRINT("Alarms (0x6-0x7):\t%#x", (In_Buffer[0] << 8) |
+				 In_Buffer[1]);
 
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x9;	// 0x9-0xC: Alarms
-		I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			goto Out;
-		}
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x9;	// 0x9-0xC: Alarms
+			I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
 
-		SC_PRINT("Alarms (Bytes 9-12):\t%x", ((In_Buffer[0] << 24) |
-		    (In_Buffer[1] << 16) | (In_Buffer[2] << 8) | In_Buffer[3]));
-		break;
+			SC_PRINT("Alarms (0x9-0xc):\t%#x %#x", ((In_Buffer[0] << 8) |
+				 In_Buffer[1]), ((In_Buffer[2] << 8) |
+				 In_Buffer[3]));
 
-	case GETPWMQSFP:
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
-		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			goto Out;
-		}
+		} else if (QSFP->Type == qsfpdd) {
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x8;	// 0x8-0xB: Alarms
+			I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
 
-		SC_PRINT("Register 98, bit7 +2.5w, bit6 +1.5w, bits5-0 up to 1.0w:\t%x",
-		    In_Buffer[0]);
-		break;
+			SC_PRINT("Alarms (0x8-0xb):\t%#x %#x", ((In_Buffer[0] << 8) |
+				 In_Buffer[1]), ((In_Buffer[2] << 8) |
+				 In_Buffer[3]));
 
-	case SETPWMQSFP:
-		/* Validate the value */
-		if (V_Flag == 0) {
-			SC_ERR("no PWM value");
+		} else {
+			SC_ERR("Unsupported QSFP");
 			Ret = -1;
-			goto Out;
-		}
-
-		Value = strtol(Value_Arg, NULL, 16);
-		if (Value > 0xFF) {
-			SC_ERR("invalid PWM value");
-			Ret = -1;
-			goto Out;
-		}
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x62;	// 0x62: PWM Controller
-		Out_Buffer[1] = (Value & 0xFF);
-		SC_INFO("Write PWM Controller(0x62): 0x%x%x", Out_Buffer[0],
-			Out_Buffer[1]);
-		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer, Ret);
-		if (Ret != 0) {
-			goto Out;
-		}
-
-		break;
-
-	case GETPWMOQSFP:
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
-		I2C_READ(FD, QSFP->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			goto Out;
-		}
-
-		SC_PRINT("Register 93, 0 = use LPMode pin, 1 = hi pwr, 3 = low pwr:\t%x",
-		    In_Buffer[0]);
-		break;
-
-	case SETPWMOQSFP:
-		/* Validate the value */
-		if (V_Flag == 0) {
-			SC_ERR("no PWM Override value");
-			Ret = -1;
-			goto Out;
-		}
-
-		Value = strtol(Value_Arg, NULL, 16);
-		if (Value != 0x0 && Value != 0x1 && Value != 0x3) {
-			SC_ERR("valid PWM Override value: 0x0, 0x1, or 0x3");
-			Ret = -1;
-			goto Out;
-		}
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x5D;	// 0x5D: Low Power Mode Override
-		Out_Buffer[1] = (Value & 0x3);
-		SC_INFO("Write Low Power Mode Override(0x5D): 0x%x%x", Out_Buffer[0],
-			Out_Buffer[1]);
-		I2C_WRITE(FD, QSFP->I2C_Address, 2, Out_Buffer, Ret);
-		if (Ret != 0) {
 			goto Out;
 		}
 

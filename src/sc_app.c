@@ -2474,53 +2474,6 @@ int SFP_Ops(void)
 	return 0;
 }
 
-int QSFP_List(void)
-{
-	QSFPs_t *QSFPs;
-	QSFP_t *QSFP;
-	int FD;
-	char Buffer[STRLEN_MAX];
-	int Ret = 0;
-
-	QSFPs = Plat_Devs->QSFPs;
-	for (int i = 0; i < QSFPs->Numbers; i++) {
-		QSFP = &QSFPs->QSFP[i];
-		if (Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 1) != 0) {
-			return -1;
-		}
-
-		FD = open(QSFP->I2C_Bus, O_RDWR);
-		if (FD < 0) {
-			SC_ERR("failed to access I2C bus %s: %m", QSFP->I2C_Bus);
-			Ret = -1;
-			goto Out;
-		}
-
-		if (ioctl(FD, I2C_SLAVE_FORCE, QSFP->I2C_Address) < 0) {
-			SC_ERR("failed to configure I2C bus for access to "
-			       "device address %#x: %m", QSFP->I2C_Address);
-			Ret = -1;
-			goto Out;
-		}
-
-		/*
-		 * If the read operation fails, it indicates that there is
-		 * no QSFP device plugged into the connector referenced by
-		 * the I2C device address.
-		 */
-		if (read(FD, Buffer, 1) != 1) {
-			(void) close(FD);
-			continue;
-		}
-
-		SC_PRINT("%s", QSFP->Name);
-	}
-Out:
-	(void) Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 0);
-	(void) close(FD);
-	return Ret;
-}
-
 /*
  * QSFP Operations
  */
@@ -2542,7 +2495,11 @@ int QSFP_Ops(void)
 	}
 
 	if (Command.CmdId == LISTQSFP) {
-		return QSFP_List();
+		for (int i = 0; i < QSFPs->Numbers; i++) {
+			printf("%s\n", QSFPs->QSFP[i].Name);
+		}
+
+		return 0;
 	}
 
 	/* Validate the QSFP target */

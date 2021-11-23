@@ -1371,22 +1371,28 @@ Get_Power(INA226_t *INA226, int Mode, float *Voltage, float *Current, float *Pow
 
 	Current_LSB = (0.00512 * 1000000) /
 		      (float)(Regs.Calibration * INA226->Shunt_Resistor);
-	SC_INFO("Calculating Current_LSB = %#x", (unsigned short)Current_LSB);
+	SC_INFO("Calculating Current_LSB = %f", Current_LSB);
 
 	/* if Current is negative, use its absolute value */
-	if (Regs.Current > 0x7FFF) {
-		Regs.Current -= 0x10000;
+	*Current = (float)Regs.Current;
+	if (*Current > 0x7FFF) {
+		*Current -= 0x10000;
+		*Current = abs(*Current);
 	}
 
-	*Current = ((float)Regs.Current * Current_LSB);
+	SC_INFO("Current before LSB scaling %f", *Current);
+	*Current = ((*Current) * Current_LSB);
+	SC_INFO("Current before phase multiplier scaling %f", *Current);
 	*Current *= INA226->Phase_Multiplier;
 
 	*Voltage = (float)Regs.Bus_Voltage;
+	SC_INFO("Voltage before LSB scaling %f", *Voltage);
 	*Voltage *= 1.25;       // 1.25 mV per bit
 	*Voltage /= 1000;
 
 	/* The power LSB has a fixed ratio to the Current_LSB of 25 */
 	*Power = ((float)Regs.Power * Current_LSB * 25);
+	SC_INFO("Power before phase multiplier scaling %f", *Power);
 	*Power *= INA226->Phase_Multiplier;
 
 	return 0;

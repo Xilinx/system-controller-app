@@ -14,7 +14,7 @@ COMMON_OBJS	= sc_common.o sc_parse.o
 APP_OBJS	= $(APP).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
 APPD_OBJS	= $(APPD).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
 
-CFLAGS		= -I../src
+CFLAGS		= -I../src -Wall
 LDFLAGS 	?= -L../src
 SRCDIR		= ../src
 

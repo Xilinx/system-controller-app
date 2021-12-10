@@ -106,7 +106,7 @@ Board_Identification(void)
 	FILE *FP;
 	Board_t *Board;
 	char Buffer[SYSCMD_MAX] = { 0 };
-	char System_Cmd[SYSCMD_MAX];
+	char System_Cmd[2 * SYSCMD_MAX];
 	int Ret;
 
 	if (access(BOARDFILE, F_OK) != 0) {
@@ -541,10 +541,9 @@ GPIO_Get(char *Label, int *State)
 {
 	FILE *FP;
 	char Chip_Name[STRLEN_MAX];
-	char Buffer[STRLEN_MAX];
+	char Buffer[SYSCMD_MAX];
 	char Output[STRLEN_MAX] = {'\0'};
 	unsigned int Line_Offset;
-	struct gpiod_line *GPIO_Line;
 
 	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
 	    &Line_Offset) != 1) {
@@ -577,10 +576,9 @@ GPIO_Set(char *Label, int State)
 {
 	FILE *FP;
 	char Chip_Name[STRLEN_MAX];
-	char Buffer[STRLEN_MAX];
+	char Buffer[SYSCMD_MAX];
 	char Output[STRLEN_MAX] = {'\0'};
 	unsigned int Line_Offset;
-	struct gpiod_line *GPIO_Line;
 
 	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
 	    &Line_Offset) != 1) {
@@ -1114,7 +1112,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 
 		(void) strtok(Buffer, ":");
 		(void) sscanf(strtok(NULL, ":"), "%x", &Size);
-		(void) sscanf(strtok(NULL, ":"), "%x", &Offset);
+		(void) sscanf(strtok(NULL, ":"), "%hhx", &Offset);
 		(void) strcpy(Data_String, strtok(NULL, "\n"));
 
 		j = 0;

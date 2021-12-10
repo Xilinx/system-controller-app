@@ -129,7 +129,7 @@ int
 VCK190_BootMode_Op(BootMode_t *BootMode, int Op)
 {
 	FILE *FP;
-	char Buffer[STRLEN_MAX];
+	char Buffer[SYSCMD_MAX];
 
 	/* Only set boot mode is supported */
 	if (Op != 1) {

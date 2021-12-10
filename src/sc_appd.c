@@ -32,7 +32,6 @@ extern int Set_IDT_8A34001(Clock_t *, char *, int);
 int
 VCK190_GPIO(void)
 {
-	FILE *FP;
 	Workarounds_t *Workarounds;
 	struct gpiod_chip *GPIO_Chip;
 	struct gpiod_line *GPIO_Line;
@@ -343,7 +342,7 @@ Set_Voltages(void)
 	Voltage_t *Regulator;
 	char Buffer[SYSCMD_MAX];
 	char Value[STRLEN_MAX];
-	float Voltage, Current_Voltage;
+	float Voltage;
 
 	/* If there is no voltage file, there is nothing to do */
 	if (access(VOLTAGEFILE, F_OK) != 0) {
@@ -456,7 +455,6 @@ FMC_Autodetect_Vadj()
 int
 main()
 {
-	char Board[STRLEN_MAX];
 	int Ret = -1;
 
 	SC_OPENLOG("sc_appd");

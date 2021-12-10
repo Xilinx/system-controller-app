@@ -790,7 +790,7 @@ Clock_Ops(void)
 	Clocks_t *Clocks;
 	Clock_t *Clock;
 	FILE *FP;
-	char System_Cmd[SYSCMD_MAX];
+	char System_Cmd[2 * SYSCMD_MAX];
 	char Output[STRLEN_MAX];
 	double Frequency;
 	double Upper, Lower;
@@ -1570,7 +1570,7 @@ int Power_Ops(void)
 			    (strcmp(Next_Token, "0") != 0) &&
 			    (strcmp(Next_Token, "0x0") != 0))) {
 				SC_ERR("invalid value for 'Alert Limit' "
-				       "register", Value);
+				       "register: %lx", Value);
 				return -1;
 			}
 
@@ -2133,7 +2133,7 @@ int IO_Exp_Ops(void)
 				return -1;
 			}
 
-			SC_PRINT("Input GPIO:\t%#x", Value);
+			SC_PRINT("Input GPIO:\t%#x", (unsigned short) Value);
 
 			if (Access_IO_Exp(IO_Exp, 0, 0x2,
 					  (unsigned int *)&Value) != 0) {
@@ -2141,7 +2141,7 @@ int IO_Exp_Ops(void)
 				return -1;
 			}
 
-			SC_PRINT("Output GPIO:\t%#x", Value);
+			SC_PRINT("Output GPIO:\t%#x", (unsigned short) Value);
 
 			if (Access_IO_Exp(IO_Exp, 0, 0x6,
 					  (unsigned int *)&Value) != 0) {
@@ -2149,7 +2149,7 @@ int IO_Exp_Ops(void)
 				return -1;
 			}
 
-			SC_PRINT("Direction:\t%#x", Value);
+			SC_PRINT("Direction:\t%#x", (unsigned short) Value);
 
 		} else if (strcmp(Value_Arg, "input") == 0) {
 			if (Access_IO_Exp(IO_Exp, 0, 0x0,
@@ -2160,7 +2160,7 @@ int IO_Exp_Ops(void)
 
 			for (int i = 0; i < IO_Exp->Numbers; i++) {
 				if (IO_Exp->Directions[i] == 1) {
-					SC_PRINT("%s:\t%d", IO_Exp->Labels[i],
+					SC_PRINT("%s:\t%lu", IO_Exp->Labels[i],
 					    ((Value >> (IO_Exp->Numbers - i - 1)) & 1));
 				}
 			}
@@ -2174,7 +2174,7 @@ int IO_Exp_Ops(void)
 
 			for (int i = 0; i < IO_Exp->Numbers; i++) {
 				if (IO_Exp->Directions[i] == 0) {
-					SC_PRINT("%s:\t%d", IO_Exp->Labels[i],
+					SC_PRINT("%s:\t%lu", IO_Exp->Labels[i],
 					    ((Value >> (IO_Exp->Numbers - i - 1)) & 1));
 				}
 			}
@@ -2558,7 +2558,7 @@ int QSFP_Ops(void)
 		}
 
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
-		SC_INFO("Temperature (%#x-%#x): %#x", Out_Buffer[0],
+		SC_INFO("Temperature (%#x-%#x): %#lx", Out_Buffer[0],
 			(Out_Buffer[0] + 1), Value);
 		Value = (Value & 0x7FFF) - (Value & 0x8000);
 		/* Each bit of low byte is equivalent to 1/256 celsius */
@@ -2583,7 +2583,7 @@ int QSFP_Ops(void)
 		}
 
 		Value = (In_Buffer[0] << 8) | In_Buffer[1];
-		SC_INFO("Supply Voltage (%#x-%#x): %#x", Out_Buffer[0],
+		SC_INFO("Supply Voltage (%#x-%#x): %#lx", Out_Buffer[0],
 			(Out_Buffer[0] + 1), Value);
 		/* Each bit is 100 uV */
 		SC_PRINT("Supply Voltage(V) (%#x-%#x):\t%.2f", Out_Buffer[0],
@@ -2699,7 +2699,6 @@ int EBM_Ops(void)
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
 	char Out_Buffer[SYSCMD_MAX];
-	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 
 	Daughter_Card = Plat_Devs->Daughter_Card;

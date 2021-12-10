@@ -24,7 +24,7 @@ int
 Clocks_Check(void *Arg1, void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
-	void *Ignore = Arg2;
+	__attribute__((unused)) void *Ignore = Arg2;
 	int FD;
 	Clocks_t *Clocks;
 	char ReadBuffer[STRLEN_MAX];
@@ -118,7 +118,7 @@ int
 EBM_EEPROM_Check(void *Arg1, void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
-	void *Ignore = Arg2;
+	__attribute__((unused)) void *Ignore = Arg2;
 	Daughter_Card_t *Daughter_Card;
 	int FD;
 
@@ -156,7 +156,7 @@ int
 DIMM_EEPROM_Check(void *Arg1, void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
-	void *Ignore = Arg2;
+	__attribute__((unused)) void *Ignore = Arg2;
 	int FD;
 	DIMM_t *DIMM;
 	char In_Buffer[STRLEN_MAX];
@@ -214,7 +214,7 @@ int
 Voltages_Check(void *Arg1, void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
-	void *Ignore = Arg2;
+	__attribute__((unused)) void *Ignore = Arg2;
 	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;

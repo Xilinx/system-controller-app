@@ -3,8 +3,8 @@
 
 	"VPK120": {
 		"FEATURE": {
-			"Numbers" : 11,
-			"List" : ["eeprom", "temp", "bootmode", "clock", "voltage", "power",
+			"Numbers" : 10,
+			"List" : ["eeprom", "bootmode", "clock", "voltage", "power",
 				"BIT", "gpio", "ioexp", "QSFP", "FMC"]
 		},
 		"BOOTMODES": {

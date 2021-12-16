@@ -3,8 +3,8 @@
 
 	"VCK190" : {
 		"FEATURE" : {
-			"Numbers" : 15,
-			"List" : ["eeprom", "temp", "bootmode", "clock", "voltage", "power",
+			"Numbers" : 14,
+			"List" : ["eeprom", "bootmode", "clock", "voltage", "power",
 				"powerdomain", "BIT", "ddr", "gpio", "ioexp", "SFP", "QSFP",
 				"EBM", "FMC"]
 		},

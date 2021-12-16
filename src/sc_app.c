@@ -2031,7 +2031,6 @@ static int Gpio_get_all(void)
 static int Gpio_get(void)
 {
 	GPIOs_t *GPIOs;
-	long Tval = strtol(Target_Arg, NULL, 0);
 
 	if (strcmp(Target_Arg, "all") == 0) {
 		if (Gpio_get_all() != 0) {
@@ -2044,8 +2043,7 @@ static int Gpio_get(void)
 
 	GPIOs = Plat_Devs->GPIOs;
 	for (int i = 0; i < GPIOs->Numbers; i++) {
-		if (Tval == GPIOs->GPIO[i].Line ||
-		    !strncmp(GPIOs->GPIO[i].Display_Name, Target_Arg, STRLEN_MAX) ||
+		if (!strncmp(GPIOs->GPIO[i].Display_Name, Target_Arg, STRLEN_MAX) ||
 		    !strncmp(GPIOs->GPIO[i].Internal_Name, Target_Arg, STRLEN_MAX)) {
 			if (Gpio_get1(&GPIOs->GPIO[i]) != 0) {
 				return -1;

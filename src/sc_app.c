@@ -762,7 +762,7 @@ Temperature_Ops(void)
 	}
 
 	if (Command.CmdId == LISTTEMP) {
-		SC_PRINT("MDIO");
+		SC_PRINT("Versal");
 		return 0;
 	}
 
@@ -772,7 +772,7 @@ Temperature_Ops(void)
 		return -1;
 	}
 
-	if (strcmp(Target_Arg, "MDIO") != 0) {
+	if (strcmp(Target_Arg, "Versal") != 0) {
 		SC_ERR("invalid gettemp target");
 		return -1;
 	}

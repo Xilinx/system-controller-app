@@ -345,44 +345,6 @@ VCK190_IDCODE_Op(char *Output, int Length)
 }
 
 /*
- * Get the board temperature
- */
-int
-VCK190_Temperature_Op(void)
-{
-	FILE *FP;
-	char Output[STRLEN_MAX];
-	char Command[] = "/usr/bin/sensors ff0b0000ethernetffffffff00-mdio-0";
-	double Temperature;
-
-	SC_INFO("Command: %s", Command);
-	FP = popen(Command, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to execute sensors command %s: %m", Command);
-		return -1;
-	}
-
-	/* Temperature is on the 3rd line */
-	for (int i = 0; i < 3; i++) {
-		(void) fgets(Output, sizeof(Output), FP);
-	}
-
-	pclose(FP);
-	SC_INFO("Output: %s", Output);
-	if (strstr(Output, "temp1:") == NULL) {
-		SC_ERR("failed to get board temperature");
-		return -1;
-	}
-
-	(void) strtok(Output, ":");
-	(void) strcpy(Output, strtok(NULL, "C"));
-	Temperature = atof(Output);
-	SC_PRINT("Temperature(C):\t%.1f", Temperature);
-
-	return 0;
-}
-
-/*
  * The QSFP must be selected and not held in Reset (High) in order to be
  * accessed.  These lines are driven by Vesal.  The QSFP1_RESETL_LS high
  * has a pull up, but QSFP1_MODSKLL_LS has no pull down.  If Versal is not
@@ -585,7 +547,6 @@ Plat_Ops_t VCK190_Ops = {
 	.Reset_Op = VCK190_Reset_Op,
 	.IDCODE_Op = VCK190_IDCODE_Op,
 	.XSDB_Op = VCK190_XSDB_Op,
-	.Temperature_Op = VCK190_Temperature_Op,
 	.QSFP_ModuleSelect_Op = VCK190_QSFP_ModuleSelect_Op,
 	.FMCAutoVadj_Op = VCK190_FMCAutoVadj_Op,
 };

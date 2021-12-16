@@ -263,9 +263,9 @@
 			"VOLTAGE_VCC_PSFP": {
 				"Name": "VCC_PSFP",
 				"Part_Name": "IRPS5401",
-				"Maximum_Volt": 0.83,
-				"Typical_Volt": 0.8,
-				"Minimum_Volt": 0.77,
+				"Maximum_Volt": 0.91,
+				"Typical_Volt": 0.88,
+				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x47",
 				"Page_Select": 0
@@ -353,9 +353,9 @@
 			"VOLTAGE_VCC_PSLP_CPM5": {
 				"Name": "VCC_PSLP_CPM5",
 				"Part_Name": "IRPS5401",
-				"Maximum_Volt": 0.83,
-				"Typical_Volt": 0.8,
-				"Minimum_Volt": 0.77,
+				"Maximum_Volt": 0.91,
+				"Typical_Volt": 0.88,
+				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-2",
 				"I2C_Address": "0x4D",
 				"Page_Select": 2

@@ -14,7 +14,7 @@
 
 #define LEVELS_MAX	10
 #define ITEMS_MAX	24
-#define LITEMS_MAX	64
+#define LITEMS_MAX	128
 #define STRLEN_MAX	64
 #define SYSCMD_MAX	1024
 

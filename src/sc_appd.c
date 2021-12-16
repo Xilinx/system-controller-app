@@ -21,7 +21,7 @@ extern Plat_Devs_t *Plat_Devs;
 extern Plat_Ops_t *Plat_Ops;
 
 int (*Workaround_Op)(void *);
-extern int Board_Identification(void);
+extern int Board_Identification(char *);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Set_IDT_8A34001(Clock_t *, char *, int);
 
@@ -455,6 +455,7 @@ FMC_Autodetect_Vadj()
 int
 main()
 {
+	char Board_Name[STRLEN_MAX];
 	int Ret = -1;
 
 	SC_OPENLOG("sc_appd");
@@ -469,7 +470,7 @@ main()
 	}
 
 	/* Identify the board */
-	if (Board_Identification() != 0) {
+	if (Board_Identification(Board_Name) != 0) {
 		goto Out;
 	}
 

@@ -101,7 +101,7 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 }
 
 int
-Board_Identification(void)
+Board_Identification(char *Board_Name)
 {
 	FILE *FP;
 	Board_t *Board;
@@ -147,6 +147,7 @@ Board_Identification(void)
 	for (int i = 0; i < Boards.Numbers; i++) {
 		Board = &Boards.Board_Info[i];
 		if (strcmp(Board->Name, Buffer) == 0) {
+			(void) strcpy(Board_Name, Board->Name);
 			Plat_Devs = (Plat_Devs_t *)malloc(sizeof(Plat_Devs_t));
 			Plat_Devs->OnBoard_EEPROM = Board->Devs->OnBoard_EEPROM;
 			if (Parse_JSON(Board->Name, Plat_Devs) != 0) {

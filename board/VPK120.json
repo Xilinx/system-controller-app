@@ -847,14 +847,14 @@
 		"IO Exp": {
 			"Name": "TCA6416A",
 			"Numbers": 16,
-			"Labels": ["Port 0(7) - MAX6643 FULLSPD (AH)",
+			"Labels": ["Port 0(7) - N.C.",
 				"Port 0(6) - N.C.",
 				"Port 0(5) - N.C.",
 				"Port 0(4) - PMBUS2 INA226 Alert (AL)",
 				"Port 0(3) - QSFPDD2_MODSELL (AL)",
 				"Port 0(2) - QSFPDD1_MODSELL (AL)",
-				"Port 0(1) - MAX6643 Fan Fail (AL)",
-				"Port 0(0) - MAX6643 Fan Over Temp (AL)",
+				"Port 0(1) - N.C.",
+				"Port 0(0) - N.C.",
 				"Port 1(7) - PMBUS1 INA226 Alert (AL)",
 				"Port 1(6) - PMBUS Alert (AL)",
 				"Port 1(5) - 8A34001_EXP_RST_B (AL)",
@@ -864,7 +864,7 @@
 				"Port 1(1) - N.C.",
 				"Port 1(0) - FMCP1 FMC PRSNT M2C B (AL)"
 			],
-			"Directions": [0, -1, -1, 1, 0, 0, 1, 1, 1, 1, 0, 1, -1, 1, -1, 1],
+			"Directions": [-1, -1, -1, 1, 0, 0, -1, -1, 1, 1, 0, 1, -1, 1, -1, 1],
 			"I2C_Bus": "/dev/i2c-0",
 			"I2C_Address": "0x20"
 		},

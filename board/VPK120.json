@@ -968,7 +968,7 @@
 			"BIT_QSPI_TEST" : {
 				"Name" : "QSPI Test",
 				"Manual" : 1,
-				"Levels" : 6,
+				"Levels" : 7,
 				"BIT Level 0" : {
 					"Plat_BIT_Op" : "Display_Instruction",
 					"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n3- Click 'Pass' when this is done.\n"
@@ -991,7 +991,11 @@
 				},
 				"BIT Level 5" : {
 					"Plat_BIT_Op" : "Display_Instruction",
-					"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tBlinkBIST results = F\n\n2- Click 'Pass' if you observe it.\n"
+					"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tChoose Feature to Test:\n\t1: UART Test\n\t2: LED Test\n\t5: TIMER/SCUGIC Test\n\t7: SWITCH Test\n\tB: BUTTON Test\n\tD: LVDS Test\n\tE: MICTOR Test\n\t0: Exit\n\n2- Click 'Pass' if you observe it.\n"
+				},
+				"BIT Level 6" : {
+					"Plat_BIT_Op" : "Display_Instruction",
+					"Instruction" : "\n1- Enter X on the console.\n2- The following output should be displayed on the console:\n\n\tBlinkBIST results = F\n\tPress any key to return to main menu\n\n3- Click 'Pass' if you observe it.\n"
 				}
 			}
 		}

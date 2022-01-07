@@ -159,11 +159,8 @@ Parse_Feature(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	*Features = (FeatureList_t *)malloc(sizeof(FeatureList_t));
 
 	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*Features)->Numbers = atoi(Value_Str);
+	(*Features)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of Features: %i\n", (*Features)->Numbers);
-	*Index += 2;
 	SC_INFO("Features:");
 	while (Item < (*Features)->Numbers) {
 		(*Index)++;
@@ -189,14 +186,13 @@ Parse_BootMode(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	SC_INFO("********************* BOOTMODES *********************");
 	*Boots = (BootModes_t *)malloc(sizeof(BootModes_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*Boots)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*Boots)->Numbers = Tokens[*Index].size - 1;
 	SC_INFO("Number of Boot Modes: %i", (*Boots)->Numbers);
 	*Index += 3;
+	int Mode_Lines_Qty = Tokens[*Index - 1].size;
 	SC_INFO("Mode Lines:");
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < Mode_Lines_Qty; i++) {
 		Value_Str = strndup(Json_File + Tokens[*Index + i].start,
 		                    Tokens[*Index + i].end - Tokens[*Index + i].start);
 		strcpy((*Boots)->Mode_Lines[i], Value_Str);
@@ -230,10 +226,8 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 	SC_INFO("********************* CLOCK *********************");
 	*CLKs = (Clocks_t *)malloc(sizeof(Clocks_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*CLKs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*CLKs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of Clocks: %i", (*CLKs)->Numbers);
 	while (Clk_Items < (*CLKs)->Numbers) {
 		*Index += 4;
@@ -310,10 +304,8 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 	SC_INFO("********************* INA226 *********************");
 	*INAs = (INA226s_t *)malloc(sizeof(INA226s_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*INAs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*INAs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of INA226s: %i", (*INAs)->Numbers);
 	while (INA226_Items < (*INAs)->Numbers) {
 		*Index += 4;
@@ -364,10 +356,8 @@ Parse_PowerDomain(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	SC_INFO("******************* POWER DOMAIN *******************");
 	*PowerDoms = (Power_Domains_t *)malloc(sizeof(Power_Domains_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*PowerDoms)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*PowerDoms)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of Power Domains: %i", (*PowerDoms)->Numbers);
 	while (PwrDom_Items < (*PowerDoms)->Numbers) {
 		*Index += 4;
@@ -393,7 +383,6 @@ Parse_PowerDomain(const char *Json_File, jsmntok_t *Tokens, int *Index,
 			}
 		}
 
-		*Index += 2;
 		PwrDom_Items++;
 	}
 
@@ -410,10 +399,8 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	SC_INFO("********************* VOLTAGES *********************");
 	*VCCs = (Voltages_t *)malloc(sizeof(Voltages_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*VCCs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*VCCs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of Voltage Rails: %i", (*VCCs)->Numbers);
 	while (Voltage_Items < (*VCCs)->Numbers) {
 		*Index += 4;
@@ -526,10 +513,8 @@ Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs
 	SC_INFO("********************* GPIOS *********************");
 	*GPIOs = (GPIOs_t *)malloc(sizeof(GPIOs_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*GPIOs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*GPIOs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of GPIO: %i", (*GPIOs)->Numbers);
 	while (Items < (*GPIOs)->Numbers) {
 		*Index += 4;
@@ -570,13 +555,8 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 	strcpy((*IEs)->Name, Value_Str);
 	SC_INFO("Name: %s\n", (*IEs)->Name);
 	*Index += 2;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*IEs)->Numbers = atoi(Value_Str);
+	(*IEs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of IO Exps: %i", (*IEs)->Numbers);
-	*Index += 2;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
 	SC_INFO("Labels -");
 	while (Label < (*IEs)->Numbers) {
 		(*Index)++;
@@ -651,10 +631,8 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 	SC_INFO("******************** SFPs ********************");
 	*SFPs = (SFPs_t *)malloc(sizeof(SFPs_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*SFPs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*SFPs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of SFPs: %i", (*SFPs)->Numbers);
 	while (Item < (*SFPs)->Numbers) {
 		*Index += 4;
@@ -688,10 +666,8 @@ Parse_QSFP(const char *Json_File, jsmntok_t *Tokens, int *Index, QSFPs_t **QSFPs
 	SC_INFO("******************** QSFPs ********************");
 	*QSFPs = (QSFPs_t *)malloc(sizeof(QSFPs_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*QSFPs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*QSFPs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of QSFPs: %i", (*QSFPs)->Numbers);
 	while (Item < (*QSFPs)->Numbers) {
 		*Index += 4;
@@ -735,10 +711,8 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 	SC_INFO("******************** FMCs ********************");
 	*FMCs = (FMCs_t *)malloc(sizeof(FMCs_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*FMCs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*FMCs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of FMCs: %i", (*FMCs)->Numbers);
 	while (Item < (*FMCs)->Numbers) {
 		*Index += 4;
@@ -773,10 +747,8 @@ Parse_Workaround(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	SC_INFO("***************** WORKAROUNDS **************\n");
 	*WAs = (Workarounds_t *)malloc(sizeof(Workarounds_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*WAs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*WAs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of Workarounds: %i", (*WAs)->Numbers);
 	while (Item < (*WAs)->Numbers) {
 		*Index += 4;
@@ -817,10 +789,8 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 	SC_INFO("********************* BITs *****************");
 	*BITs = (BITs_t *)malloc(sizeof(BITs_t));
 
-	*Index += 3;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-	                    Tokens[*Index].end - Tokens[*Index].start);
-	(*BITs)->Numbers = atoi(Value_Str);
+	(*Index)++;
+	(*BITs)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of BITs: %i", (*BITs)->Numbers);
 	while (Item < (*BITs)->Numbers) {
 		*Index += 4;
@@ -834,14 +804,8 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 		                    Tokens[*Index].end - Tokens[*Index].start);
 		Temp->Manual = atoi(Value_Str);
 		SC_INFO("Manual: %i", Temp->Manual);
-		if (Temp->Manual == 0) {
-			Temp->Levels = 1;
-		} else {
-			*Index += 2;
-			Value_Str = strndup(Json_File + Tokens[*Index].start,
-			                    Tokens[*Index].end - Tokens[*Index].start);
-			Temp->Levels = atoi(Value_Str);
-		}
+		*Index += 2;
+		Temp->Levels = Tokens[*Index].size;
 
 		SC_INFO("Levels: %i", Temp->Levels);
 		Level = 0;

@@ -18,15 +18,14 @@
 #define STRLEN_MAX	64
 #define SYSCMD_MAX	1024
 
-#define APPDIR		"/home/root/.sc_app"
-#define LOCKFILE	APPDIR"/lock"
-#define CONFIGFILE	APPDIR"/config"
-#define BOOTMODEFILE	APPDIR"/boot_mode"
-#define SILICONFILE	APPDIR"/silicon"
-#define CLOCKFILE	APPDIR"/clock"
-#define VOLTAGEFILE	APPDIR"/voltage"
-#define IDT8A34001FILE	APPDIR"/8A34001"
-#define BOARDFILE	APPDIR"/board"
+#define LOCKFILE	Appfile("lock")
+#define CONFIGFILE	Appfile("config")
+#define BOOTMODEFILE	Appfile("boot_mode")
+#define SILICONFILE	Appfile("silicon")
+#define CLOCKFILE	Appfile("clock")
+#define VOLTAGEFILE	Appfile("voltage")
+#define IDT8A34001FILE	Appfile("8A34001")
+#define BOARDFILE	Appfile("board")
 
 /*
  * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code

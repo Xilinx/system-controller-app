@@ -24,6 +24,7 @@ int VCK190_JTAG_Op(int);
 int VCK190_XSDB_Op(const char *, char *, int);
 int VCK190_IDT_8A34001_Reset(void);
 int Workaround_Vccaux(void *Arg);
+extern char *Appfile(char *);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int FMC_Vadj_Range(FMC_t *, float *, float *);

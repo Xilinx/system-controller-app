@@ -13,6 +13,7 @@
 #include <time.h>
 #include <math.h>
 #include <gpiod.h>
+#include <sys/stat.h>
 #include "sc_app.h"
 
 extern Plat_Devs_t VCK190_Devs;
@@ -53,6 +54,25 @@ Boards_t Boards = {
 		.Ops = &VPK120_Ops,
 	},
 };
+
+char SC_APP_File[SYSCMD_MAX];
+
+char *
+Appfile(char *Filename)
+{
+	char Buffer[STRLEN_MAX];
+
+	(void) sprintf(Buffer, "%s/.sc_app", getenv("HOME"));
+	if (access(Buffer, F_OK) == -1) {
+		if (mkdir(Buffer, 0755) == -1) {
+			SC_ERR("mkdir %s failed: %m", Buffer);
+			return NULL;
+		}
+	}
+
+	(void) sprintf(SC_APP_File, "%s/%s", Buffer, Filename);
+	return SC_APP_File;
+}
 
 static int
 Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)

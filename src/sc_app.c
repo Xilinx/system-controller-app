@@ -68,6 +68,7 @@ int SFP_Ops(void);
 int QSFP_Ops(void);
 int EBM_Ops(void);
 int FMC_Ops(void);
+extern char *Appfile(char *);
 extern int Board_Identification(char *);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);

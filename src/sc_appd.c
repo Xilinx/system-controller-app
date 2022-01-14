@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <time.h>
 #include <gpiod.h>
-#include <sys/stat.h>
 #include "sc_app.h"
 
 #define GPIOLINE	"ZU4_TRIGGER"
@@ -21,6 +20,7 @@ extern Plat_Devs_t *Plat_Devs;
 extern Plat_Ops_t *Plat_Ops;
 
 int (*Workaround_Op)(void *);
+extern char *Appfile(char *);
 extern int Board_Identification(char *);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Set_IDT_8A34001(Clock_t *, char *, int);
@@ -460,14 +460,6 @@ main()
 
 	SC_OPENLOG("sc_appd");
 	SC_INFO(">>> Begin");
-
-	/* If '.sc_app' directory doesn't exist, create it */
-	if (access(APPDIR, F_OK) == -1) {
-		if (mkdir(APPDIR, 0755) == -1) {
-			SC_ERR("mkdir %s failed: %m", APPDIR);
-			goto Out;
-		}
-	}
 
 	/* Identify the board */
 	if (Board_Identification(Board_Name) != 0) {

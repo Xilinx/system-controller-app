@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
+# Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -11,7 +11,7 @@ DEPS		= $(APP).h
 BOARD_OBJS	= sc_vck190.o sc_vpk120.o
 BIT_OBJS	= sc_BIT.o
 COMMON_OBJS	= sc_common.o sc_parse.o
-APP_OBJS	= $(APP).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
+APP_OBJS	= $(APP).o
 APPD_OBJS	= $(APPD).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
 
 CFLAGS		= -I../src -Wall

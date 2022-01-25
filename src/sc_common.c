@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -62,7 +62,7 @@ Appfile(char *Filename)
 {
 	char Buffer[STRLEN_MAX];
 
-	(void) sprintf(Buffer, "%s/.sc_app", getenv("HOME"));
+	(void) sprintf(Buffer, "%s/.sc_app", INSTALLDIR);
 	if (access(Buffer, F_OK) == -1) {
 		if (mkdir(Buffer, 0755) == -1) {
 			SC_ERR("mkdir %s failed: %m", Buffer);
@@ -365,7 +365,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		*Voltage = Mantissa * pow(2, Exponent);
 		SC_INFO("Overvoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)",
 		       *Voltage, PMBUS_VOUT_OV_FAULT_LIMIT, Mantissa);
-		printf("Overvoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)\n",
+		SC_PRINT("Overvoltage Fault Limit(V):\t%.2f\t(Reg 0x%x:\t0x%x)",
 		       *Voltage, PMBUS_VOUT_OV_FAULT_LIMIT, Mantissa);
 
 		/* Get Overvoltage Warning Limit */
@@ -645,7 +645,7 @@ int
 EEPROM_Board(char *Buffer, int PCIe)
 {
 	char Buf[STRLEN_MAX];
-	static struct tm BuildDate;
+	struct tm BuildDate = { 0 };
 	time_t Time;
 	int Offset, Length;
 
@@ -664,8 +664,7 @@ EEPROM_Board(char *Buffer, int PCIe)
 		return -1;
 	}
 
-	SC_INFO("0x0B - Manufacturing Date:\t%s", ctime(&Time));
-	printf("0x0B - Manufacturing Date:\t%s", ctime(&Time));
+	SC_PRINT_N("0x0B - Manufacturing Date:\t%s", ctime(&Time));
 	Offset = 0xE;
 	Length = (Buffer[Offset] & 0x3F);
 	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
@@ -706,27 +705,23 @@ EEPROM_Board(char *Buffer, int PCIe)
 	Offset = Offset + Length + 1;
 	if (PCIe == 1) {
 		Length = (Buffer[Offset] & 0x3F);
-		SC_INFO("0x%.2x - PCIe Info:\t", (Offset + 1));
-		printf("0x%.2x - PCIe Info:\t", (Offset + 1));
+		SC_PRINT_N("0x%.2x - PCIe Info:\t", (Offset + 1));
 		for (int i = 0; i < Length; i++) {
-			SC_INFO("%.2x", Buffer[Offset + i + 1]);
-			printf("%.2x", Buffer[Offset + i + 1]);
+			SC_PRINT_N("%.2x", Buffer[Offset + i + 1]);
 		}
 
-		printf("\n");
+		SC_PRINT_N("\n");
 		Offset = Offset + Length + 1;
 		Length = (Buffer[Offset] & 0x3F);
-		SC_INFO("0x%.2x - UUID:\t", (Offset + 1));
-		printf("0x%.2x - UUID:\t", (Offset + 1));
+		SC_PRINT_N("0x%.2x - UUID:\t", (Offset + 1));
 		for (int i = 0; i < Length; i++) {
-			SC_INFO("%.2x", Buffer[Offset + i + 1]);
-			printf("%.2x", Buffer[Offset + i + 1]);
+			SC_PRINT_N("%.2x", Buffer[Offset + i + 1]);
 			if (i == 3 || i == 5 || i == 7 || i == 9) {
-				printf("-");
+				SC_PRINT_N("-");
 			}
 		}
 
-		printf("\n");
+		SC_PRINT_N("\n");
 		Offset = Offset + Length + 1;
 		SC_PRINT("0x%.2x - EoR and Check sum:\t%.2x %.2x", Offset,
 		       Buffer[Offset], Buffer[Offset + 1]);

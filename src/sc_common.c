@@ -123,46 +123,28 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 int
 Board_Identification(char *Board_Name)
 {
-	FILE *FP;
 	Board_t *Board;
 	char Buffer[SYSCMD_MAX] = { 0 };
-	char System_Cmd[2 * SYSCMD_MAX];
 	int Ret;
 
-	if (access(BOARDFILE, F_OK) != 0) {
-		for (int i = 0; i < Boards.Numbers; i++) {
-			Board = &Boards.Board_Info[i];
-			if (Board->Devs->OnBoard_EEPROM == NULL) {
-				SC_ERR("eeprom info is not available for %s",
-				       Board->Name);
-				return -1;
-			}
-
-			Ret = Get_Product_Name(Board->Devs->OnBoard_EEPROM, Buffer);
-			if (Ret == 0) {
-				break;
-			}
-		}
-
-		if (Ret != 0) {
-			SC_ERR("failed to identify the board");
+	for (int i = 0; i < Boards.Numbers; i++) {
+		Board = &Boards.Board_Info[i];
+		if (Board->Devs->OnBoard_EEPROM == NULL) {
+			SC_ERR("eeprom info is not available for %s",
+			       Board->Name);
 			return -1;
 		}
 
-		(void) sprintf(System_Cmd, "echo %s > %s; sync", Buffer, BOARDFILE);
-		SC_INFO("Command: %s", System_Cmd);
-		system(System_Cmd);
+		Ret = Get_Product_Name(Board->Devs->OnBoard_EEPROM, Buffer);
+		if (Ret == 0) {
+			break;
+		}
 	}
 
-	FP = fopen(BOARDFILE, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to read file %s: %m", BOARDFILE);
+	if (Ret != 0) {
+		SC_ERR("failed to identify the board");
 		return -1;
 	}
-
-	(void) fgets(System_Cmd, SYSCMD_MAX, FP);
-	(void) fclose(FP);
-	(void) strcpy(Buffer, strtok(System_Cmd, "\n"));
 
 	for (int i = 0; i < Boards.Numbers; i++) {
 		Board = &Boards.Board_Info[i];
@@ -171,7 +153,8 @@ Board_Identification(char *Board_Name)
 			Plat_Devs = (Plat_Devs_t *)malloc(sizeof(Plat_Devs_t));
 			Plat_Devs->OnBoard_EEPROM = Board->Devs->OnBoard_EEPROM;
 			if (Parse_JSON(Board->Name, Plat_Devs) != 0) {
-				SC_ERR("Parsing JSON file failed.");
+				SC_ERR("parsing JSON file for board %s failed",
+				       Board->Name);
 				return -1;
 			}
 
@@ -181,7 +164,7 @@ Board_Identification(char *Board_Name)
 	}
 
 	if (Plat_Devs == NULL || Plat_Ops == NULL) {
-		SC_ERR("Unsupported board");
+		SC_ERR("board is not supported");
 		return -1;
 	}
 

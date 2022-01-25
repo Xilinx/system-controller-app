@@ -36,9 +36,10 @@
  * 1.13 - Add 'list' command for features that didn't have that option.
  * 1.14 - Add 'listfeature' command to print supported features of the board.
  * 1.15 - Add support for INA226 custom calibration.
+ * 1.16 - Add 'board' command to return name of the board.
  */
 #define MAJOR	1
-#define MINOR	15
+#define MINOR	16
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -53,6 +54,7 @@ extern Plat_Ops_t *Plat_Ops;
 
 int Parse_Options(int, char **);
 int Version_Ops(void);
+int Board_Ops(void);
 int BootMode_Ops(void);
 int Reset_Ops(void);
 int Feature_Ops(void);
@@ -94,6 +96,7 @@ static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
 	version - version and compatibility information\n\
+	board - name of the board\n\
 	reset - apply power-on-reset\n\
 \n\
 	listfeature - list the supported features for this board\n\
@@ -167,6 +170,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 
 typedef enum {
 	VERSION,
+	BOARD,
 	RESET,
 	LISTFEATURE,
 	LISTEEPROM,
@@ -224,6 +228,7 @@ typedef struct {
 
 static Command_t Commands[] = {
 	{ .CmdId = VERSION, .CmdStr = "version", .CmdOps = Version_Ops, },
+	{ .CmdId = BOARD, .CmdStr = "board", .CmdOps = Board_Ops, },
 	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Ops, },
 	{ .CmdId = LISTFEATURE, .CmdStr = "listfeature", .CmdOps = Feature_Ops, },
 	{ .CmdId = LISTEEPROM, .CmdStr = "listeeprom", .CmdOps = EEPROM_Ops, },
@@ -527,6 +532,19 @@ Version_Ops(void)
 	SC_PRINT("BSP:\t\t%s (%sCompatible)", BSP_Version,
 	    (BSP_Compatible) ? "" : "Not ");
 
+	return 0;
+}
+
+int
+Board_Ops(void)
+{
+	if (Board_Name == NULL) {
+		if (Board_Identification(Board_Name) != 0) {
+			return -1;
+		}
+	}
+
+	SC_PRINT("%s", Board_Name);
 	return 0;
 }
 
@@ -3238,28 +3256,12 @@ Vccaux_Workaround(void)
 int
 Apply_Workarounds(void)
 {
-	FILE *FP;
-	char Buffer[SYSCMD_MAX] = { 0 };
-
-	if (access(BOARDFILE, F_OK) != 0) {
-		SC_ERR("failed to access board file");
-		return -1;
-	}
-
-	FP = fopen(BOARDFILE, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to read file %s: %m", BOARDFILE);
-		return -1;
-	}
-
-	(void) fgets(Buffer, SYSCMD_MAX, FP);
-	(void) fclose(FP);
-
 	/*
 	 * Current workarounds:
 	 *	vccaux: VCK190/VMK180 boards with ES1 part
 	 */
-	if ((strcmp(Buffer, "VCK190\n") == 0) || (strcmp(Buffer, "VMK180\n") == 0)) {
+	if ((strcmp(Board_Name, "VCK190\n") == 0) ||
+	    (strcmp(Board_Name, "VMK180\n") == 0)) {
 		if (Vccaux_Workaround() != 0) {
 			SC_ERR("failed to determine the need for vccaux workaround");
 			return -1;

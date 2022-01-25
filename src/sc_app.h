@@ -29,7 +29,6 @@
 #define CLOCKFILE	Appfile("clock")
 #define VOLTAGEFILE	Appfile("voltage")
 #define IDT8A34001FILE	Appfile("8A34001")
-#define BOARDFILE	Appfile("board")
 
 /*
  * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code

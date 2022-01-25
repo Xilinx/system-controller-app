@@ -6,6 +6,7 @@
 
 	<command> - 
 		version - version and compatibility information
+		board - name of the board
 		reset - apply power-on-reset
 
 		listfeature - list the supported features for this board

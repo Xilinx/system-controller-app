@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,6 +9,8 @@
 
 #include <syslog.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
@@ -17,8 +19,10 @@
 #define LITEMS_MAX	128
 #define STRLEN_MAX	64
 #define SYSCMD_MAX	1024
+#define SOCKBUF_MAX	(4 * SYSCMD_MAX)
 
-#define LOCKFILE	Appfile("lock")
+#define INSTALLDIR	"/usr/share/system-controller-app"
+#define SOCKFILE	Appfile("socket")
 #define CONFIGFILE	Appfile("config")
 #define BOOTMODEFILE	Appfile("boot_mode")
 #define SILICONFILE	Appfile("silicon")
@@ -38,12 +42,37 @@
 #define SC_OPENLOG(ident) openlog(ident, LOG_PID, LOG_LOCAL3)
 #define SC_INFO(msg, ...) syslog(LOG_INFO, msg, ##__VA_ARGS__)
 #define SC_ERR(msg, ...) do { \
+		extern int Client_FD; \
+		extern char Sock_OutBuffer[]; \
 		syslog(LOG_ERR, msg, ##__VA_ARGS__); \
-		fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
+		if (0 == Client_FD) { \
+			fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
+		} else { \
+			sprintf(Sock_OutBuffer, "ERROR: " msg "\n", ##__VA_ARGS__); \
+			send(Client_FD, Sock_OutBuffer, strlen(Sock_OutBuffer), MSG_NOSIGNAL); \
+		} \
 	} while (0)
 #define SC_PRINT(msg, ...) do { \
+		extern int Client_FD; \
+		extern char Sock_OutBuffer[]; \
 		syslog(LOG_INFO, msg, ##__VA_ARGS__); \
-		fprintf(stdout, msg "\n", ##__VA_ARGS__); \
+		if (0 == Client_FD) { \
+			fprintf(stdout, msg "\n", ##__VA_ARGS__); \
+		} else { \
+			sprintf(Sock_OutBuffer, msg "\n", ##__VA_ARGS__); \
+			send(Client_FD, Sock_OutBuffer, strlen(Sock_OutBuffer), MSG_NOSIGNAL); \
+		} \
+	} while (0)
+#define SC_PRINT_N(msg, ...) do { \
+		extern int Client_FD; \
+		extern char Sock_OutBuffer[]; \
+		syslog(LOG_INFO, msg, ##__VA_ARGS__); \
+		if (0 == Client_FD) { \
+			fprintf(stdout, msg, ##__VA_ARGS__); \
+		} else { \
+			sprintf(Sock_OutBuffer, msg, ##__VA_ARGS__); \
+			send(Client_FD, Sock_OutBuffer, strlen(Sock_OutBuffer), MSG_NOSIGNAL); \
+		} \
 	} while (0)
 
 /*
@@ -400,8 +429,8 @@ typedef struct {
 			 export TCLLIBPATH=/usr/local/xilinx_vitis; \
 			 export TCL_LIBRARY=/usr/local/lib/tcl8.5"
 #define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
-#define BIT_PATH	"/usr/share/system-controller-app/BIT/"
-#define BOARD_PATH  "/usr/share/system-controller-app/board/"
+#define BIT_PATH	INSTALLDIR"/BIT/"
+#define BOARD_PATH	INSTALLDIR"/board/"
 
 #define IDCODE_TCL	"idcode/idcode_check.tcl"
 

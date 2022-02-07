@@ -726,7 +726,7 @@
 			"WORKAROUND_VCCAUX" : {
 				"Name" : "vccaux",
 				"Arg_Needed" : 1,
-				"Plat_Workaround_Op" : "Workaround_Vccaux"
+				"Plat_Workaround_Op" : "VCK190_ES1_Vccaux_Workaround"
 			}
 		},
 		"BITs" : {

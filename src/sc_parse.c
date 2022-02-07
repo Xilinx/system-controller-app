@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,7 +15,7 @@
 extern IDT_8A34001_Data_t VPK120_IDT_8A34001_Data;
 extern IDT_8A34001_Data_t VCK190_IDT_8A34001_Data;
 
-extern int Workaround_Vccaux(void *Arg);
+extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int Clocks_Check(void *, void *);
 extern int XSDB_BIT(void *, void *);
 extern int EBM_EEPROM_Check(void *, void *);
@@ -764,8 +764,9 @@ Parse_Workaround(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		*Index += 2;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 		                    Tokens[*Index].end - Tokens[*Index].start);
-		if (strcmp(Value_Str, "Workaround_Vccaux") == 0) {
-			(*WAs)->Workaround[Item].Plat_Workaround_Op = Workaround_Vccaux;
+		if (strcmp(Value_Str, "VCK190_ES1_Vccaux_Workaround") == 0) {
+			(*WAs)->Workaround[Item].Plat_Workaround_Op =
+				VCK190_ES1_Vccaux_Workaround;
 			SC_INFO("Plat_Workaround_Op: %s", Value_Str);
 		}
 

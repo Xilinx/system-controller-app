@@ -8,11 +8,10 @@ APP		= sc_app
 APPD		= sc_appd
 DEPS		= $(APP).h
 
-BOARD_OBJS	= sc_vck190.o sc_vpk120.o
 BIT_OBJS	= sc_BIT.o
-COMMON_OBJS	= sc_common.o sc_parse.o
+OTHER_OBJS	= sc_common.o sc_parse.o sc_board.o
 APP_OBJS	= $(APP).o
-APPD_OBJS	= $(APPD).o $(COMMON_OBJS) $(BOARD_OBJS) $(BIT_OBJS)
+APPD_OBJS	= $(APPD).o $(OTHER_OBJS) $(BIT_OBJS)
 
 CFLAGS		= -I../src -Wall
 LDFLAGS 	?= -L../src
@@ -24,7 +23,7 @@ all: $(APP) $(APPD)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(APP): $(APP_OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm -lgpiod
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 $(APPD): $(APPD_OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) -lm -lrt -lgpiod

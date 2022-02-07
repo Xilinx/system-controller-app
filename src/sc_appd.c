@@ -50,13 +50,11 @@ int Client_FD;
 char Sock_OutBuffer[SOCKBUF_MAX];
 char Board_Name[STRLEN_MAX];
 extern Plat_Devs_t *Plat_Devs;
-extern Plat_Ops_t *Plat_Ops;
 
 int Parse_Options(int, char **);
 int Version_Ops(void);
 int Board_Ops(void);
 int BootMode_Ops(void);
-int Reset_Ops(void);
 int Feature_Ops(void);
 int EEPROM_Ops(void);
 int Temperature_Ops(void);
@@ -82,15 +80,21 @@ int Apply_Workarounds(void);
 static void String_2_Argv(char *, int *, char **);
 extern char *Appfile(char *);
 extern int Board_Identification(char *);
+extern int Reset_Op(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int GPIO_Get(char *, int *);
 extern int EEPROM_Common(char *);
 extern int EEPROM_Board(char *, int);
 extern int EEPROM_MultiRecord(char *);
+extern int Get_IDCODE(char *, int);
+extern int Get_Temperature(void);
+extern int Set_BootMode(BootMode_t *);
 extern int Get_IDT_8A34001(Clock_t *);
 extern int Set_IDT_8A34001(Clock_t *, char *, int);
 extern int Restore_IDT_8A34001(Clock_t *);
+extern int QSFP_ModuleSelect(QSFP_t *, int);
+extern int FMCAutoVadj_Op(void);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -229,7 +233,7 @@ typedef struct {
 static Command_t Commands[] = {
 	{ .CmdId = VERSION, .CmdStr = "version", .CmdOps = Version_Ops, },
 	{ .CmdId = BOARD, .CmdStr = "board", .CmdOps = Board_Ops, },
-	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Ops, },
+	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Op, },
 	{ .CmdId = LISTFEATURE, .CmdStr = "listfeature", .CmdOps = Feature_Ops, },
 	{ .CmdId = LISTEEPROM, .CmdStr = "listeeprom", .CmdOps = EEPROM_Ops, },
 	{ .CmdId = GETEEPROM, .CmdStr = "geteeprom", .CmdOps = EEPROM_Ops, },
@@ -485,22 +489,13 @@ Parse_Options(int argc, char **argv)
 int
 Version_Ops(void)
 {
-	int Major = -1;
-	int Minor = -1;
+	int Major = MAJOR;
+	int Minor = MINOR;
 	struct utsname UTS;
 	char BSP_Version[STRLEN_MAX];
 	int Linux_Compatible = 1;
 	int BSP_Compatible = 1;
 	char *CP;
-
-	if (Plat_Ops->Version_Op != NULL) {
-		(void) Plat_Ops->Version_Op(&Major, &Minor);
-	}
-
-	if (Major == -1 && Minor == -1) {
-		Major = MAJOR;
-		Minor = MINOR;
-	}
 
 	SC_PRINT("Version:\t%d.%d", Major, Minor);
 
@@ -559,7 +554,7 @@ BootMode_Ops(void)
 	BootMode_t *BootMode;
 
 	BootModes = Plat_Devs->BootModes;
-	if ((BootModes == NULL) || (Plat_Ops->BootMode_Op == NULL)) {
+	if (BootModes == NULL) {
 		SC_ERR("bootmode operation is not supported");
 		return -1;
 	}
@@ -594,24 +589,13 @@ BootMode_Ops(void)
 
 	switch (Command.CmdId) {
 	case SETBOOTMODE:
-		return Plat_Ops->BootMode_Op(BootMode, 1);
+		return Set_BootMode(BootMode);
 	default:
 		SC_ERR("invalid bootmode command");
 		break;
 	}
 
 	return 0;
-}
-
-int
-Reset_Ops(void)
-{
-	if (Plat_Ops->Reset_Op == NULL) {
-		SC_ERR("reset operation is not supported");
-		return -1;
-	}
-
-	return Plat_Ops->Reset_Op();
 }
 
 int
@@ -746,12 +730,7 @@ EEPROM_Ops(void)
 	switch (Target) {
 	case EEPROM_SUMMARY:
 		SC_PRINT("Language: %d", In_Buffer[0xA]);
-		if (Plat_Ops->IDCODE_Op == NULL) {
-			SC_ERR("eeprom operation is not supported");
-			return -1;
-		}
-
-		if (Plat_Ops->IDCODE_Op(Buffer, STRLEN_MAX) != 0) {
+		if (Get_IDCODE(Buffer, STRLEN_MAX) != 0) {
 			SC_ERR("failed to get silicon revision");
 			return -1;
 		}
@@ -824,11 +803,6 @@ EEPROM_Ops(void)
 int
 Temperature_Ops(void)
 {
-	if (Plat_Ops->Temperature_Op == NULL) {
-		SC_ERR("temperature operation is not supported");
-		return -1;
-	}
-
 	if (Command.CmdId == LISTTEMP) {
 		SC_PRINT("Versal");
 		return 0;
@@ -845,7 +819,7 @@ Temperature_Ops(void)
 		return -1;
 	}
 
-	return Plat_Ops->Temperature_Op();
+	return Get_Temperature();
 }
 
 /*
@@ -2506,7 +2480,7 @@ int QSFP_List(void)
 
 	for (int i = 0; i < QSFPs->Numbers; i++) {
 		QSFP = &QSFPs->QSFP[i];
-		if (Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 1) != 0) {
+		if (QSFP_ModuleSelect(QSFP, 1) != 0) {
 			return -1;
 		}
 
@@ -2537,7 +2511,7 @@ int QSFP_List(void)
 		SC_PRINT("%s", QSFP->Name);
 	}
 Out:
-	(void) Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 0);
+	(void) QSFP_ModuleSelect(QSFP, 0);
 	(void) close(FD);
 	return Ret;
 }
@@ -2585,7 +2559,7 @@ int QSFP_Ops(void)
 		return -1;
 	}
 
-	if (Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 1) != 0) {
+	if (QSFP_ModuleSelect(QSFP, 1) != 0) {
 		return -1;
 	}
 
@@ -2769,7 +2743,7 @@ int QSFP_Ops(void)
 	}
 
 Out:
-	(void) Plat_Ops->QSFP_ModuleSelect_Op(QSFP, 0);
+	(void) QSFP_ModuleSelect(QSFP, 0);
 	(void) close(FD);
 	return Ret;
 }
@@ -3449,12 +3423,7 @@ FMC_Autodetect_Vadj()
 	}
 
 	if (Autodetect == 1) {
-		if (Plat_Ops->FMCAutoVadj_Op == NULL) {
-			SC_ERR("FMC autodetect vadj operation is not supported");
-			return -1;
-		}
-
-		if (Plat_Ops->FMCAutoVadj_Op() != 0) {
+		if (FMCAutoVadj_Op() != 0) {
 			SC_ERR("failed to autodetect FMC vadj");
 			return -1;
 		}

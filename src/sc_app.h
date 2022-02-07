@@ -353,26 +353,11 @@ typedef struct {
 } Plat_Devs_t;
 
 /*
- * Board-specific Operations
- */
-typedef struct {
-	void (*Version_Op)(int *, int *);
-	int (*BootMode_Op)(BootMode_t *, int);
-	int (*Reset_Op)(void);
-	int (*IDCODE_Op)(char *, int);
-	int (*XSDB_Op)(const char *, char *, int);
-	int (*Temperature_Op)(void);
-	int (*QSFP_ModuleSelect_Op)(QSFP_t *, int);
-	int (*FMCAutoVadj_Op)(void);
-} Plat_Ops_t;
-
-/*
  * Board Info
  */
 typedef struct {
 	char Name[STRLEN_MAX];
 	Plat_Devs_t *Devs;
-	Plat_Ops_t *Ops;
 } Board_t;
 
 typedef struct {

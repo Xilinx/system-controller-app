@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,9 +12,10 @@
 #include "sc_app.h"
 
 extern Plat_Devs_t *Plat_Devs;
-extern Plat_Ops_t *Plat_Ops;
 
 extern int Access_Regulator(Voltage_t *, float *, int);
+extern int Reset_Op(void);
+extern int XSDB_Op(const char *, char *, int);
 
 /*
  * This test validates whether the current clock frequency is
@@ -80,11 +81,6 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	char Output[STRLEN_MAX] = { 0 };
 	int Ret;
 
-	if (Plat_Ops->XSDB_Op == NULL) {
-		SC_ERR("xsdb operation is not supported");
-		return -1;
-	}
-
 	if (Level > BIT_p->Levels) {
 		SC_ERR("Invalid level invocation");
 		return -1;
@@ -94,7 +90,7 @@ XSDB_BIT(void *Arg1, void *Arg2)
 		SC_PRINT("%s", BIT_p->Level[Level].Instruction);
 	}
 
-	Ret = Plat_Ops->XSDB_Op(BIT_p->Level[Level].TCL_File, Output, STRLEN_MAX);
+	Ret = XSDB_Op(BIT_p->Level[Level].TCL_File, Output, STRLEN_MAX);
 	if (Ret != 0) {
 		SC_ERR("failed the xsdb operation");
 		if (!BIT_p->Manual) {
@@ -282,11 +278,6 @@ Assert_Reset(void *Arg1, void *Arg2)
 	int Level  = *(int *)Arg2;
 	int Ret = 0;
 
-	if (Plat_Ops->Reset_Op == NULL) {
-		SC_ERR("reset operation is not supported");
-		return -1;
-	}
-
 	if (Level > BIT_p->Levels) {
 		SC_ERR("Invalid level invocation");
 		return -1;
@@ -296,7 +287,7 @@ Assert_Reset(void *Arg1, void *Arg2)
 		SC_PRINT("%s", BIT_p->Level[Level].Instruction);
 	}
 
-	Ret = Plat_Ops->Reset_Op();
+	Ret = Reset_Op();
 	if (Ret != 0) {
 		SC_ERR("failed the reset operation");
 		if (!BIT_p->Manual) {

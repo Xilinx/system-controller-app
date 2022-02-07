@@ -16,46 +16,16 @@
 #include <sys/stat.h>
 #include "sc_app.h"
 
-extern Plat_Devs_t VCK190_Devs;
-extern Plat_Ops_t VCK190_Ops;
-extern Plat_Devs_t VPK120_Devs;
-extern Plat_Ops_t VPK120_Ops;
-
-extern int Parse_JSON(const char *, Plat_Devs_t *);
-
 Plat_Devs_t *Plat_Devs;
-Plat_Ops_t *Plat_Ops;
-
-/*
- * Supported Boards
- */
-typedef enum {
-	BOARD_VCK190,
-	BOARD_VMK180,
-	BOARD_VPK120,
-	BOARD_MAX,
-} Board_Index;
-
-Boards_t Boards = {
-	.Numbers = BOARD_MAX,
-	.Board_Info[BOARD_VCK190] = {
-		.Name = "VCK190",
-		.Devs = &VCK190_Devs,
-		.Ops = &VCK190_Ops,
-	},
-	.Board_Info[BOARD_VMK180] = {
-		.Name = "VMK180",
-		.Devs = &VCK190_Devs,
-		.Ops = &VCK190_Ops,
-	},
-	.Board_Info[BOARD_VPK120] = {
-		.Name = "VPK120",
-		.Devs = &VPK120_Devs,
-		.Ops = &VPK120_Ops,
-	},
-};
 
 char SC_APP_File[SYSCMD_MAX];
+extern char Board_Name[];
+extern Boards_t Boards;
+
+extern int Parse_JSON(const char *, Plat_Devs_t *);
+extern int VCK190_ES1_Vccaux_Workaround(void *);
+extern int VCK190_SetBootMode(int);
+extern int VCK190_QSFP_ModuleSelect(QSFP_t *, int);
 
 char *
 Appfile(char *Filename)
@@ -158,12 +128,11 @@ Board_Identification(char *Board_Name)
 				return -1;
 			}
 
-			Plat_Ops = Board->Ops;
 			break;
 		}
 	}
 
-	if (Plat_Devs == NULL || Plat_Ops == NULL) {
+	if (Plat_Devs == NULL) {
 		SC_ERR("board is not supported");
 		return -1;
 	}
@@ -536,6 +505,111 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 
 	SC_INFO("Min Voltage: %.2f, Max Voltage: %.2f", *Min_Voltage,
 		*Max_Voltage);
+
+	return 0;
+}
+
+int
+FMCAutoVadj_Op(void)
+{
+	int Target_Index = -1;
+	IO_Exp_t *IO_Exp;
+	unsigned int Value;
+	Voltages_t *Voltages;
+	Voltage_t *Regulator;
+	FMCs_t *FMCs;
+	FMC_t *FMC;
+	int Present[2] = { 0 };
+	float Voltage = 0;
+	float Min_Voltage[2] = { 0 };
+	float Max_Voltage[2] = { 0 };
+	float Min_Combined, Max_Combined;
+
+	IO_Exp = Plat_Devs->IO_Exp;
+	if (Access_IO_Exp(IO_Exp, 0, 0x0, &Value) != 0) {
+		SC_ERR("failed to read input of IO Expander");
+		return -1;
+	}
+
+	SC_INFO("IO Expander input: %#x", Value);
+
+	/*
+	 * Current boards support up to 2 FMC modules.  Their presence are
+	 * detected by input lines connected to pins 13 & 14 of TCA6416A.
+	 * If direction of these pins (Directions index 15 & 14) are configured
+	 * as input and they are driven low (reading value 0), then the FMC
+	 * module is present.
+	 */
+	if ((IO_Exp->Directions[15] == 1) && ((~Value & 0x1) == 0x1)) {
+		SC_INFO("FMC 0 is detected");
+		Present[0] = 1;
+	}
+
+	if ((IO_Exp->Directions[14] == 1) && ((~Value & 0x2) == 0x2)) {
+		SC_INFO("FMC 1 is detected");
+		Present[1] = 1;
+	}
+
+	Voltages  = Plat_Devs->Voltages;
+	for (int i = 0; i < Voltages->Numbers; i++) {
+		if (strcmp("VADJ_FMC", (char *)Voltages->Voltage[i].Name) == 0) {
+			Target_Index = i;
+			Regulator = &Voltages->Voltage[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		SC_ERR("no regulator exists for VADJ_FMC");
+		return -1;
+	}
+
+	FMCs = Plat_Devs->FMCs;
+	for (int i = 0; i < FMCs->Numbers; i++) {
+		if (Present[i] == 1) {
+			FMC = &FMCs->FMC[i];
+			if (FMC_Vadj_Range(FMC, &Min_Voltage[i],
+					   &Max_Voltage[i]) != 0) {
+				SC_ERR("failed to get Voltage Adjust range for "
+				       "FMC %d", i);
+				return -1;
+			}
+		}
+	}
+
+	if (Present[0] == 1 && Present[1] == 0) {
+		Min_Combined = Min_Voltage[0];
+		Max_Combined = Max_Voltage[0];
+	} else if (Present[0] == 0 && Present[1] == 1) {
+		Min_Combined = Min_Voltage[1];
+		Max_Combined = Max_Voltage[1];
+	} else if (Present[0] == 1 && Present[1] == 1) {
+		Min_Combined = MAX(Min_Voltage[0], Min_Voltage[0]);
+		Max_Combined = MIN(Max_Voltage[1], Max_Voltage[1]);
+	} else {
+		Min_Combined = 0;
+		Max_Combined = 1.5;
+	}
+
+	SC_INFO("Combined Min: %.2f, Combined Max: %.2f",
+		Min_Combined, Max_Combined);
+
+	/*
+	 * Start with satisfying the lower target voltage and then see
+	 * if it does also satisfy the higher voltage.
+	 */
+	if (Min_Combined <= 1.2 && Max_Combined >= 1.2) {
+		Voltage = 1.2;
+	}
+
+	if (Min_Combined <= 1.5 && Max_Combined >= 1.5) {
+		Voltage = 1.5;
+	}
+
+	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
+		SC_ERR("failed to set voltage of VADJ_FMC regulator");
+		return -1;
+	}
 
 	return 0;
 }
@@ -1215,6 +1289,292 @@ Restore_IDT_8A34001(Clock_t *Clock)
 		       Clock->Name, CLOCKFILE);
 	SC_INFO("Command: %s", Buffer);
 	system(Buffer);
+
+	return 0;
+}
+
+int
+Reset_IDT_8A34001(void)
+{
+	IO_Exp_t *IO_Exp;
+	unsigned int Value;
+
+	IO_Exp = Plat_Devs->IO_Exp;
+
+	/*
+	 * The '8A34001_EXP_RST_B' line is controlled by bit 5 of register
+	 * offset 3.  The output register pair (offsets 2 & 3) are written
+	 * at once.
+	 */
+	Value = 0x0;    // Assert reset - active low
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to assert reset of 8A34001 chip");
+		return -1;
+	}
+
+	sleep (1);
+
+	Value = 0x20;   // De-assert reset
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to de-assert reset of 8A34001 chip");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+Reset_Op(void)
+{
+	FILE *FP;
+	int State;
+	char Buffer[SYSCMD_MAX] = { 0 };
+	BootModes_t *BootModes;
+	BootMode_t *BootMode;
+
+	if (access(SILICONFILE, F_OK) == 0) {
+		FP = fopen(SILICONFILE, "r");
+		if (FP == NULL) {
+			SC_ERR("failed to read silicon file %s: %m", SILICONFILE);
+			return -1;
+		}
+
+		(void) fgets(Buffer, SYSCMD_MAX, FP);
+		(void) fclose(FP);
+		SC_INFO("%s: %s", SILICONFILE, Buffer);
+		if (strcmp(Buffer, "ES1\n") == 0) {
+			// Turn VCCINT_RAM off
+			State = 0;
+			if (VCK190_ES1_Vccaux_Workaround(&State) != 0) {
+				SC_ERR("failed to turn VCCINT_RAM off");
+				return -1;
+			}
+		}
+	}
+
+	/* Assert POR */
+	if (GPIO_Set("SYSCTLR_POR_B_LS", 0) != 0) {
+		SC_ERR("failed to assert power-on-reset");
+		return -1;
+	}
+
+	sleep(1);
+
+	/* De-assert POR */
+	if (GPIO_Set("SYSCTLR_POR_B_LS", 1) != 0) {
+		SC_ERR("failed to de-assert power-on-reset");
+		return -1;
+	}
+
+	/* If a boot mode is defined, set it after POR */
+	if (access(BOOTMODEFILE, F_OK) == 0) {
+		FP = fopen(BOOTMODEFILE, "r");
+		if (FP == NULL) {
+			SC_ERR("failed to read boot_mode file %s: %m", BOOTMODEFILE);
+			return -1;
+		}
+
+		(void) fscanf(FP, "%s", Buffer);
+		(void) fclose(FP);
+		SC_INFO("%s: %s", BOOTMODEFILE, Buffer);
+		BootModes = Plat_Devs->BootModes;
+		for (int i = 0; i < BootModes->Numbers; i++) {
+			BootMode = &BootModes->BootMode[i];
+			if (strcmp(Buffer, (char *)BootMode->Name) == 0) {
+				if (VCK190_SetBootMode(BootMode->Value) != 0) {
+					SC_ERR("failed to set the boot mode");
+					return -1;
+				}
+
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int
+JTAG_Op(int Select)
+{
+	int State;
+
+	switch (Select) {
+	case 1:
+		/* Overwrite the default JTAG switch */
+		if (GPIO_Set("SYSCTLR_JTAG_S0", 0) != 0) {
+			SC_ERR("failed to set JTAG 0");
+			return -1;
+		}
+
+		if (GPIO_Set("SYSCTLR_JTAG_S1", 0) != 0) {
+			SC_ERR("failed to set JTAG 1");
+			return -1;
+		}
+
+		break;
+	case 0:
+		/*
+		 * Reading the gpio lines causes ZU4 to tri-state the select
+		 * lines and that allows the switch to set back the default
+		 * values.  The value of 'State' is ignored.
+		 */
+		if (GPIO_Get("SYSCTLR_JTAG_S0", &State) != 0) {
+			SC_ERR("failed to release JTAG 0");
+			return -1;
+		}
+
+		if (GPIO_Get("SYSCTLR_JTAG_S1", &State) != 0) {
+			SC_ERR("failed to release JTAG 1");
+			return -1;
+		}
+
+		break;
+	default:
+		SC_ERR("invalid JTAG select option");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+XSDB_Op(const char *TCL_File, char *Output, int Length)
+{
+	FILE *FP;
+	char System_Cmd[SYSCMD_MAX];
+	int Ret = 0;
+
+	(void) sprintf(System_Cmd, "%s%s", BIT_PATH, TCL_File);
+	if (access(System_Cmd, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", System_Cmd);
+		return -1;
+	}
+
+	if (Output == NULL) {
+		SC_ERR("unallocated output buffer");
+		return -1;
+	}
+
+	(void) JTAG_Op(1);
+	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD,
+		       BIT_PATH, TCL_File);
+	SC_INFO("Command: %s", System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke xsdb");
+		Ret = -1;
+		goto Out;
+	}
+
+	(void) fgets(Output, Length, FP);
+	(void) pclose(FP);
+	SC_INFO("XSDB Output: %s", Output);
+	if (strstr(Output, "no targets found") != NULL) {
+		SC_ERR("could not connect to Versal through jtag");
+		Ret = -1;
+	}
+
+Out:
+	(void) JTAG_Op(0);
+	return Ret;
+}
+
+int
+Get_IDCODE(char *Output, int Length)
+{
+	return XSDB_Op(IDCODE_TCL, Output, Length);
+}
+
+int
+Get_Temperature(void)
+{
+	/* XXX - feature is not available yet */
+	SC_ERR("unable to get Versal temperature");
+	return -1;
+}
+
+int
+Set_BootMode(BootMode_t *BootMode)
+{
+	FILE *FP;
+	char Buffer[SYSCMD_MAX];
+
+	if ((strcmp(Board_Name, "VCK190") == 0) ||
+	    (strcmp(Board_Name, "VMK180") == 0)) {
+		/* Record the boot mode */
+		FP = fopen(BOOTMODEFILE, "w");
+		if (FP == NULL) {
+			SC_ERR("failed to open boot_mode file %s: %m",
+			       BOOTMODEFILE);
+			return -1;
+		}
+
+		(void) sprintf(Buffer, "%s\n", BootMode->Name);
+		SC_INFO("Boot Mode: %s", Buffer);
+		(void) fputs(Buffer, FP);
+		(void) fclose(FP);
+		return 0;
+	}
+
+	for (int i = 0; i < 4; i++) {
+		if (GPIO_Set(Plat_Devs->BootModes->Mode_Lines[i],
+		    ((BootMode->Value >> i) & 0x1)) != 0) {
+			SC_ERR("failed to set GPIO line %s",
+			       Plat_Devs->BootModes->Mode_Lines[i]);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int
+QSFP_ModuleSelect(QSFP_t *QSFP, int State)
+{
+	IO_Exp_t *IO_Exp;
+	unsigned int Value;
+
+	if (State != 0 && State != 1) {
+		SC_ERR("invalid QSFP module select state");
+		return -1;
+	}
+
+	/* Nothing to do for 'State == 0' */
+	if (State == 0) {
+		return 0;
+	}
+
+	if ((strcmp(Board_Name, "VCK190") == 0) ||
+	    (strcmp(Board_Name, "VMK180") == 0)) {
+		return VCK190_QSFP_ModuleSelect(QSFP, State);
+	}
+
+	/* State == 1 */
+	IO_Exp = Plat_Devs->IO_Exp;
+
+	/* Set direction */
+	Value = 0x73DF;
+	if (Access_IO_Exp(IO_Exp, 1, 0x6, &Value) != 0) {
+		SC_ERR("failed to set IO expander direction");
+		return -1;
+	}
+
+	/*
+	 * Only one QSFP-DD can be referenced at a time since both
+	 * have address 0x50 and are on the same I2C bus, so make
+	 * sure the other QSFP-DD is not selected.
+	 */
+	if (strcmp(QSFP->Name, "QSFPDD1") == 0) {
+		Value = 0x820;
+	} else {
+		Value = 0x420;
+	}
+
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to set IO expander output");
+		return -1;
+	}
 
 	return 0;
 }

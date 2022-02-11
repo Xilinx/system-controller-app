@@ -417,6 +417,7 @@ typedef struct {
 #define BOARD_PATH	INSTALLDIR"/board/"
 
 #define IDCODE_TCL	"idcode/idcode_check.tcl"
+#define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))

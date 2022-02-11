@@ -19,7 +19,8 @@
 		gettemp - get the reading of <target> temperature sensor
 
 		listbootmode - list the supported boot mode targets
-		setbootmode - set boot mode to <target>
+		getbootmode - get boot mode, with optional <value> of 'alternate'
+		setbootmode - set boot mode to <target>, with optional <value> of 'alternate'
 
 		listclock - list the supported clock targets
 		getclock - get the frequency of <target>

@@ -22,9 +22,9 @@ char SC_APP_File[SYSCMD_MAX];
 extern char Board_Name[];
 extern Boards_t Boards;
 
+int Set_AltBootMode(int);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
 extern int VCK190_ES1_Vccaux_Workaround(void *);
-extern int VCK190_SetBootMode(int);
 extern int VCK190_QSFP_ModuleSelect(QSFP_t *, int);
 
 char *
@@ -615,7 +615,7 @@ FMCAutoVadj_Op(void)
 }
 
 int
-GPIO_Get(char *Label, int *State)
+Get_GPIO(char *Label, int *State)
 {
 	FILE *FP;
 	char Chip_Name[STRLEN_MAX];
@@ -650,7 +650,7 @@ GPIO_Get(char *Label, int *State)
 }
 
 int
-GPIO_Set(char *Label, int State)
+Set_GPIO(char *Label, int State)
 {
 	FILE *FP;
 	char Chip_Name[STRLEN_MAX];
@@ -1353,7 +1353,7 @@ Reset_Op(void)
 	}
 
 	/* Assert POR */
-	if (GPIO_Set("SYSCTLR_POR_B_LS", 0) != 0) {
+	if (Set_GPIO("SYSCTLR_POR_B_LS", 0) != 0) {
 		SC_ERR("failed to assert power-on-reset");
 		return -1;
 	}
@@ -1361,7 +1361,7 @@ Reset_Op(void)
 	sleep(1);
 
 	/* De-assert POR */
-	if (GPIO_Set("SYSCTLR_POR_B_LS", 1) != 0) {
+	if (Set_GPIO("SYSCTLR_POR_B_LS", 1) != 0) {
 		SC_ERR("failed to de-assert power-on-reset");
 		return -1;
 	}
@@ -1381,8 +1381,8 @@ Reset_Op(void)
 		for (int i = 0; i < BootModes->Numbers; i++) {
 			BootMode = &BootModes->BootMode[i];
 			if (strcmp(Buffer, (char *)BootMode->Name) == 0) {
-				if (VCK190_SetBootMode(BootMode->Value) != 0) {
-					SC_ERR("failed to set the boot mode");
+				if (Set_AltBootMode(BootMode->Value) != 0) {
+					SC_ERR("failed to set alternative boot mode");
 					return -1;
 				}
 
@@ -1402,12 +1402,12 @@ JTAG_Op(int Select)
 	switch (Select) {
 	case 1:
 		/* Overwrite the default JTAG switch */
-		if (GPIO_Set("SYSCTLR_JTAG_S0", 0) != 0) {
+		if (Set_GPIO("SYSCTLR_JTAG_S0", 0) != 0) {
 			SC_ERR("failed to set JTAG 0");
 			return -1;
 		}
 
-		if (GPIO_Set("SYSCTLR_JTAG_S1", 0) != 0) {
+		if (Set_GPIO("SYSCTLR_JTAG_S1", 0) != 0) {
 			SC_ERR("failed to set JTAG 1");
 			return -1;
 		}
@@ -1419,12 +1419,12 @@ JTAG_Op(int Select)
 		 * lines and that allows the switch to set back the default
 		 * values.  The value of 'State' is ignored.
 		 */
-		if (GPIO_Get("SYSCTLR_JTAG_S0", &State) != 0) {
+		if (Get_GPIO("SYSCTLR_JTAG_S0", &State) != 0) {
 			SC_ERR("failed to release JTAG 0");
 			return -1;
 		}
 
-		if (GPIO_Get("SYSCTLR_JTAG_S1", &State) != 0) {
+		if (Get_GPIO("SYSCTLR_JTAG_S1", &State) != 0) {
 			SC_ERR("failed to release JTAG 1");
 			return -1;
 		}
@@ -1495,38 +1495,188 @@ Get_Temperature(void)
 }
 
 int
-Set_BootMode(BootMode_t *BootMode)
+Get_BootMode_Switch(unsigned int *Value)
+{
+	char Buffer[SYSCMD_MAX];
+	char Chip_Name[STRLEN_MAX];
+	unsigned int Line_Offset;
+	int State;
+
+	*Value = 0;
+	for (int i = 0; i < 4; i++) {
+		sprintf(Buffer, "SYSCTLR_VERSAL_MODE%d_READBACK", i);
+		if (gpiod_ctxless_find_line(Buffer, Chip_Name, STRLEN_MAX,
+					    &Line_Offset) != 1) {
+			return -1;
+		}
+
+		if (Get_GPIO(Buffer, &State) != 0) {
+			return -1;
+		}
+
+		*Value |= (State << i);
+	}
+
+	return 0;
+}
+
+int
+Get_BootMode(int Method)
 {
 	FILE *FP;
 	char Buffer[SYSCMD_MAX];
+	unsigned int Value;
+	BootModes_t *BootModes;
 
-	if ((strcmp(Board_Name, "VCK190") == 0) ||
-	    (strcmp(Board_Name, "VMK180") == 0)) {
+	/*
+	 * Supported methods to get the boot mode:
+	 *	0: External Boot Mode
+	 *	1: Alternative Boot Mode
+	 */
+	if (Method == 0) {
+		if (Get_BootMode_Switch(&Value) != 0) {
+			SC_ERR("unable to read boot mode switch");
+			return -1;
+		}
+
+		SC_INFO("Value 0x%x is read from boot mode switch", Value);
+		BootModes = Plat_Devs->BootModes;
+		for (int i = 0; i < BootModes->Numbers; i++) {
+			if (Value == BootModes->BootMode[i].Value) {
+				SC_PRINT("%s", BootModes->BootMode[i].Name);
+				return 0;
+			}
+		}
+
+		SC_ERR("unsupported boot mode value %#x", Value);
+		return -1;
+	}
+
+	if (Method == 1) {
+		if (access(BOOTMODEFILE, F_OK) != 0) {
+			SC_ERR("no alternative boot mode is set");
+			return -1;
+		}
+
+		FP = fopen(BOOTMODEFILE, "r");
+		if (FP == NULL) {
+			SC_ERR("failed to read file %s: %m", BOOTMODEFILE);
+			return -1;
+		}
+
+		(void) fgets(Buffer, SYSCMD_MAX, FP);
+		SC_PRINT_N("%s", Buffer);
+
+		(void) fclose(FP);
+		return 0;
+	}
+
+	SC_ERR("invalid Get_BootMode method");
+	return -1;
+}
+
+int
+Set_AltBootMode(int Value)
+{
+	FILE *FP;
+	char Output[STRLEN_MAX] = { 0 };
+	char System_Cmd[SYSCMD_MAX];
+
+	(void) JTAG_Op(1);
+	sprintf(System_Cmd, "%s; %s %s%s %x 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
+	    BOOTMODE_TCL, Value);
+	SC_INFO("Command: %s", System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke xsdb: %m");
+		return -1;
+	}
+
+	(void) fgets(Output, sizeof(Output), FP);
+	(void) pclose(FP);
+	SC_INFO("XSDB Output: %s", Output);
+	(void) JTAG_Op(0);
+	if (strstr(Output, "no targets found") != NULL) {
+		SC_ERR("could not connect to Versal through jtag");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+Set_BootMode(BootMode_t *BootMode, int Method)
+{
+	FILE *FP;
+	char Buffer[SYSCMD_MAX];
+	unsigned int Value;
+
+	/*
+	 * Supported methods to set the boot mode:
+	 *	0: External Boot Mode
+	 * 	1: Alternative Boot Mode
+	 */
+	if (Method == 0) {
+		/* Clear previous boot mode setting first, if any */
+		for (int i = 0; i < 4; i++) {
+			if (Set_GPIO(Plat_Devs->BootModes->Mode_Lines[i],
+			    0x1) != 0) {
+				SC_ERR("failed to set GPIO line %s",
+				       Plat_Devs->BootModes->Mode_Lines[i]);
+				return -1;
+			}
+		}
+
+		/*
+		 * VCK190/VMK180 boards don't have hardware support to read
+		 * back the current position of boot mode switch.
+		 */
+		if (Get_BootMode_Switch(&Value) != 0) {
+			SC_PRINT("WARNING: SW1 needs to be in OFF positions");
+			Value = 0xF;
+		}
+
+		if ((BootMode->Value & Value) != BootMode->Value) {
+			SC_ERR("unable to set boot mode to '%s' because "
+			       "SW1 is set to '%s %s %s %s' position",
+			       BootMode->Name,
+			       ((Value & 0x8) ? "OFF" : "ON"),
+			       ((Value & 0x4) ? "OFF" : "ON"),
+			       ((Value & 0x2) ? "OFF" : "ON"),
+			       ((Value & 0x1) ? "OFF" : "ON"));
+			return -1;
+		}
+
+		for (int i = 0; i < 4; i++) {
+			if (Set_GPIO(Plat_Devs->BootModes->Mode_Lines[i],
+			    ((BootMode->Value >> i) & 0x1)) != 0) {
+				SC_ERR("failed to set GPIO line %s",
+				       Plat_Devs->BootModes->Mode_Lines[i]);
+				return -1;
+			}
+		}
+
+		return 0;
+	}
+
+	if (Method == 1) {
 		/* Record the boot mode */
 		FP = fopen(BOOTMODEFILE, "w");
 		if (FP == NULL) {
-			SC_ERR("failed to open boot_mode file %s: %m",
+			SC_ERR("failed to open boot mode file %s: %m",
 			       BOOTMODEFILE);
 			return -1;
 		}
 
 		(void) sprintf(Buffer, "%s\n", BootMode->Name);
-		SC_INFO("Boot Mode: %s", Buffer);
+		SC_INFO("Alternatve Boot Mode: %s", Buffer);
 		(void) fputs(Buffer, FP);
 		(void) fclose(FP);
 		return 0;
 	}
 
-	for (int i = 0; i < 4; i++) {
-		if (GPIO_Set(Plat_Devs->BootModes->Mode_Lines[i],
-		    ((BootMode->Value >> i) & 0x1)) != 0) {
-			SC_ERR("failed to set GPIO line %s",
-			       Plat_Devs->BootModes->Mode_Lines[i]);
-			return -1;
-		}
-	}
-
-	return 0;
+	SC_ERR("invalid Set_BootMode method");
+	return -1;
 }
 
 int

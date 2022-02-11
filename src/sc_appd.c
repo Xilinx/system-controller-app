@@ -31,15 +31,16 @@
  * 1.8 - Support for reading EBM's EEPROM.
  * 1.9 - Support for getting board temperature.
  * 1.10 - Support for setting VOUT of voltage regulators.
- * 1.11 - Add 'geteeprom' command to get the entire content of on-board's EEPROM.
+ * 1.11 - Added 'geteeprom' command to get the entire content of on-board's EEPROM.
  * 1.12 - Support for FPGA Mezzanine Cards (FMCs).
- * 1.13 - Add 'list' command for features that didn't have that option.
- * 1.14 - Add 'listfeature' command to print supported features of the board.
- * 1.15 - Add support for INA226 custom calibration.
- * 1.16 - Add 'board' command to return name of the board.
+ * 1.13 - Added 'list' command for features that didn't have that option.
+ * 1.14 - Added 'listfeature' command to print supported features of the board.
+ * 1.15 - Added support for INA226 custom calibration.
+ * 1.16 - Added 'board' command to return name of the board.
+ * 1.17 - Added 'getbootmode' and enhanced 'setbootmode' commands.
  */
 #define MAJOR	1
-#define MINOR	16
+#define MINOR	17
 
 #define LINUX_VERSION	"5.4.0"
 #define BSP_VERSION	"2020_2"
@@ -83,13 +84,14 @@ extern int Board_Identification(char *);
 extern int Reset_Op(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
-extern int GPIO_Get(char *, int *);
+extern int Get_GPIO(char *, int *);
 extern int EEPROM_Common(char *);
 extern int EEPROM_Board(char *, int);
 extern int EEPROM_MultiRecord(char *);
 extern int Get_IDCODE(char *, int);
 extern int Get_Temperature(void);
-extern int Set_BootMode(BootMode_t *);
+extern int Get_BootMode(int);
+extern int Set_BootMode(BootMode_t *, int);
 extern int Get_IDT_8A34001(Clock_t *);
 extern int Set_IDT_8A34001(Clock_t *, char *, int);
 extern int Restore_IDT_8A34001(Clock_t *);
@@ -113,7 +115,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	gettemp - get the reading of <target> temperature sensor\n\
 \n\
 	listbootmode - list the supported boot mode targets\n\
-	setbootmode - set boot mode to <target>\n\
+	getbootmode - get boot mode, with optional <value> of 'alternate'\n\
+	setbootmode - set boot mode to <target>, with optional <value> of 'alternate'\n\
 \n\
 	listclock - list the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
@@ -182,6 +185,7 @@ typedef enum {
 	LISTTEMP,
 	GETTEMP,
 	LISTBOOTMODE,
+	GETBOOTMODE,
 	SETBOOTMODE,
 	LISTCLOCK,
 	GETCLOCK,
@@ -240,6 +244,7 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTTEMP, .CmdStr = "listtemp", .CmdOps = Temperature_Ops, },
 	{ .CmdId = GETTEMP, .CmdStr = "gettemp", .CmdOps = Temperature_Ops, },
 	{ .CmdId = LISTBOOTMODE, .CmdStr = "listbootmode", .CmdOps = BootMode_Ops, },
+	{ .CmdId = GETBOOTMODE, .CmdStr = "getbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
@@ -438,6 +443,9 @@ Parse_Options(int argc, char **argv)
 	opterr = 0;
 	optind = 1;
 	C_Flag = T_Flag = V_Flag = 0;
+	memset(Command_Arg, 0, STRLEN_MAX);
+	memset(Target_Arg, 0, STRLEN_MAX);
+	memset(Value_Arg, 0, SYSCMD_MAX);
 	while ((c = getopt(argc, argv, "hc:t:v:")) != -1) {
 		Options++;
 		switch (c) {
@@ -562,15 +570,34 @@ BootMode_Ops(void)
 	if (Command.CmdId == LISTBOOTMODE) {
 		for (int i = 0; i < BootModes->Numbers; i++) {
 			SC_PRINT("%s\t0x%x", BootModes->BootMode[i].Name,
-			    BootModes->BootMode[i].Value);
+				 BootModes->BootMode[i].Value);
 		}
 
 		return 0;
 	}
 
+	if (Command.CmdId == GETBOOTMODE) {
+		if ((T_Flag == 0) && (V_Flag == 0)) {
+			return Get_BootMode(0);
+		}
+
+		if ((strcmp(Target_Arg, "alternate") != 0) &&
+		    (strcmp(Value_Arg, "alternate") != 0)) {
+			SC_ERR("invalid get boot mode value");
+			return -1;
+		}
+
+		return Get_BootMode(1);
+	}
+
+	if (Command.CmdId != SETBOOTMODE) {
+		SC_ERR("invalid boot mode command");
+		return -1;
+	}
+
 	/* Validate the bootmode target */
 	if (T_Flag == 0) {
-		SC_ERR("no bootmode target");
+		SC_ERR("no set boot mode target");
 		return -1;
 	}
 
@@ -583,19 +610,20 @@ BootMode_Ops(void)
 	}
 
 	if (Target_Index == -1) {
-		SC_ERR("invalid bootmode target");
+		SC_ERR("invalid set boot mode target");
 		return -1;
 	}
 
-	switch (Command.CmdId) {
-	case SETBOOTMODE:
-		return Set_BootMode(BootMode);
-	default:
-		SC_ERR("invalid bootmode command");
-		break;
+	if (V_Flag == 0) {
+		return Set_BootMode(BootMode, 0);
 	}
 
-	return 0;
+	if (strcmp(Value_Arg, "alternate") != 0) {
+		SC_ERR("invalid set boot mode value");
+		return -1;
+	}
+
+	return Set_BootMode(BootMode, 1);
 }
 
 int
@@ -2017,7 +2045,7 @@ static int Gpio_get1(const GPIO_t *p)
 {
 	int State;
 
-	if (GPIO_Get((char *)p->Internal_Name, &State) != 0) {
+	if (Get_GPIO((char *)p->Internal_Name, &State) != 0) {
 		SC_ERR("failed to get GPIO line %s", p->Display_Name);
 		return -1;
 	}
@@ -2057,7 +2085,7 @@ static int Gpio_get_all(void)
 			continue;
 		}
 
-		if (GPIO_Get(Label, &State) != 0) {
+		if (Get_GPIO(Label, &State) != 0) {
 			SC_ERR("failed to get GPIO line %s", Label);
 			(void) pclose(FP);
 			return -1;

@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include "sc_app.h"
 
-#define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"
 #define QSFP_MODSEL_TCL	"qsfp_set_modsel/qsfp_download.tcl"
 
 extern Plat_Devs_t *Plat_Devs;
@@ -138,35 +137,6 @@ VCK190_ES1_Vccaux_Workaround(void *Arg)
 	Voltage = (*State == 1) ? Regulator->Typical_Volt : 0;
 	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
 		SC_ERR("failed to set VCC_RAM regulator to %0.3f v", Voltage);
-		return -1;
-	}
-
-	return 0;
-}
-
-int
-VCK190_SetBootMode(int Value)
-{
-	FILE *FP;
-	char Output[STRLEN_MAX] = { 0 };
-	char System_Cmd[SYSCMD_MAX];
-
-	(void) JTAG_Op(1);
-	sprintf(System_Cmd, "%s; %s %s%s %x 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    BOOTMODE_TCL, Value);
-	SC_INFO("Command: %s", System_Cmd);
-	FP = popen(System_Cmd, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to invoke xsdb: %m");
-		return -1;
-	}
-
-	(void) fgets(Output, sizeof(Output), FP);
-	(void) pclose(FP);
-	SC_INFO("XSDB Output: %s", Output);
-	(void) JTAG_Op(0);
-	if (strstr(Output, "no targets found") != NULL) {
-		SC_ERR("could not connect to Versal through jtag");
 		return -1;
 	}
 

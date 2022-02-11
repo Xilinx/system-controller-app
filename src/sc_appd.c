@@ -42,9 +42,6 @@
 #define MAJOR	1
 #define MINOR	17
 
-#define LINUX_VERSION	"5.4.0"
-#define BSP_VERSION	"2020_2"
-
 #define GPIOLINE	"ZU4_TRIGGER"
 
 int Client_FD;
@@ -303,10 +300,15 @@ main()
 	char *Argv[ITEMS_MAX];
 	int Ret = -1;
 
-
 	SC_OPENLOG("sc_app");
 	SC_INFO(">>> Begin");
 
+	/* Log the version of sc_app */
+	SC_INFO("Version:   %d.%d", MAJOR, MINOR);
+	SC_INFO("Built:     %s %s", __DATE__, __TIME__);
+#ifdef GIT_COMMIT
+	SC_INFO("Commit:    %s", GIT_COMMIT);
+#endif
 	/* Identify the board */
 	if (Board_Identification(Board_Name) != 0) {
 		goto Out;
@@ -497,44 +499,11 @@ Parse_Options(int argc, char **argv)
 int
 Version_Ops(void)
 {
-	int Major = MAJOR;
-	int Minor = MINOR;
-	struct utsname UTS;
-	char BSP_Version[STRLEN_MAX];
-	int Linux_Compatible = 1;
-	int BSP_Compatible = 1;
-	char *CP;
-
-	SC_PRINT("Version:\t%d.%d", Major, Minor);
-
-	if (uname(&UTS) != 0) {
-		SC_ERR("get OS information: uname failed: %m");
-		return -1;
-	}
-
-	CP = strrchr(UTS.nodename, '-');
-	if (CP == NULL) {
-		SC_ERR("failed to obtain BSP release");
-		return -1;
-	}
-
-	(void) strcpy(BSP_Version, ++CP);
-
-	if (Major == 1) {
-		if (strcmp(UTS.release, LINUX_VERSION) != 0) {
-			Linux_Compatible = 0;
-		}
-
-		if (strcmp(BSP_Version, BSP_VERSION) != 0) {
-			BSP_Compatible = 0;
-		}
-	}
-
-	SC_PRINT("Linux:\t\t%s (%sCompatible)", UTS.release,
-	    (Linux_Compatible) ? "" : "Not ");
-	SC_PRINT("BSP:\t\t%s (%sCompatible)", BSP_Version,
-	    (BSP_Compatible) ? "" : "Not ");
-
+	SC_PRINT("Version:\t%d.%d", MAJOR, MINOR);
+	SC_PRINT("Built:\t\t%s %s", __DATE__, __TIME__);
+#ifdef GIT_COMMIT
+	SC_PRINT("Commit:\t\t%s", GIT_COMMIT);
+#endif
 	return 0;
 }
 

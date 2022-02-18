@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <gpiod.h>
 #include <sys/utsname.h>
+#include <sys/stat.h>
 #include "sc_app.h"
 
 /*
@@ -352,6 +353,11 @@ main()
 	Length = sizeof(struct sockaddr_un);
 	if (bind(Sock_FD, (struct sockaddr *)&Server, Length) == -1) {
 		SC_ERR("failed to call bind(2): %m");
+		goto Out;
+	}
+
+	if (chmod(SOCKFILE, (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
+		SC_ERR("failed to change socket permission: %m");
 		goto Out;
 	}
 

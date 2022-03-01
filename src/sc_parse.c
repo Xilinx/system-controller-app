@@ -12,9 +12,6 @@
 
 #define JSMN_TOKENS_SIZE 2048
 
-extern IDT_8A34001_Data_t VPK120_IDT_8A34001_Data;
-extern IDT_8A34001_Data_t VCK190_IDT_8A34001_Data;
-
 extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int Clocks_Check(void *, void *);
 extern int XSDB_BIT(void *, void *);
@@ -23,8 +20,7 @@ extern int DIMM_EEPROM_Check(void *, void *);
 extern int Voltages_Check(void *, void *);
 extern int Display_Instruction(void *, void *);
 extern int Assert_Reset(void *, void *);
-
-char Board_File[STRLEN_MAX];
+extern int Reset_IDT_8A34001(void);
 
 int jsoneq(const char *, jsmntok_t *, const char *);
 int Parse_Feature(const char *, jsmntok_t *, int *, FeatureList_t **);
@@ -50,6 +46,7 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 	int Token_Size = JSMN_TOKENS_SIZE;
 	FILE *FP;
 	char *Json_File;
+	char Board_File[STRLEN_MAX];
 	long Char_Len;
 	jsmn_parser Parser;
 	jsmntok_t Tokens[Token_Size];
@@ -222,6 +219,8 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 {
 	char *Value_Str;
 	int Clk_Items = 0;
+	char *Label;
+	IDT_8A34001_Data_t *IDT_8A34001_Data;
 
 	SC_INFO("********************* CLOCK *********************");
 	*CLKs = (Clocks_t *)malloc(sizeof(Clocks_t));
@@ -268,24 +267,64 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 			(*CLKs)->Clock[Clk_Items].Lower_Freq = atof(Value_Str);
 			SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
 		} else if ((*CLKs)->Clock[Clk_Items].Type == IDT_8A34001) {
-			*Index += 2;
-			if (strstr(Board_File, "VPK120") != NULL) {
-				(*CLKs)->Clock[Clk_Items].Type_Data = &VPK120_IDT_8A34001_Data;
-				SC_INFO("Type_Data: VPK120_IDT_8A34001_Data");
-			} else if (strstr(Board_File, "VCK190") != NULL) {
-				(*CLKs)->Clock[Clk_Items].Type_Data = &VCK190_IDT_8A34001_Data;
-				SC_INFO("Type_Data: VCK190_IDT_8A34001_Data");
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+			                    Tokens[*Index].end - Tokens[*Index].start);
+			if (strcmp(Value_Str, "Display_Label") != 0) {
+				SC_ERR("invalid json label; expecting '%s', found '%s'",
+				       "Display_Label", Value_Str);
+				return -1;
 			}
+
+			IDT_8A34001_Data =
+				(IDT_8A34001_Data_t *)malloc(sizeof(IDT_8A34001_Data_t));
+			(*Index)++;
+			int Count = Tokens[*Index].size;
+			(*Index)++;
+			for (int i = 0; i < Count; i++) {
+				Value_Str = strndup(Json_File + Tokens[*Index + i].start,
+						    Tokens[*Index + i].end -
+						    Tokens[*Index + i].start);
+				Label = (char *)malloc(strlen(Value_Str) + 1);
+				strcpy(Label, Value_Str);
+				IDT_8A34001_Data->Display_Label[i] = Label;
+				SC_INFO("%s", IDT_8A34001_Data->Display_Label[i]);
+			}
+
+			*Index += Count;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			if (strcmp(Value_Str, "Internal_Label") != 0) {
+				SC_ERR("invalid json label; expecting '%s', found '%s'",
+				       "Internal_Label", Value_Str);
+				return -1;
+			}
+
+			*Index += 2;
+			for (int i = 0; i < Count; i++) {
+				Value_Str = strndup(Json_File + Tokens[*Index + i].start,
+						    Tokens[*Index + i].end -
+						    Tokens[*Index + i].start);
+				Label = (char *)malloc(strlen(Value_Str) + 1);
+				strcpy(Label, Value_Str);
+				IDT_8A34001_Data->Internal_Label[i] = Label;
+				SC_INFO("%s", IDT_8A34001_Data->Internal_Label[i]);
+			}
+
+			*Index += (Count - 1);
+			IDT_8A34001_Data->Number_Label = Count;
+			IDT_8A34001_Data->Chip_Reset = Reset_IDT_8A34001;
+			(*CLKs)->Clock[Clk_Items].Type_Data = (void *)IDT_8A34001_Data;
 		}
 
 		*Index += 2;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
-		                    Tokens[*Index].end - Tokens[*Index].start);
+				    Tokens[*Index].end - Tokens[*Index].start);
 		strcpy((*CLKs)->Clock[Clk_Items].I2C_Bus, Value_Str);
 		SC_INFO("I2C Bus: %s", (*CLKs)->Clock[Clk_Items].I2C_Bus);
 		*Index += 2;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
-		                    Tokens[*Index].end - Tokens[*Index].start);
+				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr - Hex: %s", Value_Str);
 		(*CLKs)->Clock[Clk_Items].I2C_Address = (int)strtol(Value_Str, NULL, 0);
 

@@ -70,41 +70,6 @@ Boards_t Boards = {
 	},
 };
 
-IDT_8A34001_Data_t VCK190_IDT_8A34001_Data = {
-	.Number_Label = 14,
-	.Display_Label = { "CIN 1 From Bank 200 GTY_REF", \
-			   "CIN 2 From Bank 706", \
-			   "Q0 to CIN 0", \
-			   "Q1 to Bank 200 GTY_REF", \
-			   "Q2 to Bank 201, 204-206 GTY_REF", \
-			   "Q3 to FMC2 REFCLK", \
-			   "Q4 to FMC2 SYNC", \
-			   "Q5 to J328", \
-			   "Q6 to NC", \
-			   "Q7 to NC", \
-			   "Q8 to NC", \
-			   "Q9 to NC", \
-			   "Q10 to NC", \
-			   "Q11 to NC", \
-	},
-	.Internal_Label = { "IN1_Frequency", \
-			    "IN2_Frequency", \
-			    "OUT0DesiredFrequency", \
-			    "OUT1DesiredFrequency", \
-			    "OUT2DesiredFrequency", \
-			    "OUT3DesiredFrequency", \
-			    "OUT4DesiredFrequency", \
-			    "OUT5DesiredFrequency", \
-			    "OUT6DesiredFrequency", \
-			    "OUT7DesiredFrequency", \
-			    "OUT8DesiredFrequency", \
-			    "OUT9DesiredFrequency", \
-			    "OUT10DesiredFrequency", \
-			    "OUT11DesiredFrequency", \
-	},
-	.Chip_Reset = Reset_IDT_8A34001,
-};
-
 int
 VCK190_ES1_Vccaux_Workaround(void *Arg)
 {
@@ -193,34 +158,3 @@ VCK190_QSFP_ModuleSelect(QSFP_t *Arg, int State)
 
 	return 0;
 }
-
-IDT_8A34001_Data_t VPK120_IDT_8A34001_Data = {
-	.Number_Label = 12,
-	.Display_Label = { "Q0 - From 8A34001 Q0 to 8A34001 CLK0", \
-			   "Q1 - From Bank 703 to Bank 206 GTM RX2", \
-			   "Q2 - From Bank 206 GTM TX2 to Bank 703", \
-			   "Q3 - From 8A34001 Q4 to SMA J339", \
-			   "Q4 - From SMA J330-331 to 8A34001 CLK3", \
-			   "Q5 - From Bank 202/204 GTM REFCLK1 to J328", \
-			   "Q6 - From Bank 206 GTM REFCLK1 to Bank 711", \
-			   "Q7 - From FMC REFCLK M2C to Bank 206 GTM REFCLK0", \
-			   "Q8 - To Bank 204/205 GTM REFCLKP0", \
-			   "Q9 - To Bank 202/203 GTM REFCLKP0", \
-			   "Q10 - To SMA J328", \
-			   "Q11 - To N.C.", \
-	},
-	.Internal_Label = { "OUT0DesiredFrequency", \
-			    "OUT1DesiredFrequency", \
-			    "OUT2DesiredFrequency", \
-			    "OUT3DesiredFrequency", \
-			    "OUT4DesiredFrequency", \
-			    "OUT5DesiredFrequency", \
-			    "OUT6DesiredFrequency", \
-			    "OUT7DesiredFrequency", \
-			    "OUT8DesiredFrequency", \
-			    "OUT9DesiredFrequency", \
-			    "OUT10DesiredFrequency", \
-			    "OUT11DesiredFrequency", \
-	},
-	.Chip_Reset = Reset_IDT_8A34001,
-};

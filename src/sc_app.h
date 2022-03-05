@@ -352,19 +352,6 @@ typedef struct {
 	BITs_t *BITs;
 } Plat_Devs_t;
 
-/*
- * Board Info
- */
-typedef struct {
-	char Name[STRLEN_MAX];
-	Plat_Devs_t *Devs;
-} Board_t;
-
-typedef struct {
-	int Numbers;
-	Board_t Board_Info[ITEMS_MAX];
-} Boards_t;
-
 #define I2C_READ(FD, Address, Len, Out, In, Return) \
 { \
 	struct i2c_msg Msgs[2]; \

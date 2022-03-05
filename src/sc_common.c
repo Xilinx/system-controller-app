@@ -20,7 +20,8 @@ Plat_Devs_t *Plat_Devs;
 
 char SC_APP_File[SYSCMD_MAX];
 extern char Board_Name[];
-extern Boards_t Boards;
+extern OnBoard_EEPROM_t Common_OnBoard_EEPROM;
+extern OnBoard_EEPROM_t Legacy_OnBoard_EEPROM;
 
 int Set_AltBootMode(int);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
@@ -75,7 +76,7 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 
 	(void) memset(In_Buffer, 0, SYSCMD_MAX);
 	if (read(FD, In_Buffer, 256) != 256) {
-		SC_ERR("unable to read onboard EEPROM");
+		SC_INFO("unable to read onboard EEPROM");
 		(void) close(FD);
 		return -1;
 	}
@@ -93,50 +94,33 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 int
 Board_Identification(char *Board_Name)
 {
-	Board_t *Board;
-	char Buffer[SYSCMD_MAX] = { 0 };
-	int Ret;
+	OnBoard_EEPROM_t *OnBoard_EEPROM;
 
-	for (int i = 0; i < Boards.Numbers; i++) {
-		Board = &Boards.Board_Info[i];
-		if (Board->Devs->OnBoard_EEPROM == NULL) {
-			SC_ERR("eeprom info is not available for %s",
-			       Board->Name);
+	Plat_Devs = (Plat_Devs_t *)malloc(sizeof(Plat_Devs_t));
+
+	OnBoard_EEPROM = &Common_OnBoard_EEPROM;
+	SC_INFO("Accessing 'Common_OnBoard_EEPROM'");
+	if (Get_Product_Name(OnBoard_EEPROM, Board_Name) != 0) {
+		goto Legacy;
+	}
+
+	if (Parse_JSON(Board_Name, Plat_Devs) != 0) {
+Legacy:
+		OnBoard_EEPROM = &Legacy_OnBoard_EEPROM;
+		SC_INFO("Accessing 'Legacy_OnBoard_EEPROM'");
+		if (Get_Product_Name(OnBoard_EEPROM, Board_Name) != 0) {
+			SC_ERR("failed to identify the board");
 			return -1;
 		}
 
-		Ret = Get_Product_Name(Board->Devs->OnBoard_EEPROM, Buffer);
-		if (Ret == 0) {
-			break;
+		if (Parse_JSON(Board_Name, Plat_Devs) != 0) {
+			SC_ERR("failed to parse JSON file for board '%s'",
+			       Board_Name);
+			return -1;
 		}
 	}
 
-	if (Ret != 0) {
-		SC_ERR("failed to identify the board");
-		return -1;
-	}
-
-	for (int i = 0; i < Boards.Numbers; i++) {
-		Board = &Boards.Board_Info[i];
-		if (strcmp(Board->Name, Buffer) == 0) {
-			(void) strcpy(Board_Name, Board->Name);
-			Plat_Devs = (Plat_Devs_t *)malloc(sizeof(Plat_Devs_t));
-			Plat_Devs->OnBoard_EEPROM = Board->Devs->OnBoard_EEPROM;
-			if (Parse_JSON(Board->Name, Plat_Devs) != 0) {
-				SC_ERR("parsing JSON file for board %s failed",
-				       Board->Name);
-				return -1;
-			}
-
-			break;
-		}
-	}
-
-	if (Plat_Devs == NULL) {
-		SC_ERR("board is not supported");
-		return -1;
-	}
-
+	Plat_Devs->OnBoard_EEPROM = OnBoard_EEPROM;
 	return 0;
 }
 

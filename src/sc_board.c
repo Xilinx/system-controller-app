@@ -21,7 +21,7 @@ extern int Reset_IDT_8A34001(void);
 /*
  * On-board EEPROM
  */
-OnBoard_EEPROM_t VCK190_OnBoard_EEPROM = {
+OnBoard_EEPROM_t Legacy_OnBoard_EEPROM = {
 	.Name = "onboard",
 	.I2C_Bus = "/dev/i2c-11",
 	.I2C_Address = 0x54,
@@ -31,43 +31,6 @@ OnBoard_EEPROM_t Common_OnBoard_EEPROM = {
 	.Name = "onboard",
 	.I2C_Bus = "/dev/i2c-10",
 	.I2C_Address = 0x54,
-};
-
-/*
- * Board-sepcific Devices
- */
-Plat_Devs_t VCK190_Devs = {
-	.OnBoard_EEPROM = &VCK190_OnBoard_EEPROM,
-};
-
-Plat_Devs_t VPK120_Devs = {
-	.OnBoard_EEPROM = &Common_OnBoard_EEPROM,
-};
-
-/*
- * Supported Boards
- */
-typedef enum {
-	BOARD_VCK190,
-	BOARD_VMK180,
-	BOARD_VPK120,
-	BOARD_MAX,
-} Board_Index;
-
-Boards_t Boards = {
-	.Numbers = BOARD_MAX,
-	.Board_Info[BOARD_VCK190] = {
-		.Name = "VCK190",
-		.Devs = &VCK190_Devs,
-	},
-	.Board_Info[BOARD_VMK180] = {
-		.Name = "VMK180",
-		.Devs = &VCK190_Devs,
-	},
-	.Board_Info[BOARD_VPK120] = {
-		.Name = "VPK120",
-		.Devs = &VPK120_Devs,
-	},
 };
 
 int

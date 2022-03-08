@@ -13,9 +13,10 @@ OTHER_OBJS	= sc_common.o sc_parse.o sc_board.o
 APP_OBJS	= $(APP).o
 APPD_OBJS	= $(APPD).o $(OTHER_OBJS) $(BIT_OBJS)
 
-GIT_VERSION	= "$(shell git describe --abbrev=40 --always)"
+GIT_COMMIT	= "$(shell git describe --abbrev=40 --always)"
+GIT_BRANCH	= "$(shell git rev-parse --abbrev-ref HEAD)"
 
-CFLAGS		= -I../src -Wall -DGIT_COMMIT=\"$(GIT_VERSION)\"
+CFLAGS		= -I../src -Wall -DGIT_COMMIT=\"$(GIT_COMMIT)\" -DGIT_BRANCH=\"$(GIT_BRANCH)\"
 LDFLAGS 	?= -L../src
 SRCDIR		= ../src
 

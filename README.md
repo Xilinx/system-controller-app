@@ -5,7 +5,7 @@
 	sc_app -c <command> [-t <target> [-v <value>]]
 
 	<command> - 
-		version - version and compatibility information
+		version - version and build information
 		board - name of the board
 		reset - apply power-on-reset
 

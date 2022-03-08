@@ -99,7 +99,7 @@ extern int FMCAutoVadj_Op(void);
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 <command>:\n\
-	version - version and compatibility information\n\
+	version - version and build information\n\
 	board - name of the board\n\
 	reset - apply power-on-reset\n\
 \n\
@@ -307,6 +307,9 @@ main()
 	/* Log the version of sc_app */
 	SC_INFO("Version:   %d.%d", MAJOR, MINOR);
 	SC_INFO("Built:     %s %s", __DATE__, __TIME__);
+#ifdef GIT_BRANCH
+	SC_INFO("Branch:    %s", GIT_BRANCH);
+#endif
 #ifdef GIT_COMMIT
 	SC_INFO("Commit:    %s", GIT_COMMIT);
 #endif
@@ -507,6 +510,9 @@ Version_Ops(void)
 {
 	SC_PRINT("Version:\t%d.%d", MAJOR, MINOR);
 	SC_PRINT("Built:\t\t%s %s", __DATE__, __TIME__);
+#ifdef GIT_BRANCH
+	SC_PRINT("Branch:\t\t%s", GIT_BRANCH);
+#endif
 #ifdef GIT_COMMIT
 	SC_PRINT("Commit:\t\t%s", GIT_COMMIT);
 #endif

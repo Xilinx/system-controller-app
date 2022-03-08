@@ -10,17 +10,19 @@
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
 				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
-			"jtag" : "0x0",
-			"qspi24" : "0x1",
-			"qspi32" : "0x2",
-			"sd0_ls" : "0x3",
-			"sd1" : "0x5",
-			"emmc" : "0x6",
-			"usb" : "0x7",
-			"ospi" : "0x8",
-			"smap" : "0xa",
-			"dft" : "0xd",
-			"sd1_ls" : "0xe"
+			"Modes" : {
+				"jtag" : "0x0",
+				"qspi24" : "0x1",
+				"qspi32" : "0x2",
+				"sd0_ls" : "0x3",
+				"sd1" : "0x5",
+				"emmc" : "0x6",
+				"usb" : "0x7",
+				"ospi" : "0x8",
+				"smap" : "0xa",
+				"dft" : "0xd",
+				"sd1_ls" : "0xe"
+			}
 		},
 		"CLOCK" : {
 			"SI570_ZSFP" : {
@@ -121,7 +123,7 @@
 				"I2C_Address" : "0x40",
 				"Shunt_Resistor" : 500,
 				"Maximum_Current" : 192000,
-				"Phase_Mulitplier" : 6
+				"Phase_Multiplier" : 6
 			},
 			"INA226_VCC_SOC" : {
 				"Name" : "VCC_SOC",
@@ -129,7 +131,7 @@
 				"I2C_Address" : "0x41",
 				"Shunt_Resistor" : 500,
 				"Maximum_Current" : 18000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCC_PMC" : {
 				"Name" : "VCC_PMC",
@@ -137,7 +139,7 @@
 				"I2C_Address" : "0x42",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 500,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCCINT_RAM" : {
 				"Name" : "VCC_RAM",
@@ -145,7 +147,7 @@
 				"I2C_Address" : "0x43",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 4000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCCINT_PSLP" : {
 				"Name" : "VCCINT_PSLP",
@@ -153,7 +155,7 @@
 				"I2C_Address" : "0x44",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 1000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCCINT_PSFP" : {
 				"Name" : "VCCINT_PSFP",
@@ -161,7 +163,7 @@
 				"I2C_Address" : "0x45",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 2000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCCAUX" : {
 				"Name" : "VCCAUX",
@@ -169,7 +171,7 @@
 				"I2C_Address" : "0x40",
 				"Shunt_Resistor" : 500,
 				"Maximum_Current" : 3000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCCAUX_PMC" : {
 				"Name" : "VCCAUX_PMC",
@@ -177,7 +179,7 @@
 				"I2C_Address" : "0x41",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 500,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCC_MIO" : {
 				"Name" : "VCC_MIO",
@@ -185,7 +187,7 @@
 				"I2C_Address" : "0x45",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 2000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCC1V8" : {
 				"Name" : "VCC1V8",
@@ -193,7 +195,7 @@
 				"I2C_Address" : "0x46",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 6000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCC3V3" : {
 				"Name" : "VCC3V3",
@@ -201,7 +203,7 @@
 				"I2C_Address" : "0x47",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 500,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCC1V2_DDR4" : {
 				"Name" : "VCC_DDR4",
@@ -209,7 +211,7 @@
 				"I2C_Address" : "0x48",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 4000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VCC1V1_LP4" : {
 				"Name" : "VCC1V1_LP4",
@@ -217,7 +219,7 @@
 				"I2C_Address" : "0x49",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 4000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_VADJ_FMC" : {
 				"Name" : "VADJ_FMC",
@@ -225,7 +227,7 @@
 				"I2C_Address" : "0x4A",
 				"Shunt_Resistor" : 2000,
 				"Maximum_Current" : 10000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_MGTYAVCC" : {
 				"Name" : "MGTYAVCC",
@@ -233,7 +235,7 @@
 				"I2C_Address" : "0x48",
 				"Shunt_Resistor" : 2000,
 				"Maximum_Current" : 6000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_MGTYAVTT" : {
 				"Name" : "MGTYAVTT",
@@ -241,7 +243,7 @@
 				"I2C_Address" : "0x4C",
 				"Shunt_Resistor" : 2000,
 				"Maximum_Current" : 10000,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			},
 			"INA226_MGTYVCCAUX" : {
 				"Name" : "MGTYVCCAUX",
@@ -249,7 +251,7 @@
 				"I2C_Address" : "0x4D",
 				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 500,
-				"Phase_Mulitplier" : 1
+				"Phase_Multiplier" : 1
 			}
 		},
 		"POWER DOMAIN" : {
@@ -492,22 +494,22 @@
 			"GPIO_00" : {
 				"Line" : 7,
 				"Display_Name" : "500 - DC_SYS_CTRL0",
-				"INternal_Name" : "DC_SYS_CTRL0"
+				"Internal_Name" : "DC_SYS_CTRL0"
 			},
 			"GPIO_01" : {
 				"Line" : 8,
 				"Display_Name" : "500 - DC_SYS_CTRL1",
-				"INternal_Name" : "DC_SYS_CTRL1"
+				"Internal_Name" : "DC_SYS_CTRL1"
 			},
 			"GPIO_02" : {
 				"Line" : 9,
 				"Display_Name" : "500 - DC_SYS_CTRL2",
-				"INternal_Name" : "DC_SYS_CTRL2"
+				"Internal_Name" : "DC_SYS_CTRL2"
 			},
 			"GPIO_03" : {
 				"Line" : 10,
 				"Display_Name" : "500 - DC_SYS_CTRL3",
-				"INternal_Name" : "DC_SYS_CTRL3"
+				"Internal_Name" : "DC_SYS_CTRL3"
 			},
 			"GPIO_04" : {
 				"Line" : 12,

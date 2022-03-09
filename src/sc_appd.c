@@ -2881,7 +2881,7 @@ int FMC_List(void)
 	FMC_t *FMC;
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
-	char Out_Buffer[STRLEN_MAX];
+	char Out_Buffer[SYSCMD_MAX];
 	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 	int Offset, Length;

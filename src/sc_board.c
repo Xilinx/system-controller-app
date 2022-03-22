@@ -29,7 +29,7 @@ OnBoard_EEPROM_t Legacy_OnBoard_EEPROM = {
 
 OnBoard_EEPROM_t Common_OnBoard_EEPROM = {
 	.Name = "onboard",
-	.I2C_Bus = "/dev/i2c-10",
+	.I2C_Bus = "/dev/i2c-1",
 	.I2C_Address = 0x54,
 };
 

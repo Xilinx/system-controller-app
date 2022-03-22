@@ -31,8 +31,48 @@
 				"Default_Freq": 100.0,
 				"Upper_Freq": 810.0,
 				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-8",
+				"I2C_Bus": "/dev/i2c-10",
 				"I2C_Address": "0x5f"
+			},
+			"SI570_VERSAL_SYS": {
+				"Name": "Versal Sys Clk Si570",
+				"Type": "Si570",
+				"Sysfs_Path": "/sys/devices/platform/si570_ref_clk/set_rate",
+				"Default_Freq": 33.333,
+				"Upper_Freq": 160.0,
+				"Lower_Freq": 10.0,
+				"I2C_Bus": "/dev/i2c-12",
+				"I2C_Address": "0x5d"
+			},
+			"SI570_LPDDR4_CLK1": {
+				"Name": "LPDDR4 CLK1 Si570",
+				"Type": "Si570",
+				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk1/set_rate",
+				"Default_Freq": 200.0,
+				"Upper_Freq": 810.0,
+				"Lower_Freq": 10.0,
+				"I2C_Bus": "/dev/i2c-17",
+				"I2C_Address": "0x60"
+			},
+			"SI570_LPDDR4_CLK2": {
+				"Name": "LPDDR4 CLK2 Si570",
+				"Type": "Si570",
+				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk2/set_rate",
+				"Default_Freq": 200.0,
+				"Upper_Freq": 810.0,
+				"Lower_Freq": 10.0,
+				"I2C_Bus": "/dev/i2c-16",
+				"I2C_Address": "0x60"
+			},
+			"SI570_LPDDR4_CLK3": {
+				"Name": "LPDDR4 CLK3 Si570",
+				"Type": "Si570",
+				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk3/set_rate",
+				"Default_Freq": 200.0,
+				"Upper_Freq": 810.0,
+				"Lower_Freq": 10.0,
+				"I2C_Bus": "/dev/i2c-15",
+				"I2C_Address": "0x60"
 			},
 			"IDT_8A34001_FMC": {
 				"Name": "8A34001 FMC",
@@ -55,54 +95,14 @@
 					"OUT6DesiredFrequency", "OUT7DesiredFrequency",
 					"OUT8DesiredFrequency", "OUT9DesiredFrequency",
 					"OUT10DesiredFrequency", "OUT11DesiredFrequency"],
-				"I2C_Bus": "/dev/i2c-17",
+				"I2C_Bus": "/dev/i2c-19",
 				"I2C_Address": "0x5b"
-			},
-			"SI570_VERSAL_SYS": {
-				"Name": "Versal Sys Clk Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_ref_clk/set_rate",
-				"Default_Freq": 33.333,
-				"Upper_Freq": 160.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-10",
-				"I2C_Address": "0x5d"
-			},
-			"SI570_LPDDR4_CLK1": {
-				"Name": "LPDDR4 CLK1 Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk1/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 810.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-15",
-				"I2C_Address": "0x60"
-			},
-			"SI570_LPDDR4_CLK2": {
-				"Name": "LPDDR4 CLK2 Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk2/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 810.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-14",
-				"I2C_Address": "0x60"
-			},
-			"SI570_LPDDR4_CLK3": {
-				"Name": "LPDDR4 CLK3 Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk3/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 810.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-13",
-				"I2C_Address": "0x60"
 			}
 		},
 		"INA226": {
 			"INA226_VCCINT": {
 				"Name": "VCCINT",
-				"I2C_Bus": "/dev/i2c-3",
+				"I2C_Bus": "/dev/i2c-5",
 				"I2C_Address": "0x40",
 				"Shunt_Resistor": 500,
 				"Maximum_Current": 128000,
@@ -110,7 +110,7 @@
 			},
 			"INA226_VCC_SOC": {
 				"Name": "VCC_SOC",
-				"I2C_Bus": "/dev/i2c-3",
+				"I2C_Bus": "/dev/i2c-5",
 				"I2C_Address": "0x41",
 				"Shunt_Resistor": 500,
 				"Maximum_Current": 14000,
@@ -118,7 +118,7 @@
 			},
 			"INA226_VCC_PSFP": {
 				"Name": "VCC_PSFP",
-				"I2C_Bus": "/dev/i2c-3",
+				"I2C_Bus": "/dev/i2c-5",
 				"I2C_Address": "0x45",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 2000,
@@ -126,7 +126,7 @@
 			},
 			"INA226_VCC_PMC": {
 				"Name": "VCC_PMC",
-				"I2C_Bus": "/dev/i2c-3",
+				"I2C_Bus": "/dev/i2c-5",
 				"I2C_Address": "0x42",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 500,
@@ -134,7 +134,7 @@
 			},
 			"INA226_VCC_RAM_VCCINT_GT": {
 				"Name": "VCC_RAM_VCCINT_GT",
-				"I2C_Bus": "/dev/i2c-3",
+				"I2C_Bus": "/dev/i2c-5",
 				"I2C_Address": "0x43",
 				"Shunt_Resistor": 2000,
 				"Maximum_Current": 5000,
@@ -142,7 +142,7 @@
 			},
 			"INA226_VCC_PSLP_CPM5": {
 				"Name": "VCC_PSLP_CPM5",
-				"I2C_Bus": "/dev/i2c-3",
+				"I2C_Bus": "/dev/i2c-5",
 				"I2C_Address": "0x44",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 7000,
@@ -150,7 +150,7 @@
 			},
 			"INA226_VCC_MIO": {
 				"Name": "VCC_MIO",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x45",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 2000,
@@ -158,7 +158,7 @@
 			},
 			"INA226_VCCAUX": {
 				"Name": "VCCAUX",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x40",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 4000,
@@ -166,7 +166,7 @@
 			},
 			"INA226_VCC1V5": {
 				"Name": "VCC1V5",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x43",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 2000,
@@ -174,7 +174,7 @@
 			},
 			"INA226_LPDMGTYAVCC": {
 				"Name": "LPDMGTYAVCC",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x4B",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 2000,
@@ -182,7 +182,7 @@
 			},
 			"INA226_MGTVCCAUX": {
 				"Name": "MGTVCCAUX",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x48",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 2000,
@@ -190,7 +190,7 @@
 			},
 			"INA226_MGTAVCC": {
 				"Name": "MGTAVCC",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x42",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 5000,
@@ -198,7 +198,7 @@
 			},
 			"INA226_VCCAUX_PMC": {
 				"Name": "VCCAUX_PMC",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x41",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 500,
@@ -206,7 +206,7 @@
 			},
 			"INA226_VCCO_502": {
 				"Name": "VCCO_502",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x47",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 2000,
@@ -214,7 +214,7 @@
 			},
 			"INA226_VADJ_FMC": {
 				"Name": "VADJ_FMC",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x4A",
 				"Shunt_Resistor": 2000,
 				"Maximum_Current": 6000,
@@ -222,7 +222,7 @@
 			},
 			"INA226_VCC1V1_LP4": {
 				"Name": "VCC1V1_LP4",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x49",
 				"Shunt_Resistor": 2000,
 				"Maximum_Current": 6000,
@@ -230,7 +230,7 @@
 			},
 			"INA226_LPDMGTYVCCAUX": {
 				"Name": "LPDMGTYVCCAUX",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x4D",
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 500,
@@ -238,7 +238,7 @@
 			},
 			"INA226_LPDMGTYAVTT": {
 				"Name": "LPDMGTYAVTT",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x4C",
 				"Shunt_Resistor": 2000,
 				"Maximum_Current": 4000,
@@ -246,7 +246,7 @@
 			},
 			"INA226_MGTAVTT": {
 				"Name": "MGTAVTT",
-				"I2C_Bus": "/dev/i2c-5",
+				"I2C_Bus": "/dev/i2c-7",
 				"I2C_Address": "0x46",
 				"Shunt_Resistor": 2000,
 				"Maximum_Current": 8000,
@@ -260,7 +260,7 @@
 				"Maximum_Volt": 0.88,
 				"Typical_Volt": 0.8,
 				"Minimum_Volt": 0.7,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x46",
 				"Page_Select": 0
 			},
@@ -270,7 +270,7 @@
 				"Maximum_Volt": 0.83,
 				"Typical_Volt": 0.8,
 				"Minimum_Volt": 0.77,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x46",
 				"Page_Select": 1
 			},
@@ -280,7 +280,7 @@
 				"Maximum_Volt": 0.91,
 				"Typical_Volt": 0.88,
 				"Minimum_Volt": 0.85,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
 				"Page_Select": 0
 			},
@@ -290,7 +290,7 @@
 				"Maximum_Volt": 1.86,
 				"Typical_Volt": 1.8,
 				"Minimum_Volt": 1.74,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
 				"Page_Select": 1
 			},
@@ -300,7 +300,7 @@
 				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
 				"Minimum_Volt": 1.45,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
 				"Page_Select": 2
 			},
@@ -310,7 +310,7 @@
 				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
 				"Minimum_Volt": 1.45,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
 				"Page_Select": 3
 			},
@@ -320,7 +320,7 @@
 				"Maximum_Volt": 0.91,
 				"Typical_Volt": 0.88,
 				"Minimum_Volt": 0.85,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4C",
 				"Page_Select": 0
 			},
@@ -330,7 +330,7 @@
 				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
 				"Minimum_Volt": 1.45,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4C",
 				"Page_Select": 1
 			},
@@ -340,7 +340,7 @@
 				"Maximum_Volt": 0.91,
 				"Typical_Volt": 0.88,
 				"Minimum_Volt": 0.85,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4C",
 				"Page_Select": 2
 			},
@@ -350,7 +350,7 @@
 				"Maximum_Volt": 1.86,
 				"Typical_Volt": 1.8,
 				"Minimum_Volt": 1.74,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4D",
 				"Page_Select": 0
 			},
@@ -360,7 +360,7 @@
 				"Maximum_Volt": 2.58,
 				"Typical_Volt": 2.5,
 				"Minimum_Volt": 2.42,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4D",
 				"Page_Select": 1
 			},
@@ -370,7 +370,7 @@
 				"Maximum_Volt": 0.91,
 				"Typical_Volt": 0.88,
 				"Minimum_Volt": 0.85,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4D",
 				"Page_Select": 2
 			},
@@ -380,7 +380,7 @@
 				"Maximum_Volt": 0.83,
 				"Typical_Volt": 0.8,
 				"Minimum_Volt": 0.77,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x43",
 				"Page_Select": -1
 			},
@@ -390,7 +390,7 @@
 				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
 				"Minimum_Volt": 0.0,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4E",
 				"Page_Select": -1
 			},
@@ -400,7 +400,7 @@
 				"Maximum_Volt": 1.24,
 				"Typical_Volt": 1.2,
 				"Minimum_Volt": 1.16,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x41",
 				"Page_Select": -1
 			},
@@ -410,7 +410,7 @@
 				"Maximum_Volt": 1.14,
 				"Typical_Volt": 1.1,
 				"Minimum_Volt": 1.06,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4F",
 				"Page_Select": -1
 			},
@@ -420,7 +420,7 @@
 				"Maximum_Volt": 1.24,
 				"Typical_Volt": 1.2,
 				"Minimum_Volt": 1.16,
-				"I2C_Bus": "/dev/i2c-2",
+				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x49",
 				"Page_Select": -1
 			}
@@ -884,20 +884,20 @@
 			"QSFPDD_0": {
 				"Name": "QSFPDD1",
 				"Type": "qsfpdd",
-				"I2C_Bus": "/dev/i2c-16",
+				"I2C_Bus": "/dev/i2c-18",
 				"I2C_Address": "0x50"
 			},
 			"QSFPDD_1": {
 				"Name": "QSFPDD2",
 				"Type": "qsfpdd",
-				"I2C_Bus": "/dev/i2c-16",
+				"I2C_Bus": "/dev/i2c-18",
 				"I2C_Address": "0x50"
 			}
 		},
 		"FMCs": {
 			"FMC_1": {
 				"Name": "FMC",
-				"I2C_Bus": "/dev/i2c-11",
+				"I2C_Bus": "/dev/i2c-13",
 				"I2C_Address": "0x50"
 			}
 		},

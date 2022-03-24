@@ -3379,63 +3379,41 @@ FMC_Autodetect_Vadj()
 	FILE *FP;
 	char Buffer[SYSCMD_MAX];
 	char Value[STRLEN_MAX];
-	int Autodetect;
-	int Found = 0;
 
 	/*
-	 * XXX - The FMC Autodetect Vadj task is currently performed by
-	 * the Board Framework.  At this time, this feature is not performed
-	 * by sc_appd by default.  If there is no 'FMC_Autodetect' variable
-	 * defined in CONFIGFILE, add one and set it to 0.  If this variable
-	 * already exists in CONFIGFILE and it is set to 1, it overrides
-	 * the current default behavior.
+	 * The FMC Autodetect Vadj task is enabled by default.  It can be
+	 * disabled by adding 'FMC_Autodetect: 0' entry in CONFIGFILE.
 	 */
-
-	/* If there is no config file, create one and add 'FMC_Autodetect: 0' */
-	if (access(CONFIGFILE, F_OK) != 0) {
-		(void) sprintf(Buffer, "echo \"FMC_Autodetect: 0\" > %s; "
-			       "sync", CONFIGFILE);
-		SC_INFO("Command: %s", Buffer);
-		system(Buffer);
-		return 0;
-	}
-
-	FP = fopen(CONFIGFILE, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to read file %s: %m", CONFIGFILE);
-		return -1;
-	}
-
-	while (fgets(Buffer, SYSCMD_MAX, FP)) {
-		if (strstr(Buffer, "FMC_Autodetect:") != NULL) {
-			SC_INFO("%s: %s", CONFIGFILE, Buffer);
-			(void) strtok(Buffer, ":");
-			if (strcmp(Buffer, "FMC_Autodetect") != 0) {
-				continue;
-			}
-
-			(void) strcpy(Value, strtok(NULL, "\n"));
-			Autodetect = atoi(Value);
-			Found = 1;
-			break;
-		}
-	}
-
-	(void) fclose(FP);
-
-	if (!Found) {
-		(void) sprintf(Buffer, "echo \"FMC_Autodetect: 0\" >> %s; "
-			       "sync", CONFIGFILE);
-		SC_INFO("Command: %s", Buffer);
-		system(Buffer);
-		return 0;
-	}
-
-	if (Autodetect == 1) {
-		if (FMCAutoVadj_Op() != 0) {
-			SC_ERR("failed to autodetect FMC vadj");
+	if (access(CONFIGFILE, F_OK) == 0) {
+		FP = fopen(CONFIGFILE, "r");
+		if (FP == NULL) {
+			SC_ERR("failed to read file %s: %m", CONFIGFILE);
 			return -1;
 		}
+
+		while (fgets(Buffer, SYSCMD_MAX, FP)) {
+			if (strstr(Buffer, "FMC_Autodetect:") != NULL) {
+				SC_INFO("%s: %s", CONFIGFILE, Buffer);
+				(void) strtok(Buffer, ":");
+				if (strcmp(Buffer, "FMC_Autodetect") != 0) {
+					continue;
+				}
+
+				(void) strcpy(Value, strtok(NULL, "\n"));
+				if (atoi(Value) == 0) {
+					SC_INFO("FMC Autodetect Vadj is disabled");
+					(void) fclose(FP);
+					return 0;
+				}
+			}
+		}
+
+		(void) fclose(FP);
+	}
+
+	if (FMCAutoVadj_Op() != 0) {
+		SC_ERR("failed to autodetect FMC vadj");
+		return -1;
 	}
 
 	return 0;

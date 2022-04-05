@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020 - 2021 Xilinx, Inc.  All rights reserved.
+# Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -22,8 +22,14 @@ if {$idcode == "14CA8093"} {
    puts "XCVM1802 PROD"
 } elseif {$idcode == "04CAA093"} {
    puts "XCVM1802 ES1"
+} elseif {$idcode == "14D00093"} {
+   puts "XCVP1202 PROD"
 } elseif {$idcode == "04D00093"} {
    puts "XCVP1202 ES1"
+} elseif {$idcode == "14D14093"} {
+   puts "XCVP1802 PROD"
+} elseif {$idcode == "04D14093"} {
+   puts "XCVP1802 ES1"
 } else {
    puts "ERROR: invalid idcode 0x$idcode"
 }

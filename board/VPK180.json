@@ -257,9 +257,9 @@
 			"VOLTAGE_UTIL_3V3": {
 				"Name": "UTIL_3V3",
 				"Part_Name": "IR35215",
-				"Maximum_Volt": 3.4,
-				"Typical_Volt": 3.3,
-				"Minimum_Volt": 3.2,
+				"Maximum_Volt": 1.7,
+				"Typical_Volt": 1.65,
+				"Minimum_Volt": 1.6,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x45",
 				"Page_Select": 0
@@ -337,9 +337,9 @@
 			"VOLTAGE_MGTAVCC": {
 				"Name": "MGTAVCC",
 				"Part_Name": "IRPS5401",
-				"Maximum_Volt": 0.91,
-				"Typical_Volt": 0.88,
-				"Minimum_Volt": 0.85,
+				"Maximum_Volt": 0.95,
+				"Typical_Volt": 0.92,
+				"Minimum_Volt": 0.89,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4C",
 				"Page_Select": 2
@@ -397,9 +397,9 @@
 			"VOLTAGE_LPDMGTYAVCC": {
 				"Name": "LPDMGTYAVCC",
 				"Part_Name": "IRPS5401",
-				"Maximum_Volt": 0.91,
-				"Typical_Volt": 0.88,
-				"Minimum_Volt": 0.85,
+				"Maximum_Volt": 0.95,
+				"Typical_Volt": 0.92,
+				"Minimum_Volt": 0.89,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x48",
 				"Page_Select": 2
@@ -427,7 +427,7 @@
 			"VOLTAGE_VCC1V1_LP4": {
 				"Name": "VCC1V1_LP4",
 				"Part_Name": "IR38164",
-				"Maximum_Volt": 1.14,
+				"Maximum_Volt": 1.18,
 				"Typical_Volt": 1.1,
 				"Minimum_Volt": 1.06,
 				"I2C_Bus": "/dev/i2c-4",
@@ -437,7 +437,7 @@
 			"VOLTAGE_MGTAVTT": {
 				"Name": "MGTAVTT",
 				"Part_Name": "IR38164",
-				"Maximum_Volt": 1.24,
+				"Maximum_Volt": 1.25,
 				"Typical_Volt": 1.2,
 				"Minimum_Volt": 1.16,
 				"I2C_Bus": "/dev/i2c-4",

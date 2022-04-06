@@ -171,8 +171,9 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	 * Voltage =  Mantissa * 2 ^ -(Exponent)
 	 */
 
-	/* IR38164 does not support VOUT_MODE PMBus command */
-	if (0 == strcmp(Regulator->Part_Name, "IR38164")) {
+	/* Regulators that don't support VOUT_MODE PMBus command */
+	if ((0 == strcmp(Regulator->Part_Name, "IR38164")) ||
+	    (0 == strcmp(Regulator->Part_Name, "IR38060"))) {
 		Get_Vout_Mode = 0;
 	}
 
@@ -188,7 +189,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 		SC_INFO("VOUT_MODE: %#x", In_Buffer[0]);
 		Exponent = In_Buffer[0] - (sizeof(int) * 8);
 	} else {
-		/* For IR38164, use exponent value -8 */
+		/* For non-compliant regulators, use exponent value -8 */
 		Exponent = -8;
 	}
 

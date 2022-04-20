@@ -452,7 +452,7 @@ Parse_Options(int argc, char **argv)
 	int c;
 
 	opterr = 0;
-	optind = 1;
+	optind = 0;
 	C_Flag = T_Flag = V_Flag = 0;
 	memset(Command_Arg, 0, STRLEN_MAX);
 	memset(Target_Arg, 0, STRLEN_MAX);

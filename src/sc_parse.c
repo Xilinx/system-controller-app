@@ -52,11 +52,11 @@ int Parse_BIT(const char *, jsmntok_t *, int *, BITs_t **);
 }
 
 #define Validate_Str_Size(Parsed_String, Feature, Attribute, Size) { \
-    if ((strlen(Parsed_String) + 1) > Size) { \
-        SC_ERR("%s: %s: value string '%s' is greater than %d characters", \
-                Feature, Attribute, Parsed_String, Size); \
-        return -1; \
-    } \
+	if ((strlen(Parsed_String) + 1) > Size) { \
+		SC_ERR("%s: %s: value string '%s' is greater than %d characters", \
+			Feature, Attribute, Parsed_String, Size); \
+		return -1; \
+	} \
 }
 
 int
@@ -97,9 +97,7 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 		return -1;
 	}
 
-	Parse_Result = jsmn_parse(&Parser, Json_File, strlen(Json_File), Tokens,
-	                          Token_Size);
-
+	Parse_Result = jsmn_parse(&Parser, Json_File, Char_Len, Tokens, Token_Size);
 	if (Parse_Result < 1) {
 		SC_ERR("failed to parse JSON - error code: %d", Parse_Result);
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020 Xilinx, Inc.  All rights reserved.
+# Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -25,7 +25,7 @@ mwr -force 0xF1260138 0
 mwr -force 0xF1260320 0x77
 
 # Perform reset
-targets -set -nocase -filter {name =~ "PMC"}
-rst
+targets -set -nocase -filter {name =~ "*Versal*"}
+rst -system
 
 disconnect

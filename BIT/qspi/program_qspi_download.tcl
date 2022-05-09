@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2021 Xilinx, Inc.  All rights reserved.
+# Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -22,8 +22,8 @@ proc switch_to_jtag {} {
    mwr -force 0xF1260320 0x77
 
    # Perform reset
-   targets -set -nocase -filter {name =~ "PMC"}
-   rst
+   targets -set -nocase -filter {name =~ "*Versal*"}
+   rst -system
 }
 
 connect -xvc-url TCP:127.0.0.1:2542

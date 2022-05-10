@@ -5,7 +5,6 @@
 #
 
 connect -xvc-url TCP:127.0.0.1:2542
-
 targets -set -nocase -filter {name =~ "*Versal*"}
 
 set idcode_reg [mrd -force 0xF11A0000]

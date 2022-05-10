@@ -1,11 +1,10 @@
 #
-# Copyright (c) 2021 Xilinx, Inc.  All rights reserved.
+# Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 connect -xvc-url TCP:127.0.0.1:2542
-
 targets -set -nocase -filter {name =~ "*Versal*"}
 
 # The content of DNA registers varies for each part, however, currently

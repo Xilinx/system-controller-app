@@ -5,7 +5,6 @@
 #
 
 connect -xvc-url TCP:127.0.0.1:2542
-
 targets -set -nocase -filter {name =~ "*Versal*"}
 
 # Enable ISO
@@ -25,7 +24,6 @@ mwr -force 0xF1260138 0
 mwr -force 0xF1260320 0x77
 
 # Perform reset
-targets -set -nocase -filter {name =~ "*Versal*"}
 rst -system
 
 disconnect

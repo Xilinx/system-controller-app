@@ -5,8 +5,6 @@
 #
 
 proc switch_to_jtag {} {
-   targets -set -nocase -filter {name =~ "*Versal*"}
-
    # Enable ISO
    mwr -force 0xf1120000 0xffbff
 
@@ -22,15 +20,12 @@ proc switch_to_jtag {} {
    mwr -force 0xF1260320 0x77
 
    # Perform reset
-   targets -set -nocase -filter {name =~ "*Versal*"}
    rst -system
 }
 
 connect -xvc-url TCP:127.0.0.1:2542
-
-switch_to_jtag
-
 targets -set -nocase -filter {name =~ "*Versal*"}
+switch_to_jtag
 
 set idcode_reg [mrd -force 0xF11A0000]
 # Remove the unwanted information from idcode_reg srting

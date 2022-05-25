@@ -13,22 +13,26 @@ set idcode [lindex [split $idcode_reg ":"] 1]
 set idcode [string map {" " ""} $idcode]
 set idcode [string map {"\n" ""} $idcode]
 
-if {$idcode == "14CA8093"} {
-   puts "XCVC1902 PROD"
-} elseif {$idcode == "04CA8093"} {
-   puts "XCVC1902 ES1"
+if {$idcode == "04CAA093"} {
+   puts "XCVM1802 ES1"
 } elseif {$idcode == "14CAA093"} {
    puts "XCVM1802 PROD"
-} elseif {$idcode == "04CAA093"} {
-   puts "XCVM1802 ES1"
-} elseif {$idcode == "14D00093"} {
-   puts "XCVP1202 PROD"
+} elseif {$idcode == "04CA8093"} {
+   puts "XCVC1902 ES1"
+} elseif {$idcode == "14CA8093"} {
+   puts "XCVC1902 PROD"
 } elseif {$idcode == "04D00093"} {
    puts "XCVP1202 ES1"
-} elseif {$idcode == "14D14093"} {
-   puts "XCVP1802 PROD"
+} elseif {$idcode == "14D00093"} {
+   puts "XCVP1202 PROD"
 } elseif {$idcode == "04D14093"} {
    puts "XCVP1802 ES1"
+} elseif {$idcode == "14D14093"} {
+   puts "XCVP1802 PROD"
+} elseif {$idcode == "04D28093"} {
+   puts "XCVH1582 ES1"
+} elseif {$idcode == "14D28093"} {
+   puts "XCVP1802 PROD"
 } else {
    puts "ERROR: invalid idcode 0x$idcode"
 }

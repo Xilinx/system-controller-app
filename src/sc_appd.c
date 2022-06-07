@@ -76,6 +76,7 @@ int FMC_Autodetect_Vadj(void);
 int Set_Clocks(void);
 int Set_Voltages(void);
 int Apply_Workarounds(void);
+int IO_Exp_Initialized(void);
 static void String_2_Argv(char *, int *, char **);
 extern char *Appfile(char *);
 extern int Board_Identification(char *);
@@ -315,6 +316,15 @@ main()
 #endif
 	/* Identify the board */
 	if (Board_Identification(Board_Name) != 0) {
+		goto Out;
+	}
+
+	/*
+	 * Direction of IO Expander ports needs to be initialized
+	 * in order for FMC modules to be detected.
+	 */
+	if (IO_Exp_Initialized() != 0) {
+		SC_ERR("failed to initialize IO expander");
 		goto Out;
 	}
 
@@ -2138,6 +2148,39 @@ int GPIO_Ops(void)
 	return Gpio_get();
 }
 
+int IO_Exp_Initialized(void)
+{
+	IO_Exp_t *IO_Exp;
+	unsigned int Value = 0;
+
+	IO_Exp = Plat_Devs->IO_Exp;
+	if (IO_Exp == NULL) {
+		SC_ERR("ioexp operation is not supported");
+		return -1;
+	}
+
+	for (int i = 0; i < IO_Exp->Numbers; i++) {
+		Value <<= 1;
+		if ((IO_Exp->Directions[i] == 1) ||
+		   (IO_Exp->Directions[i] == -1)) {
+			Value |= 1;
+		}
+	}
+
+	if (Access_IO_Exp(IO_Exp, 1, 0x6, &Value) != 0) {
+		SC_ERR("failed to set direction");
+		return -1;
+	}
+
+	Value = (~Value & ((1 << IO_Exp->Numbers) - 1));
+	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
+		SC_ERR("failed to set output");
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
  * IO Expander Operations
  */
@@ -2266,28 +2309,7 @@ int IO_Exp_Ops(void)
 		break;
 
 	case RESTOREIOEXP:
-		Value = 0;
-		for (int i = 0; i < IO_Exp->Numbers; i++) {
-			Value <<= 1;
-			if ((IO_Exp->Directions[i] == 1) ||
-			   (IO_Exp->Directions[i] == -1)) {
-				Value |= 1;
-			}
-		}
-
-		if (Access_IO_Exp(IO_Exp, 1, 0x6,
-				  (unsigned int *)&Value) != 0) {
-			SC_ERR("failed to set direction");
-			return -1;
-		}
-
-		Value = (~Value & ((1 << IO_Exp->Numbers) - 1));
-		if (Access_IO_Exp(IO_Exp, 1, 0x2,
-				  (unsigned int *)&Value) != 0) {
-			SC_ERR("failed to set output");
-			return -1;
-		}
-
+		return IO_Exp_Initialized();
 		break;
 
 	default:
@@ -2475,7 +2497,6 @@ int QSFP_List(void)
 	QSFP_t *QSFP;
 	int FD;
 	char Buffer[STRLEN_MAX];
-	int Ret = 0;
 
 	QSFPs = Plat_Devs->QSFPs;
 	if ((strcmp(Board_Name, "VCK190") == 0) ||
@@ -2496,15 +2517,16 @@ int QSFP_List(void)
 		FD = open(QSFP->I2C_Bus, O_RDWR);
 		if (FD < 0) {
 			SC_ERR("failed to access I2C bus %s: %m", QSFP->I2C_Bus);
-			Ret = -1;
-			goto Out;
+			(void) QSFP_ModuleSelect(QSFP, 0);
+			return -1;
 		}
 
 		if (ioctl(FD, I2C_SLAVE_FORCE, QSFP->I2C_Address) < 0) {
 			SC_ERR("failed to configure I2C bus for access to "
 			       "device address %#x: %m", QSFP->I2C_Address);
-			Ret = -1;
-			goto Out;
+			(void) QSFP_ModuleSelect(QSFP, 0);
+			(void) close(FD);
+			return -1;
 		}
 
 		/*
@@ -2513,16 +2535,17 @@ int QSFP_List(void)
 		 * the I2C device address.
 		 */
 		if (read(FD, Buffer, 1) != 1) {
+			(void) QSFP_ModuleSelect(QSFP, 0);
 			(void) close(FD);
 			continue;
 		}
 
 		SC_PRINT("%s", QSFP->Name);
+		(void) QSFP_ModuleSelect(QSFP, 0);
+		(void) close(FD);
 	}
-Out:
-	(void) QSFP_ModuleSelect(QSFP, 0);
-	(void) close(FD);
-	return Ret;
+
+	return 0;
 }
 
 /*

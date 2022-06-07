@@ -1668,6 +1668,11 @@ int
 QSFP_ModuleSelect(QSFP_t *QSFP, int State)
 {
 	IO_Exp_t *IO_Exp;
+	int i, j;
+	int Found = 0;
+	unsigned char Upper_Mask = -1;
+	unsigned char Lower_Mask = -1;
+	unsigned int Mask;
 	unsigned int Value;
 
 	if (State != 0 && State != 1) {
@@ -1675,36 +1680,71 @@ QSFP_ModuleSelect(QSFP_t *QSFP, int State)
 		return -1;
 	}
 
-	/* Nothing to do for 'State == 0' */
-	if (State == 0) {
-		return 0;
-	}
-
+	/*
+	 * For boards that use PDI to enable QSFP module select, there
+	 * is nothing to do for 'State == 0'.
+	 */
 	if ((strcmp(Board_Name, "VCK190") == 0) ||
 	    (strcmp(Board_Name, "VMK180") == 0)) {
-		return VCK190_QSFP_ModuleSelect(QSFP, State);
+		if (State == 1) {
+			return VCK190_QSFP_ModuleSelect(QSFP, State);
+		} else {
+			return 0;
+		}
 	}
 
-	/* State == 1 */
 	IO_Exp = Plat_Devs->IO_Exp;
 
-	/* Set direction */
-	Value = 0x73DF;
-	if (Access_IO_Exp(IO_Exp, 1, 0x6, &Value) != 0) {
-		SC_ERR("failed to set IO expander direction");
-		return -1;
+	/*
+	 * IO expander outputs are labeled to follow schematics for
+	 * ease of referencing.  The layout of Output Port registers are
+	 * as follow:
+	 *
+	 * Upper Byte: P07 P06 P05 P04 P03 P02 P01 P00
+	 * Lower Byte: P17 P16 P15 P14 P13 P12 P11 P10
+	 *
+	 * From output labels find which bit of which byte should be
+	 * set to 0 (Active Low) for (State == 1).  For (State == 0),
+	 * revert the same bit to 1.
+	 */
+	for (i = 0, j = 8; i < 8; i++, j--) {
+		if (strstr(IO_Exp->Labels[i], QSFP->Name) != NULL) {
+			Found = 1;
+			break;
+		}
+	}
+
+	Upper_Mask &= ~(1 << (j - 1));
+
+	if (!Found) {
+		for (i = 8, j = 8; i < 16; i++, j--) {
+			if (strstr(IO_Exp->Labels[i], QSFP->Name) != NULL) {
+				break;
+			}
+		}
+
+		Lower_Mask &= ~(1 << (j - 1));
 	}
 
 	/*
-	 * Only one QSFP-DD can be referenced at a time since both
-	 * have address 0x50 and are on the same I2C bus, so make
-	 * sure the other QSFP-DD is not selected.
+	 * Read the current output value, modify the desired bit, and
+	 * write back the new output value.
 	 */
-	if (strcmp(QSFP->Name, "QSFPDD1") == 0) {
-		Value = 0x820;
-	} else {
-		Value = 0x420;
+	if (Access_IO_Exp(IO_Exp, 0, 0x2, &Value) != 0) {
+		SC_ERR("failed to get IO expander output");
+		return -1;
 	}
+
+	SC_INFO("Current Output Port Registers: %#x", Value);
+
+	Mask = (Upper_Mask << 8) | Lower_Mask;
+	if (State == 1) {
+		Value &= Mask;
+	} else {
+		Value = Value | (~Mask & ((1 << IO_Exp->Numbers) - 1));
+	}
+
+	SC_INFO("Modify Output Port Registers: %#x", Value);
 
 	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
 		SC_ERR("failed to set IO expander output");

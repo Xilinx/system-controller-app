@@ -18,6 +18,10 @@ extern int XSDB_BIT(void *, void *);
 extern int EBM_EEPROM_Check(void *, void *);
 extern int DIMM_EEPROM_Check(void *, void *);
 extern int Voltages_Check(void *, void *);
+extern int DDRMC_1_Test(void *, void *);
+extern int DDRMC_2_Test(void *, void *);
+extern int DDRMC_3_Test(void *, void *);
+extern int DDRMC_4_Test(void *, void *);
 extern int Display_Instruction(void *, void *);
 extern int Assert_Reset(void *, void *);
 extern int Reset_IDT_8A34001(void);
@@ -1049,6 +1053,14 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 					Temp->Level[Level].Plat_BIT_Op = DIMM_EEPROM_Check;
 				} else if (strcmp(Value_Str, "Voltages_Check") == 0) {
 					Temp->Level[Level].Plat_BIT_Op = Voltages_Check;
+				} else if (strcmp(Value_Str, "DDRMC_1_Test") == 0) {
+					Temp->Level[Level].Plat_BIT_Op = DDRMC_1_Test;
+				} else if (strcmp(Value_Str, "DDRMC_2_Test") == 0) {
+					Temp->Level[Level].Plat_BIT_Op = DDRMC_2_Test;
+				} else if (strcmp(Value_Str, "DDRMC_3_Test") == 0) {
+					Temp->Level[Level].Plat_BIT_Op = DDRMC_3_Test;
+				} else if (strcmp(Value_Str, "DDRMC_4_Test") == 0) {
+					Temp->Level[Level].Plat_BIT_Op = DDRMC_4_Test;
 				} else if (strcmp(Value_Str, "Display_Instruction") == 0) {
 					Temp->Level[Level].Plat_BIT_Op = Display_Instruction;
 				} else if (strcmp(Value_Str, "Assert_Reset") == 0) {

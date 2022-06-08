@@ -801,6 +801,33 @@
 					}
 				}
 			},
+			"BIT_DDRMC_1_TEST" : {
+				"Name" : "DDRMC_1 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_1_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_2_TEST" : {
+				"Name" : "DDRMC_2 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_2_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_4_TEST" : {
+				"Name" : "DDRMC_4 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_4_Test"
+					}
+				}
+			},
 			"BIT_PL_UART_TEST" : {
 				"Name" : "PL UART Test",
 				"Manual" : 1,

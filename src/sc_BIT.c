@@ -16,6 +16,7 @@ extern Plat_Devs_t *Plat_Devs;
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Reset_Op(void);
 extern int XSDB_Op(const char *, char *, int);
+extern int JTAG_Op(int);
 
 /*
  * This test validates whether the current clock frequency is
@@ -303,3 +304,95 @@ Assert_Reset(void *Arg1, void *Arg2)
 
 	return 0;
 }
+
+int
+DDRMC_Test(void *Arg1, void *Arg2)
+{
+	BIT_t *BIT_p = Arg1;
+	int *DDRMC = (int *)Arg2;
+	FILE *FP;
+	char System_Cmd[SYSCMD_MAX];
+	char Buffer[STRLEN_MAX] = {'\0'};
+	int Ret = 0;
+
+	(void) sprintf(Buffer, "%sddrmc_%d/ddrmc_%d_check.py", BIT_PATH,
+		       *DDRMC, *DDRMC);
+	if (access(Buffer, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", Buffer);
+		return -1;
+	}
+
+	(void) JTAG_Op(1);
+	(void) sprintf(System_Cmd, "python3 %s", Buffer);
+	SC_INFO("Command: %s", System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke %s: %m", System_Cmd);
+		Ret = -1;
+		goto Out;
+	}
+
+	while (fgets(Buffer, STRLEN_MAX, FP)) {
+		SC_INFO("%s", Buffer);
+		if ((strstr(Buffer, "ERROR: ") != NULL)) {
+			SC_PRINT_N("%s", Buffer);
+			Ret = -1;
+			(void) fclose(FP);
+			goto Out;
+		}
+
+		if ((strstr(Buffer, "Calibration Status: ") != NULL)) {
+			break;
+		}
+	}
+
+	if ((strstr(Buffer, "PASS") != NULL)) {
+		SC_PRINT("%s: PASS", BIT_p->Name);
+	} else {
+		SC_ERR("%s: FAIL", BIT_p->Name);
+		Ret = -1;
+	}
+
+	(void) fclose(FP);
+
+Out:
+	(void) JTAG_Op(0);
+	return Ret;
+}
+
+int
+DDRMC_1_Test(void *Arg1, void *Arg2)
+{
+	__attribute__((unused)) void *Ignore = Arg2;
+	int DDRMC = 1;
+
+	return (DDRMC_Test(Arg1, (void *)&DDRMC));
+}
+
+int
+DDRMC_2_Test(void *Arg1, void *Arg2)
+{
+	__attribute__((unused)) void *Ignore = Arg2;
+	int DDRMC = 2;
+
+	return (DDRMC_Test(Arg1, (void *)&DDRMC));
+}
+
+int
+DDRMC_3_Test(void *Arg1, void *Arg2)
+{
+	__attribute__((unused)) void *Ignore = Arg2;
+	int DDRMC = 3;
+
+	return (DDRMC_Test(Arg1, (void *)&DDRMC));
+}
+
+int
+DDRMC_4_Test(void *Arg1, void *Arg2)
+{
+	__attribute__((unused)) void *Ignore = Arg2;
+	int DDRMC = 4;
+
+	return (DDRMC_Test(Arg1, (void *)&DDRMC));
+}
+

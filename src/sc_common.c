@@ -172,8 +172,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	 */
 
 	/* Regulators that don't support VOUT_MODE PMBus command */
-	if ((0 == strcmp(Regulator->Part_Name, "IR38164")) ||
-	    (0 == strcmp(Regulator->Part_Name, "IR38060"))) {
+	if (!Regulator->PMBus_VOUT_MODE) {
 		Get_Vout_Mode = 0;
 	}
 

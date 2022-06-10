@@ -252,6 +252,7 @@
 				"Minimum_Volt": 0.7,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x46",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 0
 			},
 			"VOLTAGE_UTIL_3V3": {
@@ -262,6 +263,7 @@
 				"Minimum_Volt": 1.6,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x45",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 0
 			},
 			"VOLTAGE_VCC_SOC": {
@@ -272,6 +274,7 @@
 				"Minimum_Volt": 0.77,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x45",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 1
 			},
 			"VOLTAGE_VCC_PSFP": {
@@ -282,6 +285,7 @@
 				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 0
 			},
 			"VOLTAGE_VCCO_MIO": {
@@ -292,6 +296,7 @@
 				"Minimum_Volt": 1.74,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 1
 			},
 			"VOLTAGE_VCC_PMC": {
@@ -302,6 +307,7 @@
 				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 2
 			},
 			"VOLTAGE_VCC1V5": {
@@ -312,6 +318,7 @@
 				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 3
 			},
 			"VOLTAGE_VCC_RAM_VCCINT_GT": {
@@ -322,6 +329,7 @@
 				"Minimum_Volt": 0.77,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4C",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 0
 			},
 			"VOLTAGE_MGTVCCAUX": {
@@ -332,6 +340,7 @@
 				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4C",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 1
 			},
 			"VOLTAGE_MGTAVCC": {
@@ -342,6 +351,7 @@
 				"Minimum_Volt": 0.89,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4C",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 2
 			},
 			"VOLTAGE_VCCAUX": {
@@ -352,6 +362,7 @@
 				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4D",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 0
 			},
 			"VOLTAGE_UTIL_2V5": {
@@ -362,6 +373,7 @@
 				"Minimum_Volt": 2.42,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4D",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 1
 			},
 			"VOLTAGE_VCC_PSLP_CPM5": {
@@ -372,6 +384,7 @@
 				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4D",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 2
 			},
 			"VOLTAGE_UTIL_1V8": {
@@ -382,6 +395,7 @@
 				"Minimum_Volt": 1.75,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x48",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 0
 			},
 			"VOLTAGE_VCCAUX_PMC": {
@@ -392,6 +406,7 @@
 				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x48",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 1
 			},
 			"VOLTAGE_LPDMGTYAVCC": {
@@ -402,6 +417,7 @@
 				"Minimum_Volt": 0.89,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x48",
+				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 2
 			},
 			"VOLTAGE_VADJ_FMC": {
@@ -412,6 +428,7 @@
 				"Minimum_Volt": 0.0,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4E",
+				"PMBus_VOUT_MODE": 0,
 				"Page_Select": -1
 			},
 			"VOLTAGE_LPDMGTYAVTT": {
@@ -422,6 +439,7 @@
 				"Minimum_Volt": 1.16,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x41",
+				"PMBus_VOUT_MODE": 0,
 				"Page_Select": -1
 			},
 			"VOLTAGE_VCC1V1_LP4": {
@@ -432,6 +450,7 @@
 				"Minimum_Volt": 1.06,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4F",
+				"PMBus_VOUT_MODE": 0,
 				"Page_Select": -1
 			},
 			"VOLTAGE_MGTAVTT": {
@@ -442,6 +461,7 @@
 				"Minimum_Volt": 1.16,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x49",
+				"PMBus_VOUT_MODE": 0,
 				"Page_Select": -1
 			}
 		},

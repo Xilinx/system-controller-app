@@ -580,6 +580,13 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		(*VCCs)->Voltage[Voltage_Items].I2C_Address = (int)strtol(Value_Str, NULL, 0);
 
 		(*Index)++;
+		Check_Attribute("PMBus_VOUT_MODE", "VOLTAGE");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		(*VCCs)->Voltage[Voltage_Items].PMBus_VOUT_MODE = atoi(Value_Str);
+		SC_INFO("PMBus_VOUT_MODE: %i\n", (*VCCs)->Voltage[Voltage_Items].PMBus_VOUT_MODE);
+
+		(*Index)++;
 		Check_Attribute("Page_Select", "VOLTAGE");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);

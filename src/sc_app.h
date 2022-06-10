@@ -168,6 +168,7 @@ typedef struct {
 	float	Maximum_Volt;
 	float	Typical_Volt;
 	float	Minimum_Volt;
+	int	PMBus_VOUT_MODE;
 	int	Page_Select;
 	char	I2C_Bus[STRLEN_MAX];
 	int	I2C_Address;

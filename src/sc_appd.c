@@ -1862,137 +1862,34 @@ int BIT_Ops(void)
 	return BIT->Level[Level].Plat_BIT_Op(BIT, &Level);
 }
 
-/*
- * DDR serial presence detect (SPD) EEPROM Operations.
- *
- * SPD is a standardized way to access information about a memory module.
- * It's an EEPROM on a DIMM where the lower 128 bytes contain certain
- * parameters required by the JEDEC standards, including type, size, etc.
- * The SPD EEPROM is accessed using SMBus; address range: 0x50–0x57 or
- * 0x30–0x37. The TSE2004av extension uses addresses 0x18–0x1F to access
- * an optional on-chip temperature sensor.
- */
-
-struct spd_ddr4 {
-	__u8 spd_bytes;		// 0
-	__u8 spd_rev;		// 1
-	__u8 spd_mem_type;  // 2
-	__u8 spd_mod_type;  // 3 needs mask 0xf
-	__u8 spd_mem_size;  // 4 needs mask 0xf
-	__u8 spd_to14[9];   // byte 5-9
-	__u8 spd_tsensor;   // msbit: Thermal sensor
-};
-
-union spd_ddr {
-	__u64 a64[2];
-	__u8  b[16];
-	struct spd_ddr4 ddr4;
-	// struct spd_ddr3 ddr3;
-};
-
-int DDRi2c_read(int fd, __u8 *Buf, struct i2c_info *Iic)
-{
-	int Ret = 0;
-
-	if (ioctl(fd, I2C_SLAVE_FORCE, Iic->Bus_addr) < 0) {
-		SC_ERR("failed to configure I2C bus to access device %#x: %m",
-		       Iic->Bus_addr);
-		return -1;
-	}
-
-	I2C_READ(fd, Iic->Bus_addr, Iic->Read_len, &Iic->Reg_addr, Buf, Ret);
-	return Ret;
-}
+int SDRAM_Size[] = { 0, 512, 1, 2, 4, 8, 16 };
 
 /*
- * DDRSPD is the EEPROM on a DIMM card. First 16 bytes indicate type.
- * First 16 bytes indicate type.
- * Nibbles 4 and 5 (numbered from 0) indicates ddr4ram: "0C" in ASCII,
- * Nibble 9 indicates size: 0, .5G, 1G, 2G, 4G, 8G, or 16G
- * Nibble 28 temp sensor: 8 = present, 0 = not present
- */
-int DIMM_spd(int fd)
-{
-	char Buf_1[STRLEN_MAX];
-	char Buf_2[SYSCMD_MAX] = { 0 };
-	DIMM_t *DIMM;
-	union spd_ddr Spd_buf = {.a64 = {0, 0}};
-	struct spd_ddr4 *p = &Spd_buf.ddr4;
-	__u8 Sz256;
-	int Ret;
-
-	DIMM = Plat_Devs->DIMM;
-	Ret = DDRi2c_read(fd, Spd_buf.b, &DIMM->Spd);
-	if (Ret < 0) {
-		SC_ERR("failed to read DDR SPD");
-		return Ret;
-	}
-
-	Sz256 = 0xf & p->spd_mem_size;
-	SC_PRINT("DDR4 SDRAM?\t%s", ((p->spd_mem_type == 0xc) ? "Yes" : "No"));
-	if (Sz256 > 1) {
-		SC_PRINT("Size(Gb):\t%u", (1 << (Sz256 - 2)));
-	} else {
-		SC_PRINT("Size(Mb):\t%s", (Sz256 ? "512" : "0"));
-	}
-
-	SC_PRINT("Temp. Sensor?\t%s", ((0x80 & p->spd_tsensor) ? "Yes" : "No"));
-
-	for (int j = 0; j < sizeof(Spd_buf.b); j++) {
-		(void) sprintf(Buf_1, "%c%02x", (0xf & j) ? ' ' : '\n',
-			       Spd_buf.b[j]);
-		(void) strcat(Buf_2, Buf_1);
-	}
-
-	SC_INFO("%s", Buf_2);
-	SC_INFO("spd_bytes, revision = %u, %u", p->spd_bytes, p->spd_rev);
-	SC_INFO("spd_mem_type = %u", p->spd_mem_type);
-	SC_INFO("spd_mod_type = %u", 0xf & p->spd_mod_type);
-	SC_INFO("spd_mem_size = %u or %u MB", Sz256, Sz256 ? (256 << Sz256) : 0);
-	SC_INFO("spd_tsensor  = %c", (0x80 & p->spd_tsensor) ? 'Y' : 'N');
-
-	return Ret;
-}
-
-/*
- * See Temperature format description in SE98A data sheet
- *   tttt_tttt_XXXS_TTTT  ->  STTT_Tttt_tttt_t000
- * swap bytes, set the signed bit with shifts
- * adjust for the .125 C resolution in printf
- */
-int DIMM_temperature(int fd)
-{
-	DIMM_t *DIMM;
-	__u16 Tbuf = 0;
-	int Ret = 0;
-
-	DIMM = Plat_Devs->DIMM;
-	Ret = DDRi2c_read(fd, (void *)&Tbuf, &DIMM->Therm);
-	if (Ret == 0) {
-		__s16 t = (Tbuf << 8 | Tbuf >> 8) << 3;
-		SC_PRINT("Temperature(C):\t%.2f", (.125 * t / 16));
-	}
-
-	return Ret;
-}
-
-/*
- * DDRSPD is the EEPROM on a DIMM card. There might be a temperature sensor.
- * Assume there is only one dimm on our boards
+ * DDR Operations
  */
 int DDR_Ops(void)
 {
-	DIMM_t *DIMM;
-	int FD, Ret = 0;
+	int Target_Index = -1;
+	DIMMs_t	*DIMMs;
+	DIMM_t	*DIMM;
+	int FD;
+	char In_Buffer[STRLEN_MAX] = { 0 };
+	char Out_Buffer[STRLEN_MAX] = { 0 };
+	short Temp;
+	int DRAM_Size_Index;
+	int Ret = 0;
 
-	DIMM = Plat_Devs->DIMM;
-	if (DIMM == NULL) {
+	DIMMs = Plat_Devs->DIMMs;
+	if (DIMMs == NULL) {
 		SC_ERR("ddr operation is not supported");
 		return -1;
 	}
 
 	if (Command.CmdId == LISTDDR) {
-		SC_PRINT("%s", DIMM->Name);
+		for (int i = 0; i < DIMMs->Numbers; i++) {
+			SC_PRINT("%s", DIMMs->DIMM[i].Name);
+		}
+
 		return 0;
 	}
 
@@ -2001,18 +1898,21 @@ int DDR_Ops(void)
 		return -1;
 	}
 
-	if (strcmp(Target_Arg, DIMM->Name) != 0) {
-		SC_ERR("invalid getddr target");
+	for (int i = 0; i < DIMMs->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)DIMMs->DIMM[i].Name) == 0) {
+			Target_Index = i;
+			DIMM = &DIMMs->DIMM[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		SC_ERR("invalid ddr target");
 		return -1;
 	}
 
 	if (V_Flag == 0) {
 		SC_ERR("no value is provided for getddr command");
-		return -1;
-	}
-
-	if (strcmp(Value_Arg, "spd") != 0 && strcmp(Value_Arg, "temp") != 0) {
-		SC_ERR("%s is not a valid value", Value_Arg);
 		return -1;
 	}
 
@@ -2022,10 +1922,64 @@ int DDR_Ops(void)
 		return -1;
 	}
 
-	if (Value_Arg[0] == 't') {
-		Ret = DIMM_temperature(FD);
+	if (strcmp(Value_Arg, "temp") == 0) {
+		/*
+		 * From SE98A datasheet:
+		 *	Temperature register (address 0x5, 16-bit value)
+		 *	Byte 0: XXXS_TTTT
+		 *	Byte 1: tttt_tttt
+		 *
+		 *	STTT_Tttt_tttt_t000
+		 *
+		 * Upper 3-bit of Byte 1 is Status bits and is not involved in
+		 * temperature value.  Shift-left the 16-bit value by 3 to get
+		 * the temperature value, and then divide the value by (2 ^ 4 = 16)
+		 * to adjust for the shift-left.  Resolution of each bit is 0.125 C.
+		 */
+		Out_Buffer[0] = 0x5;
+		I2C_READ(FD, DIMM->I2C_Address_Thermal, 2, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		SC_INFO("Temperature Register: %#x %#x", In_Buffer[0], In_Buffer[1]);
+		Temp = ((In_Buffer[0] << 8) | In_Buffer[1]);
+		Temp <<= 3;
+		Temp /= 16;
+		SC_PRINT("Temperature(C):\t%.2f", ((float)Temp) * 0.125);
+
+	} else if (strcmp(Value_Arg, "spd") == 0) {
+		Out_Buffer[0] = 0x0;
+		I2C_READ(FD, DIMM->I2C_Address_SPD, 0xFF, Out_Buffer, In_Buffer, Ret);
+		if (Ret < 0) {
+			(void) close(FD);
+			return Ret;
+		}
+
+		/*
+		 * DDR Serial Presence Detect (SPD) specification for DDR4:
+		 *
+		 * Byte 0x2 - DRAM Type = (0xC: DDR4 SDRAM)
+		 * Byte 0x4 - DRAM Size (lower nibble) =
+		 *			(0: 0Mb, 1: 512Mb, 2: 1Gb, 3: 2Gb, 4: 4Gb,
+		 *			 5: 8Gb, 6: 16Gb)
+		 * Byte 0xE - Thermal Sensor = (0x0: No, 0x80: Yes)
+		 */
+		SC_INFO("DRAM Type: %#x", In_Buffer[2]);
+		SC_PRINT("DDR4 SDRAM?\t%s", ((In_Buffer[2] == 0xC) ? "Yes" : "No"));
+
+		SC_INFO("DRAM Size: %#x", In_Buffer[4]);
+		DRAM_Size_Index = In_Buffer[4] & 0xF;
+		SC_PRINT("Size(%cb):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'),
+			 SDRAM_Size[DRAM_Size_Index]);
+
+		SC_INFO("Thermal Sensor: %#x", In_Buffer[0xE]);
+		SC_PRINT("Temp. Sensor?\t%s", ((In_Buffer[0xE] & 0x80) ? "Yes" : "No"));
+
 	} else {
-		Ret = DIMM_spd(FD);
+		SC_ERR("%s is not a valid value", Value_Arg);
+		Ret = -1;
 	}
 
 	(void) close(FD);

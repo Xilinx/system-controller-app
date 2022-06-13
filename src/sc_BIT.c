@@ -155,50 +155,48 @@ DIMM_EEPROM_Check(void *Arg1, void *Arg2)
 	BIT_t *BIT_p = Arg1;
 	__attribute__((unused)) void *Ignore = Arg2;
 	int FD;
+	DIMMs_t *DIMMs;
 	DIMM_t *DIMM;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
 
-	DIMM = Plat_Devs->DIMM;
-	if (DIMM == NULL) {
+	DIMMs = Plat_Devs->DIMMs;
+	if (DIMMs == NULL) {
 		SC_ERR("ddr operation is not supported");
 		return -1;
 	}
 
-	FD = open(DIMM->I2C_Bus, O_RDWR);
-	if (FD < 0) {
-		SC_ERR("unable to open I2C bus %s: %m", DIMM->I2C_Bus);
-		SC_PRINT("%s: FAIL", BIT_p->Name);
-		return -1;
-	}
+	for (int i = 0; i < DIMMs->Numbers; i++) {
+		DIMM = &DIMMs->DIMM[i];
+		SC_INFO("DIMM: %s", DIMM->Name);
+		FD = open(DIMM->I2C_Bus, O_RDWR);
+		if (FD < 0) {
+			SC_ERR("unable to open I2C bus %s: %m", DIMM->I2C_Bus);
+			SC_PRINT("%s: FAIL", BIT_p->Name);
+			return -1;
+		}
 
-	if (ioctl(FD, I2C_SLAVE_FORCE, DIMM->Spd.Bus_addr) < 0) {
-		SC_ERR("unable to access EEPROM device %#x: %m",
-		       DIMM->Spd.Bus_addr);
-		SC_PRINT("%s: FAIL", BIT_p->Name);
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		Out_Buffer[0] = 0x2;	// Byte 2: DRAM Device Type
+		I2C_READ(FD, DIMM->I2C_Address_SPD, 1, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) close(FD);
+			return Ret;
+		}
+
+		if (In_Buffer[0] != 0xC) {
+			SC_ERR("DIMM is not DDR4");
+			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) close(FD);
+			return -1;
+		}
+
 		(void) close(FD);
-		return -1;
 	}
 
-	(void) memset(Out_Buffer, 0, STRLEN_MAX);
-	(void) memset(In_Buffer, 0, STRLEN_MAX);
-	Out_Buffer[0] = 0x2;	// Byte 2: DRAM Device Type
-	I2C_READ(FD, DIMM->Spd.Bus_addr, 1, Out_Buffer, In_Buffer, Ret);
-	if (Ret != 0) {
-		SC_PRINT("%s: FAIL", BIT_p->Name);
-		(void) close(FD);
-		return Ret;
-	}
-
-	if (In_Buffer[0] != 0xc) {
-		SC_ERR("DIMM is not DDR4");
-		SC_PRINT("%s: FAIL", BIT_p->Name);
-		(void) close(FD);
-		return -1;
-	}
-
-	(void) close(FD);
 	SC_PRINT("%s: PASS", BIT_p->Name);
 	return 0;
 }

@@ -34,7 +34,7 @@ int Parse_INA226(const char *, jsmntok_t *, int *, INA226s_t **);
 int Parse_PowerDomain(const char *, jsmntok_t *, int *, Power_Domains_t **,
                       INA226s_t *);
 int Parse_Voltage(const char *, jsmntok_t *, int *, Voltages_t **);
-int Parse_DIMM(const char *, jsmntok_t *, int *, DIMM_t **);
+int Parse_DIMM(const char *, jsmntok_t *, int *, DIMMs_t **);
 int Parse_GPIO(const char *, jsmntok_t *, int *, GPIOs_t **);
 int Parse_IO_EXP(const char *, jsmntok_t *, int *, IO_Exp_t **);
 int Parse_DaughterCard(const char *, jsmntok_t *, int *, Daughter_Card_t **);
@@ -151,7 +151,7 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 				return -1;
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "DIMM") == 0) {
-			if (Parse_DIMM(Json_File, Tokens, &i, &Dev_Parse->DIMM) != 0) {
+			if (Parse_DIMM(Json_File, Tokens, &i, &Dev_Parse->DIMMs) != 0) {
 				return -1;
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "GPIO") == 0) {
@@ -600,76 +600,50 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 }
 
 int
-Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMM_t **DIMMs)
+Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs)
 {
 	char *Value_Str;
+	int DIMM_Items = 0;
 
 	SC_INFO("********************* DIMM *********************");
-	*DIMMs = (DIMM_t *)malloc(sizeof(DIMM_t));
-
-	*Index += 2;
-	Check_Attribute("Name", "DIMM");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	Validate_Str_Size(Value_Str, "DIMM", "Name", STRLEN_MAX);
-	strncpy((*DIMMs)->Name, Value_Str, strlen(Value_Str) + 1);
-	SC_INFO("Name: %s", (*DIMMs)->Name);
+	*DIMMs = (DIMMs_t *)malloc(sizeof(DIMMs_t));
 
 	(*Index)++;
-	Check_Attribute("I2C_Bus", "DIMM");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	Validate_Str_Size(Value_Str, "DIMM", "I2C_Bus", STRLEN_MAX);
-	strncpy((*DIMMs)->I2C_Bus, Value_Str, strlen(Value_Str) + 1);
-	SC_INFO("I2C Bus: %s", (*DIMMs)->I2C_Bus);
+	(*DIMMs)->Numbers = Tokens[*Index].size;
+	SC_INFO("Number of DIMM: %i", (*DIMMs)->Numbers);
+	while (DIMM_Items < (*DIMMs)->Numbers) {
+		*Index += 3;
+		Check_Attribute("Name", "DIMM");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "DIMM", "Name", STRLEN_MAX);
+		strncpy((*DIMMs)->DIMM[DIMM_Items].Name, Value_Str, strlen(Value_Str) + 1);
+		SC_INFO("Name: %s", (*DIMMs)->DIMM[DIMM_Items].Name);
 
-	SC_INFO("Spd Info -");
-	(*Index)++;
-	Check_Attribute("Spd", "DIMM");
-	(*Index)++;
-	Check_Attribute("Bus_addr", "Spd");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	(*DIMMs)->Spd.Bus_addr = (int)strtol(Value_Str, NULL, 0);
-	SC_INFO("Bus Addr: %u", (*DIMMs)->Spd.Bus_addr);
+		(*Index)++;
+		Check_Attribute("I2C_Bus", "DIMM");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "DIMM", "I2C_Bus", STRLEN_MAX);
+		strncpy((*DIMMs)->DIMM[DIMM_Items].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+		SC_INFO("I2C_Bus: %s", (*DIMMs)->DIMM[DIMM_Items].I2C_Bus);
 
-	(*Index)++;
-	Check_Attribute("Reg_addr", "Spd");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	(*DIMMs)->Spd.Reg_addr = atoi(Value_Str);
-	SC_INFO("Reg Addr: %u", (*DIMMs)->Spd.Reg_addr);
+		(*Index)++;
+		Check_Attribute("I2C_Address_SPD", "DIMM");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		(*DIMMs)->DIMM[DIMM_Items].I2C_Address_SPD = (int)strtol(Value_Str, NULL, 0);
+		SC_INFO("I2C_Address_SPD: %u", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_SPD);
 
-	(*Index)++;
-	Check_Attribute("Read_len", "Spd");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	(*DIMMs)->Spd.Read_len = atoi(Value_Str);
-	SC_INFO("Read len: %u", (*DIMMs)->Spd.Read_len);
+		(*Index)++;
+		Check_Attribute("I2C_Address_Thermal", "DIMM");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		(*DIMMs)->DIMM[DIMM_Items].I2C_Address_Thermal = (int)strtol(Value_Str, NULL, 0);
+		SC_INFO("I2C_Address_Thermal: %u", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_Thermal);
 
-	SC_INFO("Term Info -");
-	(*Index)++;
-	Check_Attribute("Therm", "DIMM");
-	(*Index)++;
-	Check_Attribute("Bus_addr", "Therm");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	(*DIMMs)->Therm.Bus_addr = (int)strtol(Value_Str, NULL, 0);
-	SC_INFO("Bus Addr: %u", (*DIMMs)->Therm.Bus_addr);
-
-	(*Index)++;
-	Check_Attribute("Reg_addr", "Therm");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	(*DIMMs)->Therm.Reg_addr = atoi(Value_Str);
-	SC_INFO("Reg Addr: %u", (*DIMMs)->Therm.Reg_addr);
-
-	(*Index)++;
-	Check_Attribute("Read_len", "Therm");
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	(*DIMMs)->Therm.Read_len = atoi(Value_Str);
-	SC_INFO("Read len: %u", (*DIMMs)->Therm.Read_len);
+		DIMM_Items++;
+	}
 
 	return 0;
 }

@@ -300,22 +300,18 @@ typedef struct BITs {
 	BIT_t	BIT[ITEMS_MAX];
 } BITs_t;
 
-/*
- * DDR serial presence detect (SPD)
- */
-struct i2c_info {
-	__u16 Bus_addr;
-	__u8  Reg_addr;
-	__u16 Read_len;
-};
-
-/* DDR DIMM */
+/* DDR DIMMs */
 typedef struct {
 	char	Name[STRLEN_MAX];
 	char	I2C_Bus[STRLEN_MAX];
-	struct i2c_info	Spd;
-	struct i2c_info	Therm;
+	int	I2C_Address_SPD;
+	int	I2C_Address_Thermal;
 } DIMM_t;
+
+typedef struct DIMMs {
+	int	Numbers;
+	DIMM_t	DIMM[ITEMS_MAX];
+} DIMMs_t;
 
 /*
  * GPIO lines
@@ -341,7 +337,7 @@ typedef struct {
 	INA226s_t *INA226s;
 	Power_Domains_t *Power_Domains;
 	Voltages_t *Voltages;
-	DIMM_t *DIMM;
+	DIMMs_t *DIMMs;
 	GPIOs_t *GPIOs;
 	IO_Exp_t *IO_Exp;
 	OnBoard_EEPROM_t *OnBoard_EEPROM;

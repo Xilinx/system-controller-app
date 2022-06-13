@@ -495,17 +495,11 @@
 			}
 		},
 		"DIMM" : {
-			"Name" : "DIMM1",
-			"I2C_Bus" : "/dev/i2c-14",
-			"Spd" : {
-				"Bus_addr" : "0x50",
-				"Reg_addr" : 0,
-				"Read_len" : 16
-			},
-			"Therm" : {
-				"Bus_addr" : "0x18",
-				"Reg_addr" : 5,
-				"Read_len" : 2
+			"DIMM1" : {
+				"Name" : "DIMM1",
+				"I2C_Bus" : "/dev/i2c-14",
+				"I2C_Address_SPD" : "0x50",
+				"I2C_Address_Thermal" : "0x18"
 			}
 		},
 		"GPIO" : {

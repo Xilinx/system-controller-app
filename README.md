@@ -1,4 +1,4 @@
-# system-controller
+# system-controller-app
 
 	Usage:
 

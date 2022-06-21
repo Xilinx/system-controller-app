@@ -79,20 +79,20 @@
  */
 typedef struct {
 	int	Numbers;
-	char	*Feature[STRLEN_MAX];
+	char	**Feature;
 } FeatureList_t;
 
 /*
  * Boot Modes
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
+	char	*Name;
 	int	Value;
 } BootMode_t;
 
 typedef struct BootModes {
 	int	Numbers;
-	char	Mode_Lines[4][SYSCMD_MAX];
+	char	**Mode_Lines;
 	BootMode_t	BootMode[ITEMS_MAX];
 } BootModes_t;
 
@@ -105,14 +105,14 @@ typedef enum {
 } Clock_Type;
 
 typedef struct {
-	char	Name[STRLEN_MAX];
+	char	*Name;
 	double	Default_Freq;
 	double	Upper_Freq;
 	double	Lower_Freq;
 	Clock_Type	Type;
 	void	*Type_Data;
-	char	Sysfs_Path[SYSCMD_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*Sysfs_Path;
+	char	*I2C_Bus;
 	int	I2C_Address;
 } Clock_t;
 
@@ -123,8 +123,8 @@ typedef struct Clocks {
 
 typedef struct {
 	int	Number_Label;
-	char	*Display_Label[SYSCMD_MAX];
-	char	*Internal_Label[SYSCMD_MAX];
+	char	**Display_Label;
+	char	**Internal_Label;
 	int	(*Chip_Reset)(void);
 } IDT_8A34001_Data_t;
 
@@ -132,8 +132,8 @@ typedef struct {
  * INA226
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*Name;
+	char	*I2C_Bus;
 	int	I2C_Address;
 	int	Shunt_Resistor;
 	int	Maximum_Current;
@@ -149,7 +149,7 @@ typedef struct INA226s {
  * Power Domains
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
+	char	*Name;
 	int	Rails[ITEMS_MAX];
 	int	Numbers;
 } Power_Domain_t;
@@ -163,14 +163,14 @@ typedef struct Power_Domains {
  * Voltages
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
-	char	Part_Name[STRLEN_MAX];
+	char	*Name;
+	char	*Part_Name;
 	float	Maximum_Volt;
 	float	Typical_Volt;
 	float	Minimum_Volt;
 	int	PMBus_VOUT_MODE;
 	int	Page_Select;
-	char	I2C_Bus[STRLEN_MAX];
+	char	*I2C_Bus;
 	int	I2C_Address;
 } Voltage_t;
 
@@ -183,11 +183,11 @@ typedef struct Voltages {
  * IO Expander
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
+	char	*Name;
 	int	Numbers;
-	char	Labels[ITEMS_MAX][STRLEN_MAX];
+	char	**Labels;
 	unsigned int	Directions[ITEMS_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*I2C_Bus;
 	int	I2C_Address;
 } IO_Exp_t;
 
@@ -203,8 +203,8 @@ typedef enum {
  * On-Board EEPROM
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*Name;
+	char	*I2C_Bus;
 	int	I2C_Address;
 } OnBoard_EEPROM_t;
 
@@ -212,8 +212,8 @@ typedef struct {
  * Daughter Card
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*Name;
+	char	*I2C_Bus;
 	int	I2C_Address;
 } Daughter_Card_t;
 
@@ -221,8 +221,8 @@ typedef struct {
  * SFP Transceivers
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*Name;
+	char	*I2C_Bus;
 	int	I2C_Address;
 } SFP_t;
 
@@ -240,9 +240,9 @@ typedef enum {
 } QSFP_Type;
 
 typedef struct {
-	char	Name[STRLEN_MAX];
+	char	*Name;
 	QSFP_Type	Type;
-	char	I2C_Bus[STRLEN_MAX];
+	char	*I2C_Bus;
 	int	I2C_Address;
 } QSFP_t;
 
@@ -255,8 +255,8 @@ typedef struct QSFPs {
  * FMC Cards
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*Name;
+	char	*I2C_Bus;
 	int	I2C_Address;
 } FMC_t;
 
@@ -269,7 +269,7 @@ typedef struct FMCs {
  * Workarounds
  */
 typedef struct {
-	char	Name[STRLEN_MAX];
+	char	*Name;
 	int	Arg_Needed;
 	int	(*Plat_Workaround_Op)(void *);
 } Workaround_t;
@@ -283,13 +283,13 @@ typedef struct Workarounds {
  * Board Interface Tests (BITs)
  */
 typedef struct {
-	char	Instruction[SYSCMD_MAX];
+	char	*Instruction;
 	int	(*Plat_BIT_Op)(void *, void *);
-	char	TCL_File[SYSCMD_MAX];
+	char	*TCL_File;
 } BIT_Level_t;
 
 typedef struct {
-	char	Name[STRLEN_MAX];
+	char	*Name;
 	int	Manual;
 	int	Levels;
 	BIT_Level_t	Level[LEVELS_MAX];
@@ -302,8 +302,8 @@ typedef struct BITs {
 
 /* DDR DIMMs */
 typedef struct {
-	char	Name[STRLEN_MAX];
-	char	I2C_Bus[STRLEN_MAX];
+	char	*Name;
+	char	*I2C_Bus;
 	int	I2C_Address_SPD;
 	int	I2C_Address_Thermal;
 } DIMM_t;

@@ -64,11 +64,11 @@ int Parse_BIT(const char *, jsmntok_t *, int *, BITs_t **);
 }
 
 #define Validate_Item_Size(Items_Qty, Feature, Attribute, Size_Limit) { \
-    if (Items_Qty > Size_Limit) { \
-        SC_ERR("%s: %s: number of values '%d' is greater than %d items", \
-                Feature, Attribute, Items_Qty, Size_Limit); \
-        return -1; \
-    } \
+	if (Items_Qty > Size_Limit) { \
+		SC_ERR("%s: %s: number of values '%d' is greater than %d items", \
+			Feature, Attribute, Items_Qty, Size_Limit); \
+		return -1; \
+	} \
 }
 
 int

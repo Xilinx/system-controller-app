@@ -335,7 +335,7 @@ DDRMC_Test(void *Arg1, void *Arg2)
 		if ((strstr(Buffer, "ERROR: ") != NULL)) {
 			SC_PRINT_N("%s", Buffer);
 			Ret = -1;
-			(void) fclose(FP);
+			(void) pclose(FP);
 			goto Out;
 		}
 
@@ -351,7 +351,7 @@ DDRMC_Test(void *Arg1, void *Arg2)
 		Ret = -1;
 	}
 
-	(void) fclose(FP);
+	(void) pclose(FP);
 
 Out:
 	(void) JTAG_Op(0);

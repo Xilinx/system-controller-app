@@ -1951,7 +1951,7 @@ int DDR_Ops(void)
 
 	} else if (strcmp(Value_Arg, "spd") == 0) {
 		Out_Buffer[0] = 0x0;
-		I2C_READ(FD, DIMM->I2C_Address_SPD, 0xFF, Out_Buffer, In_Buffer, Ret);
+		I2C_READ(FD, DIMM->I2C_Address_SPD, 0xF, Out_Buffer, In_Buffer, Ret);
 		if (Ret < 0) {
 			(void) close(FD);
 			return Ret;

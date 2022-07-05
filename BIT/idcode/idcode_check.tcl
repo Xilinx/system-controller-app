@@ -32,7 +32,7 @@ if {$idcode == "04CAA093"} {
 } elseif {$idcode == "04D28093"} {
    puts "XCVH1582 ES1"
 } elseif {$idcode == "14D28093"} {
-   puts "XCVP1802 PROD"
+   puts "XCVH1582 PROD"
 } else {
    puts "ERROR: invalid idcode 0x$idcode"
 }

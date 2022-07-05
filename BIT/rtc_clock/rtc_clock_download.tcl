@@ -38,6 +38,8 @@ cd /usr/share/system-controller-app/BIT/rtc_clock
 # Based on IDCODE download the correct PDI
 if {$idcode == "04D00093"} {
    device program vpk120_es1_system_wrapper.pdi
+} elseif {$idcode == "14D00093"} {
+   device program vpk120_system_wrapper.pdi
 } else {
    puts "Invalid IDCODE!"
    disconnect

@@ -45,6 +45,9 @@ if {$idcode == "14CA8093"} {
 } elseif {$idcode == "04D00093"} {
    device program vpk120_es1_system_wrapper.pdi
    set board "vpk120"
+} elseif {$idcode == "14D00093"} {
+   device program vpk120_system_wrapper.pdi
+   set board "vpk120"
 } else {
    puts "Invalid IDCODE!"
    disconnect

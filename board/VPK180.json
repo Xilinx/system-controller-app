@@ -1043,6 +1043,15 @@
 						"Plat_BIT_Op" : "DDRMC_2_Test"
 					}
 				}
+			},
+			"BIT_DDRMC_3_TEST" : {
+				"Name" : "DDRMC_3 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_3_Test"
+					}
+				}
 			}
 		}
 	}

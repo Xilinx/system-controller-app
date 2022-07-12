@@ -2453,17 +2453,13 @@ int QSFP_List(void)
 	char Buffer[STRLEN_MAX];
 
 	QSFPs = Plat_Devs->QSFPs;
-	if ((strcmp(Board_Name, "VCK190") == 0) ||
-	    (strcmp(Board_Name, "VMK180") == 0)) {
-		for (int i = 0; i < QSFPs->Numbers; i++) {
-			SC_PRINT("%s", QSFPs->QSFP[i].Name);
-		}
-
-		return 0;
-	}
-
 	for (int i = 0; i < QSFPs->Numbers; i++) {
 		QSFP = &QSFPs->QSFP[i];
+		if (QSFP->Type == qsfp) {
+			SC_PRINT("%s", QSFP->Name);
+			continue;
+		}
+
 		if (QSFP_ModuleSelect(QSFP, 1) != 0) {
 			return -1;
 		}

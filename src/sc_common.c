@@ -1683,8 +1683,7 @@ QSFP_ModuleSelect(QSFP_t *QSFP, int State)
 	 * For boards that use PDI to enable QSFP module select, there
 	 * is nothing to do for 'State == 0'.
 	 */
-	if ((strcmp(Board_Name, "VCK190") == 0) ||
-	    (strcmp(Board_Name, "VMK180") == 0)) {
+	if (QSFP->Type == qsfp) {
 		if (State == 1) {
 			return VCK190_QSFP_ModuleSelect(QSFP, State);
 		} else {

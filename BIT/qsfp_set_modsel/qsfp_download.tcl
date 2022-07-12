@@ -44,6 +44,10 @@ if {$idcode == "04CA8093"} {
    device program vmk180_es1_system_wrapper.pdi
 } elseif {$idcode == "14CAA093"} {
    device program vmk180_system_wrapper.pdi
+} elseif {$idcode == "04D28093"} {
+   device program vhk158_es1_system_wrapper.pdi
+} elseif {$idcode == "14D28093"} {
+   device program vhk158_system_wrapper.pdi
 } else {
    puts "Invalid IDCODE!"
 }

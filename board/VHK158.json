@@ -1034,6 +1034,24 @@
 						"Plat_BIT_Op" : "Voltages_Check"
 					}
 				}
+			},
+			"BIT_DDRMC_1_TEST" : {
+				"Name" : "DDRMC_1 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_1_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_2_TEST" : {
+				"Name" : "DDRMC_2 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_2_Test"
+					}
+				}
 			}
 		}
 	}

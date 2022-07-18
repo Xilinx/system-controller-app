@@ -53,6 +53,10 @@ with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL) as session:
         PDI_FILE = "vpk180_es1_ddr4_" + str(DDRMC - 1) + ".pdi"
     elif IDCODE == 0x14D14093:
         PDI_FILE = "vpk180_ddr4_" + str(DDRMC - 1) + ".pdi"
+    elif IDCODE == 0x04D28093:
+        PDI_FILE = "vhk158_es1_ddr4_" + str(DDRMC - 1) + ".pdi"
+    elif IDCODE == 0x14D28093:
+        PDI_FILE = "vhk158_ddr4_" + str(DDRMC - 1) + ".pdi"
     else:
         print("ERROR: DDRMC test for idcode", hex(IDCODE), "is not supported")
         quit(-1)

@@ -1052,6 +1052,36 @@
 						"Plat_BIT_Op" : "DDRMC_2_Test"
 					}
 				}
+			},
+			"BIT_RTC_CLOCK_TEST" : {
+				"Name" : "RTC Clock Test",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "rtc_clock/rtc_clock_download.tcl",
+						"Instruction" : "\n1- A similar output should be displayed on the console:\n\n\tDay Convention : 0-Fri, 1-Sat, 2-Sun, 3-Mon, 4-Tue, 5-Wed, 6-Thur\n\tLast set time for RTC is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:01     Day = 3\n\n\tCurrent RTC time is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:08:39     Day = 3\n\n\tSetting Time = 2016:10:17 00:00:00\n\tRTC time after set is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:00     Day = 3\n\n\tRTC time after delay_1 is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:01     Day = 3\n\n\tRTC time after delay_2 is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:03     Day = 3\n\tSuccessfully ran RTC Set time Example Test\n\n2- Click 'Pass' if you observe it.\n"
+					}
+				}
+			},
+			"BIT_PL_UART_TEST" : {
+				"Name" : "PL UART Test",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "pl_uart/pl_uart_download.tcl",
+						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tTesting UART\n\t115200,8,N,1\n\tHello world!\n\tUART 02 Test Passed\n\n2- Click 'Pass' if you observe it.\n"
+					}
+				}
 			}
 		}
 	}

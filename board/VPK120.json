@@ -1010,7 +1010,7 @@
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "pl_uart/pl_uart_download.tcl",
-						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tTesting UART\n\t9600,8,N,1\n\tHello world!\n\tUART 02 Test Passed\n\n2- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tTesting UART\n\tHello world!\n\tUART 02 Test Passed\n\n2- Click 'Pass' if you observe it.\n"
 					}
 				}
 			},

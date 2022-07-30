@@ -1427,6 +1427,7 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 {
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
+	char Board_Name_LC[STRLEN_MAX] = {'\0'};
 	int Ret = 0;
 
 	(void) sprintf(System_Cmd, "%s%s", BIT_PATH, TCL_File);
@@ -1440,9 +1441,14 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 		return -1;
 	}
 
+	/* Convert the board name to all lower case */
+	for (int i = 0; i < strlen(Board_Name); i++) {
+		Board_Name_LC[i] = tolower(Board_Name[i]);
+	}
+
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD,
-		       BIT_PATH, TCL_File);
+	(void) sprintf(System_Cmd, "%s; %s %s%s %s 2>&1", XSDB_ENV, XSDB_CMD,
+		       BIT_PATH, TCL_File, Board_Name_LC);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

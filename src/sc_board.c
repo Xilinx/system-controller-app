@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <unistd.h>
 #include "sc_app.h"
 
@@ -13,6 +14,7 @@
 
 extern Plat_Devs_t *Plat_Devs;
 
+extern char Board_Name[];
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Reset_Op(void);
 extern int JTAG_Op(int);
@@ -83,6 +85,7 @@ VCK190_QSFP_ModuleSelect(QSFP_t *Arg, int State)
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
+	char Board_Name_LC[STRLEN_MAX] = {'\0'};
 
 	if (State != 0 && State != 1) {
 		SC_ERR("invalid QSFP module select state");
@@ -99,10 +102,15 @@ VCK190_QSFP_ModuleSelect(QSFP_t *Arg, int State)
 		return 0;
 	}
 
+	/* Convert the board name to all lower case */
+	for (int i = 0; i < strlen(Board_Name); i++) {
+		Board_Name_LC[i] = tolower(Board_Name[i]);
+	}
+
 	/* State == 1 */
 	(void) JTAG_Op(1);
-	sprintf(System_Cmd, "%s; %s %s%s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    QSFP_MODSEL_TCL);
+	sprintf(System_Cmd, "%s; %s %s%s %s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
+	    QSFP_MODSEL_TCL, Board_Name_LC);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

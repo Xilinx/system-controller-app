@@ -754,8 +754,7 @@ EEPROM_Ops(void)
 			return -1;
 		}
 
-		(void) strtok(Buffer, " ");
-		(void) strcpy(Buffer, strtok(NULL, "\n"));
+		(void) strtok(Buffer, "\n");
 		SC_PRINT("Silicon Revision: %s", Buffer);
 
 		/* Base build date for manufacturing is 1/1/1996 */

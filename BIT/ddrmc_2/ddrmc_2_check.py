@@ -14,9 +14,15 @@
 #
 
 import os
+import sys
 import time
 from chipscopy import create_session
 
+if len(sys.argv) != 2:
+    print("ERROR: missing board name")
+    quit(-1)
+
+Board = sys.argv[1]
 DDRMC = 2
 BIT_Dir = "/usr/share/system-controller-app/BIT"
 DDRMC_Dir = BIT_Dir + "/ddrmc_" + str(DDRMC) + "/"
@@ -41,25 +47,22 @@ with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL) as session:
     device_properties = versal_device.chipscope_node.props
     IDCODE = device_properties['idcode']
 
-    if IDCODE == 0x14CAA093:
-        PDI_FILE = "vmk180_ddr4_" + str(DDRMC - 1) + ".pdi"
-    elif IDCODE == 0x14CA8093:
-        PDI_FILE = "vck190_ddr4_" + str(DDRMC - 1) + ".pdi"
-    elif IDCODE == 0x04D00093:
-        PDI_FILE = "vpk120_es1_ddr4_" + str(DDRMC - 1) + ".pdi"
-    elif IDCODE == 0x14D00093:
-        PDI_FILE = "vpk120_ddr4_" + str(DDRMC - 1) + ".pdi"
-    elif IDCODE == 0x04D14093:
-        PDI_FILE = "vpk180_es1_ddr4_" + str(DDRMC - 1) + ".pdi"
-    elif IDCODE == 0x14D14093:
-        PDI_FILE = "vpk180_ddr4_" + str(DDRMC - 1) + ".pdi"
-    elif IDCODE == 0x04D28093:
-        PDI_FILE = "vhk158_es1_ddr4_" + str(DDRMC - 1) + ".pdi"
-    elif IDCODE == 0x14D28093:
-        PDI_FILE = "vhk158_ddr4_" + str(DDRMC - 1) + ".pdi"
-    else:
-        print("ERROR: DDRMC test for idcode", hex(IDCODE), "is not supported")
+    # IDCODE[11:0] = 0x93   // Xilinx Manufacturer
+    if hex(IDCODE & 0xFFF) != hex(0x93):
+        print("ERROR: invalid manufacturer")
         quit(-1)
+
+    # IDCODE[31:28]         // Silicon Revision
+    Revision = (IDCODE >> 28)
+    if Revision == 0:
+        Revision_Str = "_es1"
+    elif Revision == 1:
+        Revision_Str = ""
+    else:
+        print("ERROR: unsupported revision")
+        quit(-1)
+
+    PDI_FILE = Board + Revision_Str + "_ddr4_" + str(DDRMC - 1) + ".pdi"
 
     # Program the PDI
     versal_device.program(DDRMC_Dir + PDI_FILE)

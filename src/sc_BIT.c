@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,7 @@
 
 extern Plat_Devs_t *Plat_Devs;
 
+extern char Board_Name[];
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Reset_Op(void);
 extern int XSDB_Op(const char *, char *, int);
@@ -310,6 +312,7 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	int *DDRMC = (int *)Arg2;
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
+	char Board_Name_LC[STRLEN_MAX] = {'\0'};
 	char Buffer[STRLEN_MAX] = {'\0'};
 	int Ret = 0;
 
@@ -320,8 +323,13 @@ DDRMC_Test(void *Arg1, void *Arg2)
 		return -1;
 	}
 
+	/* Convert the board name to all lower case */
+	for (int i = 0; i < strlen(Board_Name); i++) {
+		Board_Name_LC[i] = tolower(Board_Name[i]);
+	}
+
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "python3 %s", Buffer);
+	(void) sprintf(System_Cmd, "python3 %s %s", Buffer, Board_Name_LC);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

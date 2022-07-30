@@ -27,29 +27,48 @@ connect -xvc-url TCP:127.0.0.1:2542
 targets -set -nocase -filter {name =~ "*Versal*"}
 switch_to_jtag
 
+# Determine the board name
+if {$argc == 1} {
+   set board [lindex $argv 0]
+} else {
+   puts "ERROR: missing board name"
+   disconnect
+   exit -1
+}
+
+# Get the IDCODE
 set idcode_reg [mrd -force 0xF11A0000]
-# Remove the unwanted information from idcode_reg srting
-set idcode [lindex [split $idcode_reg ":"] 1]
-set idcode [string map {" " ""} $idcode]
-set idcode [string map {"\n" ""} $idcode]
+set idcode_str [lindex [split $idcode_reg ":"] 1]
+set idcode_str [string map {" " ""} $idcode_str]
+set idcode_str [string map {"\n" ""} $idcode_str]
+set idcode [expr 0x$idcode_str]
+
+# Determine silicon revision
+#
+# IDCODE[11:0] = 0x93   // Xilinx Manufacturer
+set mask [expr 0xFFF]
+if {($idcode & $mask) != 0x93} {
+   puts "ERROR: invalid manufacturer"
+   disconnect
+   exit -1
+}
+
+# IDCODE[31:28]         // Silicon Revision
+set revision [expr $idcode >> 28]
+if {$revision == 0} {
+   set revision_str "_es1"
+} elseif {$revision == 1} {
+   set revision_str ""
+} else {
+   puts "ERROR: unsupported revision"
+   disconnect
+   exit -1
+}
 
 cd /usr/share/system-controller-app/BIT/qsfp_set_modsel
 
-# Based on IDCODE download the correct PDI
-if {$idcode == "04CA8093"} {
-   device program vck190_es1_system_wrapper.pdi
-} elseif {$idcode == "14CA8093"} {
-   device program vck190_system_wrapper.pdi
-} elseif {$idcode == "04CAA093"} {
-   device program vmk180_es1_system_wrapper.pdi
-} elseif {$idcode == "14CAA093"} {
-   device program vmk180_system_wrapper.pdi
-} elseif {$idcode == "04D28093"} {
-   device program vhk158_es1_system_wrapper.pdi
-} elseif {$idcode == "14D28093"} {
-   device program vhk158_system_wrapper.pdi
-} else {
-   puts "Invalid IDCODE!"
-}
+# Download the PDI file
+append pdi $board $revision_str "_system_wrapper.pdi"
+device program $pdi
 
 disconnect

@@ -323,7 +323,7 @@
 			"VOLTAGE_LPDMGTYAVCC": {
 				"Name": "LPDMGTYAVCC",
 				"Part_Name": "IRPS5401",
-				"Maximum_Volt": 0.91,
+				"Maximum_Volt": 0.95,
 				"Typical_Volt": 0.88,
 				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-4",
@@ -345,7 +345,7 @@
 			"VOLTAGE_MGTAVCC": {
 				"Name": "MGTAVCC",
 				"Part_Name": "IRPS5401",
-				"Maximum_Volt": 0.91,
+				"Maximum_Volt": 0.95,
 				"Typical_Volt": 0.88,
 				"Minimum_Volt": 0.85,
 				"I2C_Bus": "/dev/i2c-4",

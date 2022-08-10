@@ -10,7 +10,7 @@
 #include "jsmn.h"
 #include "sc_app.h"
 
-#define JSMN_TOKENS_SIZE 2048
+#define JSMN_TOKENS_SIZE 4096
 
 extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int Clocks_Check(void *, void *);
@@ -330,7 +330,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		}
 
 		SC_INFO("Type: %s", Value_Str);
-		if ((*CLKs)->Clock[Clk_Items].Type == Si570) {
+		if ((*CLKs)->Clock[Clk_Items].Type != IDT_8A34001) {
 			(*Index)++;
 			Check_Attribute("Sysfs_Path", "CLOCK");
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
@@ -360,7 +360,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 					    Tokens[*Index].end - Tokens[*Index].start);
 			(*CLKs)->Clock[Clk_Items].Lower_Freq = atof(Value_Str);
 			SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
-		} else if ((*CLKs)->Clock[Clk_Items].Type == IDT_8A34001) {
+		} else {	// (Type == IDT_8A34001)
 			(*Index)++;
 			Check_Attribute("Display_Label", "CLOCK");
 			IDT_8A34001_Data =

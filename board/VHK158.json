@@ -27,7 +27,7 @@
 			"GTCLK1_OUT1": {
 				"Name": "GTCLK1_OUT1",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out1/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk1-out1/set_rate",
 				"Default_Freq": 156.25,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -37,7 +37,7 @@
 			"GTCLK1_OUT2": {
 				"Name": "GTCLK1_OUT2",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out2/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk1-out2/set_rate",
 				"Default_Freq": 156.25,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -47,7 +47,7 @@
 			"GTCLK1_OUT3": {
 				"Name": "GTCLK1_OUT3",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out3/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk1-out3/set_rate",
 				"Default_Freq": 156.25,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -57,7 +57,7 @@
 			"GTCLK1_OUT6": {
 				"Name": "GTCLK1_OUT6",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out6/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk1-out6/set_rate",
 				"Default_Freq": 156.25,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -67,7 +67,7 @@
 			"GTCLK1_OUT7": {
 				"Name": "GTCLK1_OUT7",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out7/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk1-out7/set_rate",
 				"Default_Freq": 156.25,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -77,7 +77,7 @@
 			"GTCLK1_OUT8": {
 				"Name": "GTCLK1_OUT8",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out8/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk1-out8/set_rate",
 				"Default_Freq": 156.25,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -87,7 +87,7 @@
 			"GTCLK1_OUT10": {
 				"Name": "GTCLK1_OUT10",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out10/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk1-out10/set_rate",
 				"Default_Freq": 156.25,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -97,7 +97,7 @@
 			"GTCLK2_OUT1": {
 				"Name": "GTCLK2_OUT1",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk2_out1/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk2-out1/set_rate",
 				"Default_Freq": 200.0,
 				"Upper_Freq": 500.0,
 				"Lower_Freq": 200.0,
@@ -107,7 +107,7 @@
 			"GTCLK2_OUT2": {
 				"Name": "GTCLK2_OUT2",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk2_out2/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk2-out2/set_rate",
 				"Default_Freq": 100.0,
 				"Upper_Freq": 625.0,
 				"Lower_Freq": 50.0,
@@ -117,7 +117,7 @@
 			"GTCLK2_OUT3": {
 				"Name": "GTCLK2_OUT3",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk2_out3/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk2-out3/set_rate",
 				"Default_Freq": 100.0,
 				"Upper_Freq": 625.0,
 				"Lower_Freq": 50.0,
@@ -127,7 +127,7 @@
 			"GTCLK2_OUT6_DDR1": {
 				"Name": "GTCLK2_OUT6_DDR1",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk2_out6_ddr1/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk2-out6-ddr1/set_rate",
 				"Default_Freq": 200.0,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -137,7 +137,7 @@
 			"GTCLK2_OUT7_DDR2": {
 				"Name": "GTCLK2_OUT7_DDR2",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk2_out7_ddr2/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk2-out7-ddr2/set_rate",
 				"Default_Freq": 200.0,
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
@@ -147,7 +147,7 @@
 			"GTCLK2_REF_CLK": {
 				"Name": "GTCLK2_REF_CLK",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk2_ref_clk/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk2-ref-clk/set_rate",
 				"Default_Freq": 33.5,
 				"Upper_Freq": 60.0,
 				"Lower_Freq": 27.0,
@@ -157,7 +157,7 @@
 			"GTCLK2_OUT10": {
 				"Name": "GTCLK2_OUT10",
 				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk2_out10/set_rate",
+				"Sysfs_Path": "/sys/devices/platform/gtclk2-out10/set_rate",
 				"Default_Freq": 200.0,
 				"Upper_Freq": 500.0,
 				"Lower_Freq": 200.0,
@@ -1137,6 +1137,15 @@
 			}
 		},
 		"BITs": {
+			"BIT_CLOCKS_CHECK" : {
+				"Name" : "Check Clocks",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Clocks_Check"
+					}
+				}
+			},
 			"BIT_IDCODE_CHECK" : {
 				"Name" : "IDCODE Check",
 				"Manual" : 0,

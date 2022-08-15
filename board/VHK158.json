@@ -1231,6 +1231,55 @@
 						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tTesting UART\n\t115200,8,N,1\n\tHello world!\n\tUART 02 Test Passed\n\n2- Click 'Pass' if you observe it.\n"
 					}
 				}
+			},
+			"BIT_PROGRAM_OSPI" : {
+				"Name" : "Program OSPI",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "qspi/program_qspi_download.tcl",
+						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tSF: Detected mt35xu02g with page size 256 Bytes, erase size 128 KiB, total 256 MiB\n\tSF: 5242880 bytes @ 0x0 Erased: OK\n\tdevice 0 offset 0x0, size 0x500000\n\tSF: 5242880 bytes @ 0x0 Written: OK\n\tVersal> \n\n2- Click 'Pass' if you observe it.\n"
+					}
+				}
+			},
+			"BIT_OSPI_TEST" : {
+				"Name" : "OSPI Test",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0001 (Up, Up, Up, Down, left to right) for testing OSPI.\n3- Click 'Pass' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "Assert_Reset",
+						"Instruction" : "\n1- Observe PL LEDs blinking, then PL LED3 and PL LED2 turn on in sequence.\n2- PL LED1 should be blinking.\n3- Do you see the PL LEDs 3 and 2 both on?\n4- Click 'Pass' if you observe it.\n"
+					},
+					"Level 2" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Set PL DIP, SW6 to '1111' (All Up).\n2- Set PL DIP, SW6 to '0000' (All Down).\n3- Observe PL LED1 turn on and PL LED0 blinking.\n4- Click 'Pass' if you observe it.\n"
+					},
+					"Level 3" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Click 'Pass' when this is done.\n"
+					},
+					"Level 4" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Do you see the PL LEDs 3 through 0 all on?\n2- Click 'Pass' if you observe it.\n"
+					},
+					"Level 5" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tChoose Feature to Test:\n\t1: UART Test\n\t2: LED Test\n\t5: TIMER/SCUGIC Test\n\t7: SWITCH Test\n\tB: BUTTON Test\n\tD: LVDS Test\n\tE: MICTOR Test\n\t0: Exit\n\n2- Click 'Pass' if you observe it.\n"
+					},
+					"Level 6" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Enter X on the console.\n2- The following output should be displayed on the console:\n\n\tBlinkBIST results = F\n\tPress any key to return to main menu\n\n3- Click 'Pass' if you observe it.\n"
+					}
+				}
 			}
 		}
 	}

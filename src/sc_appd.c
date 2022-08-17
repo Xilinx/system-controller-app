@@ -39,9 +39,10 @@
  * 1.15 - Added support for INA226 custom calibration.
  * 1.16 - Added 'board' command to return name of the board.
  * 1.17 - Added 'getbootmode' and enhanced 'setbootmode' commands.
+ * 1.18 - Added 'setgpio' command.
  */
 #define MAJOR	1
-#define MINOR	17
+#define MINOR	18
 
 #define GPIOLINE	"ZU4_TRIGGER"
 
@@ -84,6 +85,7 @@ extern int Reset_Op(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 extern int Get_GPIO(char *, int *);
+extern int Set_GPIO(char *, int);
 extern int EEPROM_Common(char *);
 extern int EEPROM_Board(char *, int);
 extern int EEPROM_MultiRecord(char *);
@@ -151,6 +153,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 \n\
 	listgpio - list the supported gpio line targets\n\
 	getgpio - get the state of <target> gpio\n\
+	setgpio - set the state of <target> gpio to <value>\n\
 \n\
 	listioexp - list the supported IO expander targets\n\
 	getioexp - get the state of <target> IO expander for either <value>:\n\
@@ -211,6 +214,7 @@ typedef enum {
 	GETDDR,
 	LISTGPIO,
 	GETGPIO,
+	SETGPIO,
 	LISTIOEXP,
 	GETIOEXP,
 	SETDIRIOEXP,
@@ -270,6 +274,7 @@ static Command_t Commands[] = {
 	{ .CmdId = GETDDR, .CmdStr = "getddr", .CmdOps = DDR_Ops, },
 	{ .CmdId = LISTGPIO, .CmdStr = "listgpio", .CmdOps = GPIO_Ops, },
 	{ .CmdId = GETGPIO, .CmdStr = "getgpio", .CmdOps = GPIO_Ops, },
+	{ .CmdId = SETGPIO, .CmdStr = "setgpio", .CmdOps = GPIO_Ops, },
 	{ .CmdId = LISTIOEXP, .CmdStr = "listioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = GETIOEXP, .CmdStr = "getioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = SETDIRIOEXP, .CmdStr = "setdirioexp", .CmdOps = IO_Exp_Ops, },
@@ -1985,20 +1990,7 @@ int DDR_Ops(void)
 	return Ret;
 }
 
-static int Gpio_get1(const GPIO_t *p)
-{
-	int State;
-
-	if (Get_GPIO((char *)p->Internal_Name, &State) != 0) {
-		SC_ERR("failed to get GPIO line %s", p->Display_Name);
-		return -1;
-	}
-
-	SC_PRINT("%s (line %2d):\t%d", p->Display_Name, p->Line, State);
-	return 0;
-}
-
-static int Gpio_get_all(void)
+static int GPIO_Get_All(void)
 {
 	FILE *FP;
 	int Line, State;
@@ -2042,41 +2034,15 @@ static int Gpio_get_all(void)
 	return 0;
 }
 
-static int Gpio_get(void)
-{
-	GPIOs_t *GPIOs;
-
-	if (strcmp(Target_Arg, "all") == 0) {
-		if (Gpio_get_all() != 0) {
-			SC_ERR("failed to get all GPIO lines");
-			return -1;
-		};
-
-		return 0;
-	}
-
-	GPIOs = Plat_Devs->GPIOs;
-	for (int i = 0; i < GPIOs->Numbers; i++) {
-		if (!strncmp(GPIOs->GPIO[i].Display_Name, Target_Arg, STRLEN_MAX) ||
-		    !strncmp(GPIOs->GPIO[i].Internal_Name, Target_Arg, STRLEN_MAX)) {
-			if (Gpio_get1(&GPIOs->GPIO[i]) != 0) {
-				return -1;
-			}
-
-			return 0;
-		}
-	}
-
-	SC_ERR("no valid target");
-	return -1;
-}
-
 /*
- * GPIO_Ops lists the supported gpio lines
+ * GPIO Operations
  */
 int GPIO_Ops(void)
 {
+	int Target_Index = -1;
 	GPIOs_t *GPIOs;
+	GPIO_t *GPIO;
+	unsigned long int State;
 
 	GPIOs = Plat_Devs->GPIOs;
 	if (GPIOs == NULL) {
@@ -2098,7 +2064,66 @@ int GPIO_Ops(void)
 		return -1;
 	}
 
-	return Gpio_get();
+	/* Process '-c getgpio -t all' command here */
+	if ((Command.CmdId == GETGPIO) && (strcmp(Target_Arg, "all") == 0)) {
+		if (GPIO_Get_All() != 0) {
+			SC_ERR("failed to get all GPIO lines");
+			return -1;
+		}
+
+		return 0;
+	}
+
+	for (int i = 0; i < GPIOs->Numbers; i++) {
+		if (!strncmp(GPIOs->GPIO[i].Display_Name, Target_Arg, STRLEN_MAX) ||
+		    !strncmp(GPIOs->GPIO[i].Internal_Name, Target_Arg, STRLEN_MAX)) {
+			Target_Index = i;
+			GPIO = &GPIOs->GPIO[Target_Index = i];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		SC_ERR("invalid gpio target");
+		return -1;
+	}
+
+	switch (Command.CmdId) {
+	case GETGPIO:
+		if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State) != 0) {
+			SC_ERR("failed to get GPIO line %s", GPIO->Display_Name);
+			return -1;
+		}
+
+		SC_PRINT("%s (line %2d):\t%d", GPIO->Display_Name, GPIO->Line,
+			 (int)State);
+		break;
+
+	case SETGPIO:
+		if (V_Flag == 0) {
+			SC_ERR("no gpio value");
+			return -1;
+		}
+
+		State = strtol(Value_Arg, NULL, 16);
+		if ((State != 0) && (State != 1)) {
+			SC_ERR("invalid gpio value");
+			return -1;
+		}
+
+		if (Set_GPIO((char *)GPIO->Internal_Name, (int)State) != 0) {
+			SC_ERR("failed to set GPIO line %s", GPIO->Display_Name);
+			return -1;
+		}
+
+		break;
+
+	default:
+		SC_ERR("invalid gpio command");
+		return -1;
+	}
+
+	return 0;
 }
 
 int IO_Exp_Initialized(void)

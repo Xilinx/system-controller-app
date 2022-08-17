@@ -56,6 +56,7 @@
 
 		listgpio - list the supported gpio line targets
 		getgpio - get the state of <target> gpio
+		setgpio - set the state of <target> gpio to <value>
 
 		listioexp - list the supported IO expander targets
 		getioexp - get the state of <target> IO expander for either <value>:

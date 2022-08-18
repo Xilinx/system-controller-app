@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <libgen.h>
 #include "sc_app.h"
 
 #define QSFP_MODSEL_TCL	"qsfp_set_modsel/qsfp_download.tcl"
@@ -85,7 +86,8 @@ VCK190_QSFP_ModuleSelect(QSFP_t *Arg, int State)
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
-	char Board_Name_LC[STRLEN_MAX] = {'\0'};
+	char Buffer[SYSCMD_MAX];
+	char *Directory, *Filename;
 
 	if (State != 0 && State != 1) {
 		SC_ERR("invalid QSFP module select state");
@@ -102,15 +104,18 @@ VCK190_QSFP_ModuleSelect(QSFP_t *Arg, int State)
 		return 0;
 	}
 
-	/* Convert the board name to all lower case */
-	for (int i = 0; i < strlen(Board_Name); i++) {
-		Board_Name_LC[i] = tolower(Board_Name[i]);
+	/* State == 1 */
+	(void) sprintf(Buffer, "%s%s/%s", BIT_PATH, Board_Name, QSFP_MODSEL_TCL);
+	if (access(Buffer, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", Buffer);
+		return -1;
 	}
 
-	/* State == 1 */
 	(void) JTAG_Op(1);
-	sprintf(System_Cmd, "%s; %s %s%s %s 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    QSFP_MODSEL_TCL, Board_Name_LC);
+	Directory = strdup(Buffer);
+	Filename = strdup(Buffer);
+	(void) sprintf(System_Cmd, "cd %s; %s; %s %s 2>&1", dirname(Directory),
+		       XSDB_ENV, XSDB_CMD, basename(Filename));
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

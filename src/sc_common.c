@@ -12,6 +12,7 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <libgen.h>
 #include <gpiod.h>
 #include <sys/stat.h>
 #include "sc_app.h"
@@ -1427,12 +1428,13 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 {
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
-	char Board_Name_LC[STRLEN_MAX] = {'\0'};
+	char Buffer[SYSCMD_MAX];
+	char *Directory, *Filename;
 	int Ret = 0;
 
-	(void) sprintf(System_Cmd, "%s%s", BIT_PATH, TCL_File);
-	if (access(System_Cmd, F_OK) != 0) {
-		SC_ERR("failed to access file %s: %m", System_Cmd);
+	(void) sprintf(Buffer, "%s%s/%s", BIT_PATH, Board_Name, TCL_File);
+	if (access(Buffer, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", Buffer);
 		return -1;
 	}
 
@@ -1441,14 +1443,11 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 		return -1;
 	}
 
-	/* Convert the board name to all lower case */
-	for (int i = 0; i < strlen(Board_Name); i++) {
-		Board_Name_LC[i] = tolower(Board_Name[i]);
-	}
-
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "%s; %s %s%s %s 2>&1", XSDB_ENV, XSDB_CMD,
-		       BIT_PATH, TCL_File, Board_Name_LC);
+	Directory = strdup(Buffer);
+	Filename = strdup(Buffer);
+	(void) sprintf(System_Cmd, "cd %s; %s; %s %s 2>&1", dirname(Directory),
+		       XSDB_ENV, XSDB_CMD, basename(Filename));
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
@@ -1571,27 +1570,40 @@ Set_AltBootMode(int Value)
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
 	char System_Cmd[SYSCMD_MAX];
+	char Buffer[SYSCMD_MAX];
+	char *Directory, *Filename;
+	int Ret = 0;
+
+	(void) sprintf(Buffer, "%s%s/%s", BIT_PATH, Board_Name, BOOTMODE_TCL);
+	if (access(Buffer, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", Buffer);
+		return -1;
+	}
 
 	(void) JTAG_Op(1);
-	sprintf(System_Cmd, "%s; %s %s%s %x 2>&1", XSDB_ENV, XSDB_CMD, BIT_PATH,
-	    BOOTMODE_TCL, Value);
+	Directory = strdup(Buffer);
+	Filename = strdup(Buffer);
+	(void) sprintf(System_Cmd, "cd %s; %s; %s %s %x 2>&1", dirname(Directory),
+		       XSDB_ENV, XSDB_CMD, basename(Filename), Value);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
 		SC_ERR("failed to invoke xsdb: %m");
-		return -1;
+		Ret = -1;
+		goto Out;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
 	SC_INFO("XSDB Output: %s", Output);
-	(void) JTAG_Op(0);
 	if (strstr(Output, "no targets found") != NULL) {
 		SC_ERR("could not connect to Versal through jtag");
-		return -1;
+		Ret = -1;
 	}
 
-	return 0;
+Out:
+	(void) JTAG_Op(0);
+	return Ret;
 }
 
 int

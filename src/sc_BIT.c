@@ -312,24 +312,19 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	int *DDRMC = (int *)Arg2;
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
-	char Board_Name_LC[STRLEN_MAX] = {'\0'};
-	char Buffer[STRLEN_MAX] = {'\0'};
+	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 
-	(void) sprintf(Buffer, "%sddrmc_%d/ddrmc_%d_check.py", BIT_PATH,
-		       *DDRMC, *DDRMC);
-	if (access(Buffer, F_OK) != 0) {
-		SC_ERR("failed to access file %s: %m", Buffer);
+	(void) sprintf(Buffer, "%s%s/ddrmc_%d/", BIT_PATH, Board_Name, *DDRMC);
+	(void) sprintf(System_Cmd, "%sddrmc_check.py", Buffer);
+	if (access(System_Cmd, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", System_Cmd);
 		return -1;
 	}
 
-	/* Convert the board name to all lower case */
-	for (int i = 0; i < strlen(Board_Name); i++) {
-		Board_Name_LC[i] = tolower(Board_Name[i]);
-	}
-
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "python3 %s %s", Buffer, Board_Name_LC);
+	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d", Buffer,
+		       *DDRMC);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

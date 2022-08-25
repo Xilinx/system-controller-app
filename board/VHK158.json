@@ -1133,7 +1133,11 @@
 			"FMC": {
 				"Name": "FMC",
 				"I2C_Bus": "/dev/i2c-13",
-				"I2C_Address": "0x50"
+				"I2C_Address": "0x50",
+				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
+				"Supported_Volts": [1.2, 1.5],
+				"Voltage_Regulator": "VADJ_FMC",
+				"Default_Volt": 1.5
 			}
 		},
 		"BITs": {

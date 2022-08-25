@@ -258,6 +258,12 @@ typedef struct {
 	char	*Name;
 	char	*I2C_Bus;
 	int	I2C_Address;
+	int	Label_Numbers;
+	char	**Presence_Labels;
+	int	Volt_Numbers;
+	float	*Supported_Volts;
+	char	*Voltage_Regulator;
+	float	Default_Volt;
 } FMC_t;
 
 typedef struct FMCs {

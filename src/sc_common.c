@@ -25,6 +25,7 @@ extern OnBoard_EEPROM_t Common_OnBoard_EEPROM;
 extern OnBoard_EEPROM_t Legacy_OnBoard_EEPROM;
 
 int Set_AltBootMode(int);
+int Get_GPIO(char *, int *);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
 extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int VCK190_QSFP_ModuleSelect(QSFP_t *, int);
@@ -506,55 +507,88 @@ FMCAutoVadj_Op(void)
 	FMC_t *FMC;
 	int Present[2] = { 0 };
 	float Voltage = 0;
-	float Min_Voltage[2] = { 0 };
-	float Max_Voltage[2] = { 0 };
+	float Min_Volt[2] = { 0 };
+	float Max_Volt[2] = { 0 };
 	float Min_Combined, Max_Combined;
+	int Legacy_Approach = 0;
+	int State;
+	char *Regulator_Name;
+	float Target_Volt, Default_Volt;
 
-	IO_Exp = Plat_Devs->IO_Exp;
-	if (Access_IO_Exp(IO_Exp, 0, 0x0, &Value) != 0) {
-		SC_ERR("failed to read input of IO Expander");
+	FMCs = Plat_Devs->FMCs;
+	if (FMCs == NULL) {
+		SC_ERR("FMC operation is not supported");
 		return -1;
 	}
 
-	SC_INFO("IO Expander input: %#x", Value);
-
-	/*
-	 * Current boards support up to 2 FMC modules.  Their presence are
-	 * detected by input lines connected to pins 13 & 14 of TCA6416A.
-	 * If direction of these pins (Directions index 15 & 14) are configured
-	 * as input and they are driven low (reading value 0), then the FMC
-	 * module is present.
-	 */
-	if ((IO_Exp->Directions[15] == 1) && ((~Value & 0x1) == 0x1)) {
-		SC_INFO("FMC 0 is detected");
-		Present[0] = 1;
+	/* Current boards support up to 2 FMC modules */
+	if (FMCs->Numbers > 2) {
+		SC_ERR("unsupported number of FMC modules");
+		return -1;
 	}
 
-	if ((IO_Exp->Directions[14] == 1) && ((~Value & 0x2) == 0x2)) {
-		SC_INFO("FMC 1 is detected");
-		Present[1] = 1;
-	}
-
-	Voltages  = Plat_Devs->Voltages;
-	for (int i = 0; i < Voltages->Numbers; i++) {
-		if (strcmp("VADJ_FMC", (char *)Voltages->Voltage[i].Name) == 0) {
-			Target_Index = i;
-			Regulator = &Voltages->Voltage[Target_Index];
-			break;
+	/* Determine if gpiod knows about 'presence' lines */
+	for (int i = 0; i < FMCs->Numbers; i++) {
+		FMC = &FMCs->FMC[i];
+		for (int j = 0; j < FMC->Label_Numbers; j++) {
+			if (Get_GPIO(FMC->Presence_Labels[j], &State) != 0) {
+				Legacy_Approach = 1;
+				break;
+			}
 		}
 	}
 
-	if (Target_Index == -1) {
-		SC_ERR("no regulator exists for VADJ_FMC");
-		return -1;
+	if (Legacy_Approach == 1) {
+		SC_INFO("Read IO Expander to determine FMC presence");
+		IO_Exp = Plat_Devs->IO_Exp;
+		if (Access_IO_Exp(IO_Exp, 0, 0x0, &Value) != 0) {
+			SC_ERR("failed to read input of IO Expander");
+			return -1;
+		}
+
+		SC_INFO("IO Expander input: %#x", Value);
+
+		/*
+		 * Presence of FMC modules are detected by input lines connected
+		 * to pins 13 & 14 of TCA6416A.  If direction of these pins (Directions
+		 * index 15 & 14) are configured as input and they are driven low
+		 * (reading value 0), then the FMC module is present.
+		 */
+		if ((IO_Exp->Directions[15] == 1) && ((~Value & 0x1) == 0x1)) {
+			SC_INFO("FMC 0 is present");
+			Present[0] = 1;
+		}
+
+		if ((IO_Exp->Directions[14] == 1) && ((~Value & 0x2) == 0x2)) {
+			SC_INFO("FMC 1 is present");
+			Present[1] = 1;
+		}
+	} else {
+		SC_INFO("Read GPIO line to determine FMC presence");
+		for (int i = 0; i < FMCs->Numbers; i++) {
+			FMC = &FMCs->FMC[i];
+			if (Get_GPIO(FMC->Presence_Labels[0], &State) != 0) {
+				SC_ERR("failed to determine presence of FMC %d", i);
+				return -1;
+			}
+
+			/* Presence line is active low */
+			Present[i] = !State;
+			SC_INFO("FMC %d is %spresent", i, (Present[i] ? "" : "not "));
+		}
 	}
 
-	FMCs = Plat_Devs->FMCs;
+	/*
+	 * Assumption here is that both FMC modules are powered by the same
+	 * voltage regulator and with the same voltage requirement.
+	 */
+	Regulator_Name = FMCs->FMC[0].Voltage_Regulator;
+	Default_Volt = FMCs->FMC[0].Default_Volt;
+
 	for (int i = 0; i < FMCs->Numbers; i++) {
 		if (Present[i] == 1) {
 			FMC = &FMCs->FMC[i];
-			if (FMC_Vadj_Range(FMC, &Min_Voltage[i],
-					   &Max_Voltage[i]) != 0) {
+			if (FMC_Vadj_Range(FMC, &Min_Volt[i], &Max_Volt[i]) != 0) {
 				SC_ERR("failed to get Voltage Adjust range for "
 				       "FMC %d", i);
 				return -1;
@@ -563,36 +597,52 @@ FMCAutoVadj_Op(void)
 	}
 
 	if (Present[0] == 1 && Present[1] == 0) {
-		Min_Combined = Min_Voltage[0];
-		Max_Combined = Max_Voltage[0];
+		Min_Combined = Min_Volt[0];
+		Max_Combined = Max_Volt[0];
 	} else if (Present[0] == 0 && Present[1] == 1) {
-		Min_Combined = Min_Voltage[1];
-		Max_Combined = Max_Voltage[1];
+		Min_Combined = Min_Volt[1];
+		Max_Combined = Max_Volt[1];
 	} else if (Present[0] == 1 && Present[1] == 1) {
-		Min_Combined = MAX(Min_Voltage[0], Min_Voltage[0]);
-		Max_Combined = MIN(Max_Voltage[1], Max_Voltage[1]);
-	} else {
-		Min_Combined = 0;
-		Max_Combined = 1.5;
+		Min_Combined = MAX(Min_Volt[0], Min_Volt[0]);
+		Max_Combined = MIN(Max_Volt[1], Max_Volt[1]);
 	}
 
 	SC_INFO("Combined Min: %.2f, Combined Max: %.2f",
 		Min_Combined, Max_Combined);
 
 	/*
-	 * Start with satisfying the lower target voltage and then see
-	 * if it does also satisfy the higher voltage.
+	 * Both FMC modules are constrained to the same target voltage
+	 * restriction defined by the board.
 	 */
-	if (Min_Combined <= 1.2 && Max_Combined >= 1.2) {
-		Voltage = 1.2;
+	for (int i = 0; i < FMCs->FMC[0].Volt_Numbers; i++) {
+		Target_Volt = FMCs->FMC[0].Supported_Volts[i];
+		if (Min_Combined <= Target_Volt && Max_Combined >= Target_Volt) {
+			Voltage = Target_Volt;
+		}
 	}
 
-	if (Min_Combined <= 1.5 && Max_Combined >= 1.5) {
-		Voltage = 1.5;
+	/* If no FMC module is present, set the regulator to default voltage level */
+	if (Present[0] == 0 && Present[1] == 0) {
+		Voltage = Default_Volt;
 	}
 
+	Voltages  = Plat_Devs->Voltages;
+	for (int i = 0; i < Voltages->Numbers; i++) {
+		if (strcmp(Regulator_Name, Voltages->Voltage[i].Name) == 0) {
+			Target_Index = i;
+			Regulator = &Voltages->Voltage[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		SC_ERR("no regulator exists for %s", Regulator_Name);
+		return -1;
+	}
+
+	SC_INFO("Set %s voltage regulator to %.2f volts", Regulator_Name, Voltage);
 	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-		SC_ERR("failed to set voltage of VADJ_FMC regulator");
+		SC_ERR("failed to set voltage of %s regulator", Regulator_Name);
 		return -1;
 	}
 
@@ -610,7 +660,7 @@ Get_GPIO(char *Label, int *State)
 
 	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
 	    &Line_Offset) != 1) {
-		SC_ERR("failed to find GPIO line %s", Label);
+		SC_INFO("failed to find GPIO line %s", Label);
 		return -1;
 	}
 

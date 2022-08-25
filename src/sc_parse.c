@@ -939,6 +939,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 {
 	char *Value_Str;
 	int Item = 0;
+	int Sub_Item;
 
 	SC_INFO("******************** FMCs ********************");
 	*FMCs = (FMCs_t *)malloc(sizeof(FMCs_t));
@@ -972,6 +973,62 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr: %s", Value_Str);
 		(*FMCs)->FMC[Item].I2C_Address = (int)strtol(Value_Str, NULL, 0);
+
+		(*Index)++;
+		Check_Attribute("Presence_Labels", "FMC");
+		(*FMCs)->FMC[Item].Label_Numbers = Tokens[*Index].size;
+		SC_INFO("Number of Presence Labels: %i\n", (*FMCs)->FMC[Item].Label_Numbers);
+		SC_INFO("Presence Labels:");
+		char **Presence_Labels = (char **)malloc((*FMCs)->FMC[Item].Label_Numbers *
+							sizeof(char *));
+		Sub_Item = 0;
+		while (Sub_Item < (*FMCs)->FMC[Item].Label_Numbers) {
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Presence_Labels[Sub_Item] = (char *)malloc(strlen(Value_Str) + 1);
+			Validate_Str_Size(Value_Str, "FMC", "Presence_Labels", STRLEN_MAX);
+			strncpy(Presence_Labels[Sub_Item], Value_Str, strlen(Value_Str) + 1);
+			SC_INFO("  %s  ", Presence_Labels[Sub_Item]);
+			Sub_Item++;
+		}
+
+		(*FMCs)->FMC[Item].Presence_Labels = Presence_Labels;
+
+		(*Index)++;
+		Check_Attribute("Supported_Volts", "FMC");
+		(*FMCs)->FMC[Item].Volt_Numbers = Tokens[*Index].size;
+		SC_INFO("Number of Supported Voltages: %i\n", (*FMCs)->FMC[Item].Volt_Numbers);
+		SC_INFO("Supported Voltages:");
+		float *Supported_Volts = (float *)malloc((*FMCs)->FMC[Item].Volt_Numbers *
+							 sizeof(float));
+		Sub_Item = 0;
+		while (Sub_Item < (*FMCs)->FMC[Item].Volt_Numbers) {
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Supported_Volts[Sub_Item] = atof(Value_Str);
+			SC_INFO("  %f  ", Supported_Volts[Sub_Item]);
+			Sub_Item++;
+		}
+
+		(*FMCs)->FMC[Item].Supported_Volts = Supported_Volts;
+
+		(*Index)++;
+		Check_Attribute("Voltage_Regulator", "FMC");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "FMC", "Voltage_Regulator", STRLEN_MAX);
+		(*FMCs)->FMC[Item].Voltage_Regulator = (char *)malloc(strlen(Value_Str) + 1);
+		strncpy((*FMCs)->FMC[Item].Voltage_Regulator, Value_Str, strlen(Value_Str) + 1);
+		SC_INFO("Voltage_Regulator: %s", (*FMCs)->FMC[Item].Voltage_Regulator);
+
+		(*Index)++;
+		Check_Attribute("Default_Volt", "FMC");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		(*FMCs)->FMC[Item].Default_Volt = atof(Value_Str);
+		SC_INFO("Default Voltage: %f", (*FMCs)->FMC[Item].Default_Volt);
 
 		Item++;
 	}

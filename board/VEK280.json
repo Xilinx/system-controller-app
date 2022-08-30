@@ -88,7 +88,7 @@
 				"Name": "PS_REF_CLK",
 				"Type": "RC21008A",
 				"Sysfs_Path": "/sys/devices/platform/ps_ref_clk/set_rate",
-				"Default_Freq": 33.5,
+				"Default_Freq": 33.333,
 				"Upper_Freq": 60.0,
 				"Lower_Freq": 27.0,
 				"I2C_Bus": "/dev/i2c-9",
@@ -317,7 +317,7 @@
 				"Part_Name": "IRPS5401",
 				"Maximum_Volt": 0.91,
 				"Typical_Volt": 0.88,
-				"Minimum_Volt": 0.85,
+				"Minimum_Volt": 0.77,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x47",
 				"PMBus_VOUT_MODE": 1,
@@ -480,9 +480,9 @@
 			"VOLTAGE_UTIL_1V8": {
 				"Name": "VCC_UTIL_1V8",
 				"Part_Name": "IR38060",
-				"Maximum_Volt": 0.91,
-				"Typical_Volt": 0.88,
-				"Minimum_Volt": 0.78,
+				"Maximum_Volt": 1.86,
+				"Typical_Volt": 1.8,
+				"Minimum_Volt": 1.74,
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x4F",
 				"PMBus_VOUT_MODE": 0,
@@ -998,6 +998,54 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Voltages_Check"
+					}
+				}
+			},
+			"BIT_DDRMC_1_TEST" : {
+				"Name" : "DDRMC_1 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_1_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_2_TEST" : {
+				"Name" : "DDRMC_2 Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_2_Test"
+					}
+				}
+			},
+			"BIT_RTC_CLOCK_TEST" : {
+				"Name" : "RTC Clock Test",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "rtc_clock/rtc_clock_download.tcl",
+						"Instruction" : "\n1- A similar output should be displayed on the console:\n\n\tDay Convention : 0-Fri, 1-Sat, 2-Sun, 3-Mon, 4-Tue, 5-Wed, 6-Thur\n\tLast set time for RTC is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:01     Day = 3\n\n\tCurrent RTC time is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:08:39     Day = 3\n\n\tSetting Time = 2016:10:17 00:00:00\n\tRTC time after set is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:00     Day = 3\n\n\tRTC time after delay_1 is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:02     Day = 3\n\n\tRTC time after delay_2 is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:04     Day = 3\n\tSuccessfully ran RTC Set time Example Test\n\n2- Click 'Pass' if you observe it.\n"
+					}
+				}
+			},
+			"BIT_PL_UART_TEST" : {
+				"Name" : "PL UART Test",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "pl_uart/pl_uart_download.tcl",
+						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tTesting UART\n\t115200,8,N,1\n\tHello world!\n\tUART 02 Test Passed\n\n2- Click 'Pass' if you observe it.\n"
 					}
 				}
 			}

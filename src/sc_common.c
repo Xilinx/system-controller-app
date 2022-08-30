@@ -136,7 +136,7 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	short Mantissa;
 	int Get_Vout_Mode = 1;
 	int Ret = 0;
-	unsigned int Vout;
+	unsigned int Vout, Vout_OV;
 	float Over_Voltage_Limit;
 
 	/* Check if setting the requested voltage is within range */
@@ -240,28 +240,44 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 			return Ret;
 		}
 
-		/* Set Overvoltage limits to 30% of VOUT */
-		Over_Voltage_Limit = (*Voltage != 0) ? *Voltage : 0.1;
-		Over_Voltage_Limit += (Over_Voltage_Limit * 0.3);
-		Vout = round(Over_Voltage_Limit / pow(2, Exponent));
+		/*
+		 * If the new voltage is above existing Overvoltage limits, increase
+		 * the Overvoltage limites to 30% of new VOUT.
+		 */
 		Out_Buffer[0] = PMBUS_VOUT_OV_FAULT_LIMIT;
-		Out_Buffer[1] = Vout & 0xFF;
-		Out_Buffer[2] = Vout >> 8;
-		SC_INFO("Overvoltage Fault Limit: %#x %#x %#x", Out_Buffer[0],
-			Out_Buffer[1], Out_Buffer[2]);
-		I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		I2C_READ(FD, Regulator->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			(void) close(FD);
 			return Ret;
 		}
 
-		Out_Buffer[0] = PMBUS_VOUT_OV_WARN_LIMIT;
-		SC_INFO("Overvoltage Warning Limit: %#x %#x %#x", Out_Buffer[0],
-			Out_Buffer[1], Out_Buffer[2]);
-		I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
+		Vout = ((unsigned char)In_Buffer[1] << 8) | (unsigned char)In_Buffer[0];
+
+		Over_Voltage_Limit = (*Voltage != 0) ? *Voltage : 0.1;
+		Over_Voltage_Limit += (Over_Voltage_Limit * 0.3);
+		Vout_OV = round(Over_Voltage_Limit / pow(2, Exponent));
+		SC_INFO("Existing Overvoltage = %x, New Overvoltage = %x", Vout, Vout_OV);
+		if (Vout_OV > Vout) {
+			Out_Buffer[0] = PMBUS_VOUT_OV_FAULT_LIMIT;
+			Out_Buffer[1] = Vout_OV & 0xFF;
+			Out_Buffer[2] = Vout_OV >> 8;
+			SC_INFO("Overvoltage Fault Limit: %#x %#x %#x", Out_Buffer[0],
+				Out_Buffer[1], Out_Buffer[2]);
+			I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
+			if (Ret != 0) {
+				(void) close(FD);
+				return Ret;
+			}
+
+			Out_Buffer[0] = PMBUS_VOUT_OV_WARN_LIMIT;
+			SC_INFO("Overvoltage Warning Limit: %#x %#x %#x", Out_Buffer[0],
+				Out_Buffer[1], Out_Buffer[2]);
+			I2C_WRITE(FD, Regulator->I2C_Address, 3, Out_Buffer, Ret);
+			if (Ret != 0) {
+				(void) close(FD);
+				return Ret;
+			}
 		}
 
 		/* Set VOUT */

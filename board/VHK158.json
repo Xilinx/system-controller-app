@@ -148,7 +148,7 @@
 				"Name": "GTCLK2_REF_CLK",
 				"Type": "RC21008A",
 				"Sysfs_Path": "/sys/devices/platform/gtclk2-ref-clk/set_rate",
-				"Default_Freq": 33.5,
+				"Default_Freq": 33.333,
 				"Upper_Freq": 60.0,
 				"Lower_Freq": 27.0,
 				"I2C_Bus": "/dev/i2c-10",

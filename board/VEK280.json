@@ -520,11 +520,6 @@
 				"Display_Name": "500 - SYSCTLR_QSPI_CS_B",
 				"Internal_Name": "QSPI_CS_B"
 			},
-			"GPIO_06": {
-				"Line": 12,
-				"Display_Name": "500 - SYSCTLR_FWUEN_C2M_B",
-				"Internal_Name": "FWUEN"
-			},
 			"GPIO_07": {
 				"Line": 13,
 				"Display_Name": "500 - SYSCTLR_EMMC_DAT0",

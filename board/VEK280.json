@@ -785,46 +785,6 @@
 				"Display_Name": "43 - SYSCTLR_GPIO7",
 				"Internal_Name": "SYSCTLR_GPIO7"
 			},
-			"GPIO_60": {
-				"Line": 8,
-				"Display_Name": "43 - SYSCTLR_GPIO8",
-				"Internal_Name": "SYSCTLR_GPIO8"
-			},
-			"GPIO_61": {
-				"Line": 9,
-				"Display_Name": "43 - SYSCTLR_GPIO9",
-				"Internal_Name": "SYSCTLR_GPIO9"
-			},
-			"GPIO_62": {
-				"Line": 10,
-				"Display_Name": "43 - SYSCTLR_GPIO10",
-				"Internal_Name": "SYSCTLR_GPIO10"
-			},
-			"GPIO_63": {
-				"Line": 11,
-				"Display_Name": "43 - SYSCTLR_GPIO11",
-				"Internal_Name": "SYSCTLR_GPIO11"
-			},
-			"GPIO_64": {
-				"Line": 12,
-				"Display_Name": "43 - SYSCTLR_GPIO12",
-				"Internal_Name": "SYSCTLR_GPIO12"
-			},
-			"GPIO_65": {
-				"Line": 13,
-				"Display_Name": "43 - SYSCTLR_GPIO13",
-				"Internal_Name": "SYSCTLR_GPIO13"
-			},
-			"GPIO_66": {
-				"Line": 14,
-				"Display_Name": "43 - SYSCTLR_GPIO14",
-				"Internal_Name": "SYSCTLR_GPIO14"
-			},
-			"GPIO_67": {
-				"Line": 15,
-				"Display_Name": "43 - SYSCTLR_GPIO15",
-				"Internal_Name": "SYSCTLR_GPIO15"
-			},
 			"GPIO_68": {
 				"Line": 16,
 				"Display_Name": "44 - SYSCTLR_IIC_MUX1_RESET_B",

@@ -1264,17 +1264,13 @@
 					},
 					"Level 3" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Do you see the PL LEDs 3 through 0 all on?\n3- Click 'Pass' if you observe it.\n"
 					},
 					"Level 4" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Do you see the PL LEDs 3 through 0 all on?\n2- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tChoose Feature to Test:\n\t1: UART Test\n\t2: LED Test\n\t5: TIMER/SCUGIC Test\n\t7: SWITCH Test\n\t9: DDR4 External Memory Test\n\tB: BUTTON Test\n\tC: Clocking Test\n\tD: LVDS Test\n\tE: MICTOR Test\n\t0: Exit\n\n2- Click 'Pass' if you observe it.\n"
 					},
 					"Level 5" : {
-						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tChoose Feature to Test:\n\t1: UART Test\n\t2: LED Test\n\t5: TIMER/SCUGIC Test\n\t7: SWITCH Test\n\tB: BUTTON Test\n\tD: LVDS Test\n\tE: MICTOR Test\n\t0: Exit\n\n2- Click 'Pass' if you observe it.\n"
-					},
-					"Level 6" : {
 						"Plat_BIT_Op" : "Display_Instruction",
 						"Instruction" : "\n1- Enter X on the console.\n2- The following output should be displayed on the console:\n\n\tBlinkBIST results = F\n\tPress any key to return to main menu\n\n3- Click 'Pass' if you observe it.\n"
 					}

@@ -870,6 +870,11 @@ Clock_Ops(void)
 		for (int i = 0; i < Clocks->Numbers; i++) {
 			if (Clocks->Clock[i].Type == IDT_8A34001) {
 				SC_PRINT("%s", Clocks->Clock[i].Name);
+			} else if (Clocks->Clock[i].Lower_Freq == -1 &&
+				   Clocks->Clock[i].Upper_Freq == -1) {
+				SC_PRINT("%s - (%.3f MHz)",
+					 Clocks->Clock[i].Name,
+					 Clocks->Clock[i].Default_Freq);
 			} else {
 				SC_PRINT("%s - (%.3f MHz - %.3f MHz)",
 					 Clocks->Clock[i].Name,
@@ -941,6 +946,13 @@ Clock_Ops(void)
 		Frequency = strtod(Value_Arg, NULL);
 		Upper = Clock->Upper_Freq;
 		Lower = Clock->Lower_Freq;
+
+		/* restrict change in frequency if Upper & Lower are not set */
+		if (Upper == -1 && Lower == -1) {
+			SC_ERR("change of clock frequency is not permitted");
+			return -1;
+		}
+
 		if (Frequency > Upper || Frequency < Lower) {
 			SC_ERR("valid frequency range is %.3f MHz - %.3f MHz",
 			    Lower, Upper);

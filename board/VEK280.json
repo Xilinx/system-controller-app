@@ -89,8 +89,8 @@
 				"Type": "RC21008A",
 				"Sysfs_Path": "/sys/devices/platform/ps_ref_clk/set_rate",
 				"Default_Freq": 33.333,
-				"Upper_Freq": 60.0,
-				"Lower_Freq": 27.0,
+				"Upper_Freq": -1,
+				"Lower_Freq": -1,
 				"I2C_Bus": "/dev/i2c-9",
 				"I2C_Address": "0x9"
 			},

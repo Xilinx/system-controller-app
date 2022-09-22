@@ -696,28 +696,19 @@ Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs
 	Validate_Item_Size((*GPIOs)->Numbers, "GPIO", "GPIO", LITEMS_MAX);
 	SC_INFO("Number of GPIO: %i", (*GPIOs)->Numbers);
 	while (Items < (*GPIOs)->Numbers) {
-		*Index += 3;
-		Check_Attribute("Line", "GPIO");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		(*GPIOs)->GPIO[Items].Line = atoi(Value_Str);
-		SC_INFO("GPIO_%i\nLine: %i", Items, (*GPIOs)->GPIO[Items].Line);
-
 		(*Index)++;
-		Check_Attribute("Display_Name", "GPIO");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "GPIO", "Display_Name", STRLEN_MAX);
-		(*GPIOs)->GPIO[Items].Display_Name = Value_Str;
-		SC_INFO("Display Name: %s", (*GPIOs)->GPIO[Items].Display_Name);
-
-		(*Index)++;
-		Check_Attribute("Internal_Name", "GPIO");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "GPIO", "Internal_Name", STRLEN_MAX);
 		(*GPIOs)->GPIO[Items].Internal_Name = Value_Str;
 		SC_INFO("Internal Name: %s", (*GPIOs)->GPIO[Items].Internal_Name);
+
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "GPIO", "Display_Name", STRLEN_MAX);
+		(*GPIOs)->GPIO[Items].Display_Name = Value_Str;
+		SC_INFO("Display Name: %s", (*GPIOs)->GPIO[Items].Display_Name);
 
 		Items++;
 	}

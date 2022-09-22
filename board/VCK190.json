@@ -503,191 +503,51 @@
 			}
 		},
 		"GPIO" : {
-			"GPIO_00" : {
-				"Line" : 7,
-				"Display_Name" : "500 - DC_SYS_CTRL0",
-				"Internal_Name" : "DC_SYS_CTRL0"
-			},
-			"GPIO_01" : {
-				"Line" : 8,
-				"Display_Name" : "500 - DC_SYS_CTRL1",
-				"Internal_Name" : "DC_SYS_CTRL1"
-			},
-			"GPIO_02" : {
-				"Line" : 9,
-				"Display_Name" : "500 - DC_SYS_CTRL2",
-				"Internal_Name" : "DC_SYS_CTRL2"
-			},
-			"GPIO_03" : {
-				"Line" : 10,
-				"Display_Name" : "500 - DC_SYS_CTRL3",
-				"Internal_Name" : "DC_SYS_CTRL3"
-			},
-			"GPIO_04" : {
-				"Line" : 12,
-				"Display_Name" : "500 - SYSCTLR_PB",
-				"Internal_Name" : "SYSCTLR_PB"
-			},
-			"GPIO_05" : {
-				"Line" : 34,
-				"Display_Name" : "501 - LP_I2C0_PMC_SCL",
-				"Internal_Name" : "LP_I2C0_PMC_SCL"
-			},
-			"GPIO_06" : {
-				"Line" : 35,
-				"Display_Name" : "501 - LP_I2C0_PMC_SDA",
-				"Internal_Name" : "LP_I2C0_PMC_SDA"
-			},
-			"GPIO_07" : {
-				"Line" : 36,
-				"Display_Name" : "501 - LP_I2C1_SCL",
-				"Internal_Name" : "LP_I2C1_SCL"
-			},
-			"GPIO_08" : {
-				"Line" : 37,
-				"Display_Name" : "501 - LP_I2C1_SDA",
-				"Internal_Name" : "LP_I2C1_SDA"
-			},
-			"GPIO_09" : {
-				"Line" : 38,
-				"Display_Name" : "501 - SYSCTLR_UART0_RXD_IN",
-				"Internal_Name" : "UART0_RXD_IN"
-			},
-			"GPIO_10" : {
-				"Line" : 39,
-				"Display_Name" : "501 - SYSCTLR_UART0_TXD_OUT",
-				"Internal_Name" : "UART0_TXD_OUT"
-			},
-			"GPIO_11" : {
-				"Line" : 42,
-				"Display_Name" : "501 - SYSCTLR_ETH_RESET_B_R",
-				"Internal_Name" : "ETH_RESET_B"
-			},
-			"GPIO_12" : {
-				"Line" : 45,
-				"Display_Name" : "501 - SYSCTLR_SD1_CD_B",
-				"Internal_Name" : "SD1_CD_B"
-			},
-			"GPIO_13" : {
-				"Line" : 46,
-				"Display_Name" : "501 - SYSCTLR_SD1_DATA0",
-				"Internal_Name" : "SD1_DATA0"
-			},
-			"GPIO_14" : {
-				"Line" : 47,
-				"Display_Name" : "501 - SYSCTLR_SD1_DATA1",
-				"Internal_Name" : "SD1_DATA1"
-			},
-			"GPIO_15" : {
-				"Line" : 48,
-				"Display_Name" : "501 - SYSCTLR_SD1_DATA2",
-				"Internal_Name" : "SD1_DATA2"
-			},
-			"GPIO_16" : {
-				"Line" : 49,
-				"Display_Name" : "501 - SYSCTLR_SD1_DATA3",
-				"Internal_Name" : "SD1_DATA3"
-			},
-			"GPIO_17" : {
-				"Line" : 50,
-				"Display_Name" : "501 - SYSCTLR_SD1_CMD",
-				"Internal_Name" : "SD1_CMD"
-			},
-			"GPIO_18" : {
-				"Line" : 51,
-				"Display_Name" : "501 - SYSCTLR_SD1_CLK",
-				"Internal_Name" : "SD1_CLK"
-			},
-			"GPIO_19" : {
-				"Line" : 76,
-				"Display_Name" : "502 - SYSCTLR_ETH_MDC",
-				"Internal_Name" : "ETH_MDC"
-			},
-			"GPIO_20" : {
-				"Line" : 77,
-				"Display_Name" : "502 - SYSCTLR_ETH_MDIO",
-				"Internal_Name" : "ETH_MDIO"
-			},
-			"GPIO_21" : {
-				"Line" : 90,
-				"Display_Name" : "43 - SYSCTLR_GPIO0",
-				"Internal_Name" : "SYSCTLR_GPIO0"
-			},
-			"GPIO_22" : {
-				"Line" : 91,
-				"Display_Name" : "43 - SYSCTLR_GPIO1",
-				"Internal_Name" : "SYSCTLR_GPIO1"
-			},
-			"GPIO_23" : {
-				"Line" : 92,
-				"Display_Name" : "43 - SYSCTLR_GPIO2",
-				"Internal_Name" : "SYSCTLR_GPIO2"
-			},
-			"GPIO_24" : {
-				"Line" : 93,
-				"Display_Name" : "43 - SYSCTLR_GPIO3",
-				"Internal_Name" : "SYSCTLR_GPIO3"
-			},
-			"GPIO_25" : {
-				"Line" : 94,
-				"Display_Name" : "43 - SYSCTLR_GPIO4",
-				"Internal_Name" : "SYSCTLR_GPIO4"
-			},
-			"GPIO_26" : {
-				"Line" : 95,
-				"Display_Name" : "43 - SYSCTLR_GPIO5",
-				"Internal_Name" : "SYSCTLR_GPIO5"
-			},
-			"GPIO_27" : {
-				"Line" : 78,
-				"Display_Name" : "44 - SYSCTLR_VERSAL_MODE0",
-				"Internal_Name" : "SYSCTLR_VERSAL_MODE0"
-			},
-			"GPIO_28" : {
-				"Line" : 79,
-				"Display_Name" : "44 - SYSCTLR_VERSAL_MODE1",
-				"Internal_Name" : "SYSCTLR_VERSAL_MODE1"
-			},
-			"GPIO_29" : {
-				"Line" : 80,
-				"Display_Name" : "44 - SYSCTLR_VERSAL_MODE2",
-				"Internal_Name" : "SYSCTLR_VERSAL_MODE2"
-			},
-			"GPIO_30" : {
-				"Line" : 81,
-				"Display_Name" : "44 - SYSCTLR_VERSAL_MODE3",
-				"Internal_Name" : "SYSCTLR_VERSAL_MODE3"
-			},
-			"GPIO_31" : {
-				"Line" : 82,
-				"Display_Name" : "44 - SYSCTLR_POR_B_LS",
-				"Internal_Name" : "SYSCTLR_POR_B_LS"
-			},
-			"GPIO_32" : {
-				"Line" : 83,
-				"Display_Name" : "44 - DC_PRSNT",
-				"Internal_Name" : "DC_PRSNT"
-			},
-			"GPIO_33" : {
-				"Line" : 85,
-				"Display_Name" : "44 - SYSCTLR_JTAG_S0",
-				"Internal_Name" : "SYSCTLR_JTAG_S0"
-			},
-			"GPIO_34" : {
-				"Line" : 86,
-				"Display_Name" : "44 - SYSCTLR_JTAG_S1",
-				"Internal_Name" : "SYSCTLR_JTAG_S1"
-			},
-			"GPIO_35" : {
-				"Line" : 87,
-				"Display_Name" : "44 - SYSCTLR_IIC_MUX0_RESET_B",
-				"Internal_Name" : "SYSCTLR_IIC_MUX0_RESET_B"
-			},
-			"GPIO_36" : {
-				"Line" : 88,
-				"Display_Name" : "44 - SYSCTLR_IIC_MUX1_RESET_B",
-				"Internal_Name" : "SYSCTLR_IIC_MUX1_RESET_B"
-			}
+			"DC_SYS_CTRL0" : "500 - DC_SYS_CTRL0",
+			"DC_SYS_CTRL1" : "500 - DC_SYS_CTRL1",
+			"DC_SYS_CTRL2" : "500 - DC_SYS_CTRL2",
+			"DC_SYS_CTRL3" : "500 - DC_SYS_CTRL3",
+			"SYSCTLR_PB" : "500 - SYSCTLR_PB",
+			"LP_I2C0_PMC_SCL" : "501 - LP_I2C0_PMC_SCL",
+			"LP_I2C0_PMC_SDA" : "501 - LP_I2C0_PMC_SDA",
+			"LP_I2C1_SCL" : "501 - LP_I2C1_SCL",
+			"LP_I2C1_SDA" : "501 - LP_I2C1_SDA",
+			"UART0_RXD_IN" : "501 - SYSCTLR_MIO38_UART0_RXD_IN",
+			"UART0_TXD_OUT" : "501 - SYSCTLR_MIO39_UART0_TXD_OUT",
+			"ETH_RESET_B" : "501 - SYSCTLR_ETH_RESET_B_R",
+			"SD1_CD_B" : "501 - SYSCTLR_MIO45_SD1_CD_B",
+			"SD1_DATA0" : "501 - SYSCTLR_MIO46_SD1_DATA0",
+			"SD1_DATA1" : "501 - SYSCTLR_MIO47_SD1_DATA1",
+			"SD1_DATA2" : "501 - SYSCTLR_MIO48_SD1_DATA2",
+			"SD1_DATA3" : "501 - SYSCTLR_MIO49_SD1_DATA3",
+			"SD1_CMD" : "501 - SYSCTLR_MIO50_SD1_CMD",
+			"SD1_CLK" : "501 - SYSCTLR_MIO51_SD1_CLK",
+			"ETH_MDC" : "502 - SYSCTLR_ETH_MDC",
+			"ETH_MDIO" : "502 - SYSCTLR_ETH_MDIO",
+			"SYSCTLR_GPIO0" : "43 - SYSCTLR_GPIO0",
+			"SYSCTLR_GPIO1" : "43 - SYSCTLR_GPIO1",
+			"SYSCTLR_GPIO2" : "43 - SYSCTLR_GPIO2",
+			"SYSCTLR_GPIO3" : "43 - SYSCTLR_GPIO3",
+			"SYSCTLR_GPIO4" : "43 - SYSCTLR_GPIO4",
+			"SYSCTLR_GPIO5" : "43 - SYSCTLR_GPIO5",
+			"SYSCTLR_VERSAL_MODE0" : "44 - SYSCTLR_VERSAL_MODE0",
+			"SYSCTLR_VERSAL_MODE1" : "44 - SYSCTLR_VERSAL_MODE1",
+			"SYSCTLR_VERSAL_MODE2" : "44 - SYSCTLR_VERSAL_MODE2",
+			"SYSCTLR_VERSAL_MODE3" : "44 - SYSCTLR_VERSAL_MODE3",
+			"SYSCTLR_POR_B_LS" : "44 - SYSCTLR_POR_B_LS",
+			"DC_PRSNT" : "44 - DC_PRSNT",
+			"SYSCTLR_JTAG_S0" : "44 - SYSCTLR_JTAG_S0",
+			"SYSCTLR_JTAG_S1" : "44 - SYSCTLR_JTAG_S1",
+			"SYSCTLR_IIC_MUX0_RESET_B" : "44 - SYSCTLR_IIC_MUX0_RESET_B",
+			"SYSCTLR_IIC_MUX1_RESET_B" : "44 - SYSCTLR_IIC_MUX1_RESET_B",
+			"MAX6643_FULLSPD" : "46 - MAX6643_FULLSPD",
+			"MAX6643_FANFAIL_B" : "46 - MAX6643_FANFAIL_B",
+			"MAX6643_OT_B" : "46 - MAX6643_OT_B",
+			"SYSCTLR_VCC0V85_TG" : "46 - SYSCTLR_VCC0V85_TG",
+			"SYSCTLR_ETH_RESET_B" : "46 - SYSCTLR_ETH_RESET_B",
+			"PMBUS_ALERT" : "46 - PMBUS_ALERT",
+			"PMBUS2_INA226_ALERT" : "46 - PMBUS2_INA226_ALERT",
+			"PMBUS1_INA226_ALERT" : "46 - PMBUS1_INA226_ALERT"
 		},
 		"IO Exp" : {
 			"Name" : "TCA6416A",

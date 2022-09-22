@@ -2005,7 +2005,7 @@ int DDR_Ops(void)
 static int GPIO_Get_All(void)
 {
 	FILE *FP;
-	int Line, State;
+	int State;
 	char Buffer[SYSCMD_MAX];
 	char Label[STRLEN_MAX];
 	char Usage[STRLEN_MAX];
@@ -2024,12 +2024,11 @@ static int GPIO_Get_All(void)
 		}
 
 		(void) strtok(Buffer, " :\"");
-		Line = atoi(strtok(NULL, " :\""));
+		(void) strtok(NULL, " :\"");
 		(void) strcpy(Label, strtok(NULL, " :\""));
 		(void) strcpy(Usage, strtok(NULL, " :\""));
 		if (strcmp(Usage, "unused") != 0) {
-			SC_PRINT("%s (line %d):\tbusy, used by %s", Label,
-			       Line, Usage);
+			SC_PRINT("%s:\tbusy, used by %s", Label, Usage);
 			continue;
 		}
 
@@ -2039,7 +2038,7 @@ static int GPIO_Get_All(void)
 			return -1;
 		}
 
-		SC_PRINT("%s (line %d):\t%d", Label, Line, State);
+		SC_PRINT("%s:\t%d", Label, State);
 	}
 
 	(void) pclose(FP);
@@ -2090,7 +2089,7 @@ int GPIO_Ops(void)
 		if (!strncmp(GPIOs->GPIO[i].Display_Name, Target_Arg, STRLEN_MAX) ||
 		    !strncmp(GPIOs->GPIO[i].Internal_Name, Target_Arg, STRLEN_MAX)) {
 			Target_Index = i;
-			GPIO = &GPIOs->GPIO[Target_Index = i];
+			GPIO = &GPIOs->GPIO[Target_Index];
 			break;
 		}
 	}
@@ -2107,8 +2106,7 @@ int GPIO_Ops(void)
 			return -1;
 		}
 
-		SC_PRINT("%s (line %2d):\t%d", GPIO->Display_Name, GPIO->Line,
-			 (int)State);
+		SC_PRINT("%s:\t%d", GPIO->Display_Name, (int)State);
 		break;
 
 	case SETGPIO:

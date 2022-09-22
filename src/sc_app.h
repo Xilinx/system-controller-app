@@ -323,7 +323,6 @@ typedef struct DIMMs {
  * GPIO lines
  */
 typedef struct {
-	int Line;
 	const char *Display_Name;
 	const char *Internal_Name;
 } GPIO_t;

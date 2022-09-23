@@ -714,7 +714,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'OK' when this is done.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -729,7 +729,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'OK' when this is done.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -744,7 +744,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n3- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n3- Click 'OK' when this is done.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "Assert_Reset",
@@ -756,17 +756,13 @@
 					},
 					"Level 3" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Do you see the PL LEDs 3 through 0 all on?\n3- Click 'Pass' if you observe it.\n"
 					},
 					"Level 4" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Do you see the PL LEDs 3 through 0 all on?\n2- Click 'Pass' if you observe it.\n"
-					},
-					"Level 5" : {
-						"Plat_BIT_Op" : "Display_Instruction",
 						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tChoose Feature to Test:\n\t1: UART Test\n\t2: LED Test\n\t5: TIMER/SCUGIC Test\n\t7: SWITCH Test\n\tB: BUTTON Test\n\tD: LVDS Test\n\tE: MICTOR Test\n\t0: Exit\n\n2- Click 'Pass' if you observe it.\n"
 					},
-					"Level 6" : {
+					"Level 5" : {
 						"Plat_BIT_Op" : "Display_Instruction",
 						"Instruction" : "\n1- Enter X on the console.\n2- The following output should be displayed on the console:\n\n\tBlinkBIST results = F\n\tPress any key to return to main menu\n\n3- Click 'Pass' if you observe it.\n"
 					}

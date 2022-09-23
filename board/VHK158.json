@@ -867,7 +867,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'OK' when this is done.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -882,7 +882,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'OK' when this is done.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -897,7 +897,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'OK' when this is done.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -912,7 +912,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0001 (Up, Up, Up, Down, left to right) for testing OSPI.\n3- Click 'Pass' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0001 (Up, Up, Up, Down, left to right) for testing OSPI.\n3- Click 'OK' when this is done.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "Assert_Reset",

@@ -52,6 +52,7 @@ char Board_Name[STRLEN_MAX];
 extern Plat_Devs_t *Plat_Devs;
 
 int Parse_Options(int, char **);
+int Constraint_Pre_Ops(void);
 int Version_Ops(void);
 int Board_Ops(void);
 int BootMode_Ops(void);
@@ -306,6 +307,7 @@ main()
 	int Argc;
 	char *Argv[ITEMS_MAX];
 	int Ret = -1;
+	int Valid_Command;
 
 	SC_OPENLOG("sc_app");
 	SC_INFO(">>> Begin");
@@ -399,10 +401,28 @@ main()
 			goto Out;
 		}
 
+		Valid_Command = 0;
 		SC_INFO(">>> Command: %s", InBuffer);
 		String_2_Argv(InBuffer, &Argc, &Argv[0]);
 
 		if (Parse_Options(Argc, Argv) != 0) {
+			goto Next;
+		}
+
+		if ((Ret = Constraint_Pre_Ops()) != 0) {
+			goto Next;
+		}
+
+		for (int i = 0; i < COMMAND_MAX; i++) {
+			if (strcmp(Command_Arg, (char *)Commands[i].CmdStr) == 0) {
+				Command = Commands[i];
+				Valid_Command = 1;
+				break;
+			}
+		}
+
+		if (!Valid_Command) {
+			SC_ERR("invalid command");
 			goto Next;
 		}
 
@@ -506,15 +526,116 @@ Parse_Options(int argc, char **argv)
 		return -1;
 	}
 
-	for (int i = 0; i < COMMAND_MAX; i++) {
-		if (strcmp(Command_Arg, (char *)Commands[i].CmdStr) == 0) {
-			Command = Commands[i];
-			return 0;
+	return 0;
+}
+
+/*
+ * Process commands with pre_phase constraints
+ */
+int
+Constraint_Pre_Ops()
+{
+	int Target_Index = -1;
+	Constraints_t *Constraints;
+	Constraint_t *Constraint;
+	Constraint_Phases_t *Pre_Phases;
+	FILE *FP;
+	char Output[STRLEN_MAX] = { 0 };
+	char System_Cmd[SYSCMD_MAX];
+
+	Constraints = Plat_Devs->Constraints;
+	if (Constraints == NULL) {
+		return 0;
+	}
+
+	for (int i = 0; i < Constraints->Numbers; i++) {
+		if (strcmp(Command_Arg, Constraints->Constraint[i].Command) != 0) {
+			continue;
+		}
+
+		if ((!T_Flag && (Constraints->Constraint[i].Target != NULL)) ||
+		    (T_Flag && (Constraints->Constraint[i].Target == NULL))) {
+			continue;
+		}
+
+		if (T_Flag &&
+		    (strcmp(Target_Arg, Constraints->Constraint[i].Target) != 0)) {
+			continue;
+		}
+
+		if ((!V_Flag && (Constraints->Constraint[i].Value != NULL)) ||
+		    (V_Flag && (Constraints->Constraint[i].Value == NULL))) {
+			continue;
+		}
+
+		if (V_Flag &&
+		    (strcmp(Value_Arg, Constraints->Constraint[i].Value) != 0)) {
+			continue;
+		}
+
+		Target_Index = i;
+		Constraint = &Constraints->Constraint[Target_Index];
+		break;
+	}
+
+	if (Target_Index == -1) {
+		return 0;
+	}
+
+	SC_INFO("Constraint command: %s %s %s", Constraint->Command,
+		 ((Constraint->Target != NULL) ? Constraint->Target : ""),
+		 ((Constraint->Value != NULL) ? Constraint->Value : ""));
+
+	if (Constraint->Pre_Phases == NULL) {
+		return 0;
+	}
+
+	Pre_Phases = Constraint->Pre_Phases;
+	for (int i = 0; i < Pre_Phases->Numbers; i++) {
+		if (strcmp(Pre_Phases->Phase[i].Type, "External") == 0) {
+			SC_INFO("Executing external command: %s",
+				Pre_Phases->Phase[i].Command);
+			(void) sprintf(System_Cmd, "%s%s/%s %s", BIT_PATH, Board_Name,
+				       Pre_Phases->Phase[i].Command,
+				       ((Pre_Phases->Phase[i].Args != NULL) ?
+				       Pre_Phases->Phase[i].Args : ""));
+			SC_INFO("Command in full path: %s", System_Cmd);
+			FP = popen(System_Cmd, "r");
+			if (FP == NULL) {
+				SC_ERR("failed to invoke %s: %m", System_Cmd);
+				return -1;
+			}
+
+			while (fgets(Output, sizeof(Output), FP) != NULL) {
+				SC_INFO("\t%s", Output);
+				if (strstr(Output, "ERROR: ") != NULL) {
+					SC_ERR("external command \'%s\' reported error",
+					       Pre_Phases->Phase[i].Command);
+					return -1;
+				}
+			}
+
+			(void) pclose(FP);
+
+		} else if (strcmp(Pre_Phases->Phase[i].Type, "Internal") == 0) {
+			SC_INFO("Executing internal command: %s",
+				Pre_Phases->Phase[i].Command);
+
+			/* These are currently supported internal routines */
+			if (strcmp(Pre_Phases->Phase[i].Command, "FMC_Autodetect_Vadj") == 0) {
+				if (FMC_Autodetect_Vadj() != 0) {
+					SC_ERR("failed to FMC autodetect vadj");
+					return -1;
+				}
+			}
+
+		} else {
+			SC_ERR("invalid Pre_Phase command type");
+			return -1;
 		}
 	}
 
-	SC_ERR("invalid command");
-	return -1;
+	return ((strcmp(Constraint->Type, "Terminate") == 0) ? 1 : 0);
 }
 
 /*

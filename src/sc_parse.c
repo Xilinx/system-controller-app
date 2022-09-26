@@ -43,6 +43,7 @@ int Parse_QSFP(const char *, jsmntok_t *, int *, QSFPs_t **);
 int Parse_FMC(const char *, jsmntok_t *, int *, FMCs_t **);
 int Parse_Workaround(const char *, jsmntok_t *, int *, Workarounds_t **);
 int Parse_BIT(const char *, jsmntok_t *, int *, BITs_t **);
+int Parse_Constraint(const char *, jsmntok_t *, int *, Constraints_t **);
 
 #define Check_Attribute(Attribute, Feature) { \
 	Value_Str = strndup(Json_File + Tokens[*Index].start, \
@@ -194,6 +195,11 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "BITs") == 0) {
 			if (Parse_BIT(Json_File, Tokens, &i, &Dev_Parse->BITs) != 0) {
+				return -1;
+			}
+		} else if (jsoneq(Json_File, &Tokens[i], "Constraints") == 0) {
+			if (Parse_Constraint(Json_File, Tokens, &i,
+					     &Dev_Parse->Constraints) != 0) {
 				return -1;
 			}
 		}
@@ -1198,6 +1204,122 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 			Level++;
 		}
 
+		Item++;
+	}
+
+	return 0;
+}
+
+int
+Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constraints_t **Constraints)
+{
+	char *Value_Str;
+	int Item = 0;
+	int Sub_Item;
+	Constraint_Phases_t *Pre_Phases_Data;
+
+	SC_INFO("******************* Constraints ******************");
+	*Constraints = (Constraints_t *)malloc(sizeof(Constraints_t));
+
+	(*Index)++;
+	(*Constraints)->Numbers = Tokens[*Index].size;
+	Validate_Item_Size((*Constraints)->Numbers, "Constraints", "Constraints", ITEMS_MAX);
+	SC_INFO("Number of Constraints: %i", (*Constraints)->Numbers);
+	while (Item < (*Constraints)->Numbers) {
+		*Index += 3;
+		Check_Attribute("Type", "Constraints");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "Constraints", "Type", STRLEN_MAX);
+		SC_INFO("Type: %s", Value_Str);
+		(*Constraints)->Constraint[Item].Type = Value_Str;
+		if ((strcmp(Value_Str, "Complete") != 0) &&
+		    (strcmp(Value_Str, "Terminate") != 0)) {
+			SC_ERR("invalid \'Type\' for Constraints");
+			return -1;
+		}
+
+		(*Index)++;
+		Check_Attribute("Command", "Constraints");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "Constraints", "Command", STRLEN_MAX);
+		(*Constraints)->Constraint[Item].Command = Value_Str;
+		SC_INFO("Command: %s", (*Constraints)->Constraint[Item].Command);
+
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "Constraints", "Next", STRLEN_MAX);
+		if (strcmp(Value_Str, "Target") == 0) {
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "Constraints", "Target", STRLEN_MAX);
+			(*Constraints)->Constraint[Item].Target = Value_Str;
+			SC_INFO("Target: %s", (*Constraints)->Constraint[Item].Target);
+
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "Constraints", "Next", STRLEN_MAX);
+			if (strcmp(Value_Str, "Value") == 0) {
+				(*Index)++;
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "Constraints", "Value", STRLEN_MAX);
+				(*Constraints)->Constraint[Item].Value = Value_Str;
+				SC_INFO("Value: %s", (*Constraints)->Constraint[Item].Value);
+				(*Index)++;
+			}
+		}
+
+		Check_Attribute("Pre_Phases", "Constraints");
+		Pre_Phases_Data = (Constraint_Phases_t *)malloc(sizeof(Constraint_Phases_t));
+		Pre_Phases_Data->Numbers = Tokens[*Index].size;
+		SC_INFO("Number of Pre_Phases: %i", Pre_Phases_Data->Numbers);
+		Sub_Item = 0;
+		while (Sub_Item < Pre_Phases_Data->Numbers) {
+			*Index += 3;
+			Check_Attribute("Type", "Pre_Phases");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "Pre_Phases", "Type", STRLEN_MAX);
+			SC_INFO("Pre_Phases Type: %s", Value_Str);
+			Pre_Phases_Data->Phase[Sub_Item].Type = Value_Str;
+			if ((strcmp(Value_Str, "External") != 0) &&
+			    (strcmp(Value_Str, "Internal") != 0)) {
+				SC_ERR("invalid \'Type\' for Pre_Phases");
+				return -1;
+			}
+
+			(*Index)++;
+			Check_Attribute("Command", "Pre_Phases");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "Pre_Phases", "Command", STRLEN_MAX);
+			Pre_Phases_Data->Phase[Sub_Item].Command = Value_Str;
+			SC_INFO("Pre_Phases Command: %s", Pre_Phases_Data->Phase[Sub_Item].Command);
+
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "Pre_Phases", "Next", STRLEN_MAX);
+			if (strcmp(Value_Str, "Args") == 0) {
+				(*Index)++;
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "Pre_Phases", "Args", STRLEN_MAX);
+				Pre_Phases_Data->Phase[Sub_Item].Args = Value_Str;
+				SC_INFO("Pre_Phases Args: %s", Pre_Phases_Data->Phase[Sub_Item].Args);
+			} else {
+				(*Index)--;
+			}
+
+			Sub_Item++;
+		}
+
+		(*Constraints)->Constraint[Item].Pre_Phases = Pre_Phases_Data;
 		Item++;
 	}
 

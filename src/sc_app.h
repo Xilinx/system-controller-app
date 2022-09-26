@@ -333,6 +333,34 @@ typedef struct GPIOs {
 } GPIOs_t;
 
 /*
+ * Command Constraints
+ */
+typedef struct {
+	const char *Type;
+	const char *Command;
+	const char *Args;
+} Constraint_Phase_t;
+
+typedef struct {
+	int Numbers;
+	Constraint_Phase_t Phase[ITEMS_MAX];
+} Constraint_Phases_t;
+
+typedef struct {
+	const char *Type;
+	const char *Command;
+	const char *Target;
+	const char *Value;
+	Constraint_Phases_t *Pre_Phases;
+	Constraint_Phases_t *Post_Phases;
+} Constraint_t;
+
+typedef struct Constraints {
+	int Numbers;
+	Constraint_t Constraint[ITEMS_MAX];
+} Constraints_t;
+
+/*
  * Board-specific Devices
  */
 typedef struct {
@@ -352,6 +380,7 @@ typedef struct {
 	FMCs_t *FMCs;
 	Workarounds_t *Workarounds;
 	BITs_t *BITs;
+	Constraints_t *Constraints;
 } Plat_Devs_t;
 
 #define I2C_READ(FD, Address, Len, Out, In, Return) \

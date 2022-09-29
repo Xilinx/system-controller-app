@@ -677,7 +677,7 @@
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "rtc_clock/rtc_clock_download.tcl",
-						"Instruction" : "\n1- A similar output should be displayed on the console:\n\n\tDay Convention : 0-Fri, 1-Sat, 2-Sun, 3-Mon, 4-Tue, 5-Wed, 6-Thur\n\tLast set time for RTC is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:01     Day = 3\n\n\tCurrent RTC time is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:08:39     Day = 3\n\n\tSetting Time = 2016:10:17 00:00:00\n\tRTC time after set is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:00     Day = 3\n\n\tRTC time after delay_1 is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:02     Day = 3\n\n\tRTC time after delay_2 is..\n\tYEAR:MM:DD HR:MM:SS      2016:10:17 00:00:04     Day = 3\n\tSuccessfully ran RTC Set time Example Test\n\n2- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- Test prints the last set date and time setting of RTC.\n2- Test sets RTC to '2016:10:17 00:00:00' and prints the progression of time after two consecutive delays.\n3- Click 'Pass' if you observe RTC responses.\n"
 					}
 				}
 			},
@@ -692,7 +692,7 @@
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "pl_uart/pl_uart_download.tcl",
-						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tTesting UART\n\t115200,8,N,1\n\tHello world!\n\tUART 02 Test Passed\n\n2- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' message.\n"
 					}
 				}
 			},
@@ -707,7 +707,7 @@
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "qspi/program_qspi_download.tcl",
-						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tSF: Detected mt35xu02g with page size 256 Bytes, erase size 128 KiB, total 256 MiB\n\tSF: 5242880 bytes @ 0x0 Erased: OK\n\tdevice 0 offset 0x0, size 0x500000\n\tSF: 5242880 bytes @ 0x0 Written: OK\n\tVersal> \n\n2- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- U-Boot prints logs about OSPI device detected and size of binary that has been programmed on the device.\n2- Click 'Pass' if you observe U-Boot serial flash ('SF') detected message.\n"
 					}
 				}
 			},
@@ -733,14 +733,14 @@
 					},
 					"Level 4" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- The following output should be displayed on the console:\n\n\tChoose Feature to Test:\n\t1: UART Test\n\t2: LED Test\n\t5: TIMER/SCUGIC Test\n\t7: SWITCH Test\n\t9: DDR4 External Memory Test\n\tB: BUTTON Test\n\tC: Clocking Test\n\t0: Exit\n\n2- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- Build-In-Self-Test prompts a 'Feature to Test' menu.\n2- Individual BIST Tests can be selected from that menu to run.\n3- Click 'Pass' if you observe it.\n"
 					},
 					"Level 5" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Enter X on the console.\n2- The following output should be displayed on the console:\n\n\tBlinkBIST results = F\n\tPress any key to return to main menu\n\n3- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- Enter 'x' on the Versal console.\n2- BlinkBIST test assigns '1' for each 4 LEDs passing the test ('results = F').\n3- Click 'Pass' if you observe 'results = F'.\n"
 					}
 				}
-			}	
+			}
 		}
 	}
 }

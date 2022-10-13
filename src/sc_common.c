@@ -638,8 +638,12 @@ FMCAutoVadj_Op(void)
 		}
 	}
 
-	/* If no FMC module is present, set the regulator to default voltage level */
-	if (Present[0] == 0 && Present[1] == 0) {
+	/*
+	 * If no FMC module is present, or voltage range that is read from the
+	 * modules don't satisfy any of target voltages supported by the board,
+	 * then set the regulator to the default voltage level.
+	 */
+	if ((Present[0] == 0 && Present[1] == 0) || (Voltage == 0)) {
 		Voltage = Default_Volt;
 	}
 

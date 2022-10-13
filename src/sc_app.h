@@ -403,6 +403,26 @@ typedef struct {
 	} \
 }
 
+#define I2C_TRY_READ(FD, Address, Len, Out, In, Return) \
+{ \
+	struct i2c_msg Msgs[2]; \
+	struct i2c_rdwr_ioctl_data Msgset[1]; \
+	Msgs[0].addr = (Address); \
+	Msgs[0].flags = 0; \
+	Msgs[0].len = 1; \
+	Msgs[0].buf = (__u8 *)(Out); \
+	Msgs[1].addr = (Address); \
+	Msgs[1].flags = (I2C_M_RD | I2C_M_NOSTART); \
+	Msgs[1].len = (Len); \
+	Msgs[1].buf = (__u8 *)(In); \
+	Msgset[0].msgs = Msgs; \
+	Msgset[0].nmsgs = 2; \
+	if (ioctl((FD), I2C_RDWR, &Msgset) < 0) { \
+		SC_INFO("unable to read from I2C device %#x: %m", (Address)); \
+		(Return) = -1; \
+	} \
+}
+
 #define I2C_WRITE(FD, Address, Len, Out, Return) \
 { \
 	if (ioctl((FD), I2C_SLAVE_FORCE, (Address)) < 0) { \

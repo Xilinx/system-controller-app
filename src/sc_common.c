@@ -461,7 +461,7 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 	(void) memset(Out_Buffer, 0, SYSCMD_MAX);
 	(void) memset(In_Buffer, 0, SYSCMD_MAX);
 	Out_Buffer[0] = 0x0;    // EEPROM offset 0
-	I2C_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
+	I2C_TRY_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
 		(void) close(FD);
 		return Ret;
@@ -605,9 +605,10 @@ FMCAutoVadj_Op(void)
 		if (Present[i] == 1) {
 			FMC = &FMCs->FMC[i];
 			if (FMC_Vadj_Range(FMC, &Min_Volt[i], &Max_Volt[i]) != 0) {
-				SC_ERR("failed to get Voltage Adjust range for "
-				       "FMC %d", i);
-				return -1;
+				SC_PRINT("WARNING: unable to obtain voltage range "
+					 "from FMC %d.  Voltage regulator '%s' "
+					 "needs to be set manually.", i, Regulator_Name);
+				return 0;
 			}
 		}
 	}

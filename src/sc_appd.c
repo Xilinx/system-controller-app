@@ -48,7 +48,7 @@
 
 int Client_FD;
 char Sock_OutBuffer[SOCKBUF_MAX];
-char Board_Name[STRLEN_MAX];
+char Board_Name[LSTRLEN_MAX];
 extern Plat_Devs_t *Plat_Devs;
 
 int Parse_Options(int, char **);
@@ -99,6 +99,7 @@ extern int Set_IDT_8A34001(Clock_t *, char *, int);
 extern int Restore_IDT_8A34001(Clock_t *);
 extern int QSFP_ModuleSelect(QSFP_t *, int);
 extern int FMCAutoVadj_Op(void);
+extern int Check_Config_File(char *, char *, int *);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -3262,7 +3263,7 @@ Vccaux_Workaround(void)
 	Voltage_t *Regulator;
 	float Voltage;
 	char Buffer[SYSCMD_MAX];
-	char Value[STRLEN_MAX];
+	char Value[LSTRLEN_MAX];
 	int Workaround;
 	int Found = 0;
 
@@ -3323,30 +3324,13 @@ Vccaux_Workaround(void)
 		return 0;
 	}
 
-	FP = fopen(CONFIGFILE, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to read file %s: %m", CONFIGFILE);
+	if (Check_Config_File("Vccaux_Workaround", Value, &Found) != 0) {
 		return -1;
 	}
 
-	while (fgets(Buffer, SYSCMD_MAX, FP)) {
-		if (strstr(Buffer, "Vccaux_Workaround:") != NULL) {
-			SC_INFO("%s: %s", CONFIGFILE, Buffer);
-			(void) strtok(Buffer, ":");
-			if (strcmp(Buffer, "Vccaux_Workaround") != 0) {
-				continue;
-			}
-
-			(void) strcpy(Value, strtok(NULL, "\n"));
-			Workaround = atoi(Value);
-			Found = 1;
-			break;
-		}
-	}
-
-	(void) fclose(FP);
-
-	if (!Found) {
+	if (Found) {
+		Workaround = atoi(Value);
+	} else {
 		(void) sprintf(Buffer, "echo \"Vccaux_Workaround: 0\" >> %s; "
 			       "sync", CONFIGFILE);
 		SC_INFO("Command: %s", Buffer);
@@ -3504,39 +3488,20 @@ Set_Voltages(void)
 int
 FMC_Autodetect_Vadj()
 {
-	FILE *FP;
-	char Buffer[SYSCMD_MAX];
-	char Value[STRLEN_MAX];
+	char Value[LSTRLEN_MAX];
+	int Found = 0;
 
 	/*
 	 * The FMC Autodetect Vadj task is enabled by default.  It can be
 	 * disabled by adding 'FMC_Autodetect: 0' entry in CONFIGFILE.
 	 */
-	if (access(CONFIGFILE, F_OK) == 0) {
-		FP = fopen(CONFIGFILE, "r");
-		if (FP == NULL) {
-			SC_ERR("failed to read file %s: %m", CONFIGFILE);
-			return -1;
-		}
+	if (Check_Config_File("FMC_Autodetect", Value, &Found) != 0) {
+		return -1;
+	}
 
-		while (fgets(Buffer, SYSCMD_MAX, FP)) {
-			if (strstr(Buffer, "FMC_Autodetect:") != NULL) {
-				SC_INFO("%s: %s", CONFIGFILE, Buffer);
-				(void) strtok(Buffer, ":");
-				if (strcmp(Buffer, "FMC_Autodetect") != 0) {
-					continue;
-				}
-
-				(void) strcpy(Value, strtok(NULL, "\n"));
-				if (atoi(Value) == 0) {
-					SC_INFO("FMC Autodetect Vadj is disabled");
-					(void) fclose(FP);
-					return 0;
-				}
-			}
-		}
-
-		(void) fclose(FP);
+	if (Found && (atoi(Value) == 0)) {
+		SC_INFO("FMC Autodetect Vadj is disabled");
+		return 0;
 	}
 
 	if (FMCAutoVadj_Op() != 0) {

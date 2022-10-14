@@ -25,6 +25,7 @@ extern int DDRMC_4_Test(void *, void *);
 extern int Display_Instruction(void *, void *);
 extern int Assert_Reset(void *, void *);
 extern int Reset_IDT_8A34001(void);
+extern int Check_Config_File(char *, char *, int *);
 
 int jsoneq(const char *, jsmntok_t *, const char *);
 int Parse_Feature(const char *, jsmntok_t *, int *, FeatureList_t **);
@@ -78,17 +79,33 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 	int Token_Size = JSMN_TOKENS_SIZE;
 	FILE *FP;
 	char *Json_File;
-	char Board_File[STRLEN_MAX];
+	char Board_File[SYSCMD_MAX];
+	char Board_Path[LSTRLEN_MAX];
 	long Char_Len;
 	jsmn_parser Parser;
 	jsmntok_t Tokens[Token_Size];
+	char Value[LSTRLEN_MAX];
+	int Found = 0;
 
 	jsmn_init(&Parser);
 
-	snprintf(Board_File, STRLEN_MAX, "%s%s.json", BOARD_PATH, Board_Name);
-	if (strstr(Board_File, "VMK180") != NULL) {
-		snprintf(Board_File, STRLEN_MAX, "%s%s.json", BOARD_PATH, "VCK190");
+	/*
+	 * The default location of JSON file can be overridden by defining
+	 * 'Board_Path' parameter in CONFIGFILE.
+	 */
+	if (Check_Config_File("Board_Path", Value, &Found) != 0) {
+		return -1;
 	}
+
+	(void) strcpy(Board_Path, ((Found) ? Value : BOARD_PATH));
+	SC_INFO("Board Path: %s", Board_Path);
+
+	snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, Board_Name);
+	if (strstr(Board_File, "VMK180") != NULL) {
+		snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, "VCK190");
+	}
+
+	SC_INFO("Board File: %s", Board_File);
 
 	FP = fopen(Board_File, "r");
 	if (FP == NULL) {

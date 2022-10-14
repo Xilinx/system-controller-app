@@ -18,6 +18,7 @@
 #define ITEMS_MAX	24
 #define LITEMS_MAX	128
 #define STRLEN_MAX	64
+#define LSTRLEN_MAX	128
 #define SYSCMD_MAX	1024
 #define SOCKBUF_MAX	(4 * SYSCMD_MAX)
 

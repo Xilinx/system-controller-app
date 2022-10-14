@@ -26,6 +26,7 @@ extern OnBoard_EEPROM_t Legacy_OnBoard_EEPROM;
 
 int Set_AltBootMode(int);
 int Get_GPIO(char *, int *);
+int Check_Config_File(char *, char *, int *);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
 extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int VCK190_QSFP_ModuleSelect(QSFP_t *, int);
@@ -52,8 +53,22 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 {
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
-	char Out_Buffer[STRLEN_MAX];
+	char Out_Buffer[LSTRLEN_MAX];
 	int Offset, Length;
+	int Found = 0;
+
+	/*
+	 * Referencing EEPROM to obtain 'Product Name' can be overridden by
+	 * defining 'Board' parameter in CONFIGFILE.
+	 */
+	if (Check_Config_File("Board", Out_Buffer, &Found) != 0) {
+		return -1;
+	}
+
+	if (Found) {
+		(void) strcpy(Product_Name, Out_Buffer);
+		return 0;
+	}
 
 	FD = open(EEPROM->I2C_Bus, O_RDWR);
 	if (FD < 0) {
@@ -1836,6 +1851,42 @@ QSFP_ModuleSelect(QSFP_t *QSFP, int State)
 	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {
 		SC_ERR("failed to set IO expander output");
 		return -1;
+	}
+
+	return 0;
+}
+
+int
+Check_Config_File(char *Name, char *Value, int *Found)
+{
+	FILE *FP;
+	char Name_String[STRLEN_MAX];
+	char Buffer[LSTRLEN_MAX];
+
+	*Found = 0;
+	if (access(CONFIGFILE, F_OK) == 0) {
+		FP = fopen(CONFIGFILE, "r");
+		if (FP == NULL) {
+			SC_ERR("failed to read file %s: %m", CONFIGFILE);
+			return -1;
+		}
+
+		(void) sprintf(Name_String, "%s:", Name);
+		while (fgets(Buffer, LSTRLEN_MAX, FP)) {
+			if (strstr(Buffer, Name_String) != NULL) {
+				SC_INFO("%s: %s", CONFIGFILE, Buffer);
+				(void) strtok(Buffer, ":");
+				if (strcmp(Buffer, Name) != 0) {
+					continue;
+				}
+
+				(void) strcpy(Value, strtok(NULL, " \n"));
+				*Found = 1;
+				break;
+			}
+		}
+
+		(void) fclose(FP);
 	}
 
 	return 0;

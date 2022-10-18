@@ -1110,6 +1110,11 @@ Clock_Ops(void)
 
 		break;
 	case RESTORECLOCK:
+		if (Clock->Upper_Freq == -1 && Clock->Lower_Freq == -1) {
+			SC_INFO("no need to restore frequency of a fixed clock");
+			break;
+		}
+
 		if (Clock->Type == IDT_8A34001) {
 			return Restore_IDT_8A34001(Clock);
 		}

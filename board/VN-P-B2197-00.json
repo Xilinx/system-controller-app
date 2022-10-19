@@ -517,6 +517,106 @@
 						"Command" : "FMC_Autodetect_Vadj"
 					}
 				}
+			},
+			"Get_VCCINT" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCCINT",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCCINT" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCCINT",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_VCC_CPM5N" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCC_CPM5N",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCC_CPM5N" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCC_CPM5N",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_VCC_IO_SOC" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCC_IO_SOC",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCC_IO_SOC" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCC_IO_SOC",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_VCC_FPD" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCC_FPD",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCC_FPD" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCC_FPD",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
 			}
 		}
 	}

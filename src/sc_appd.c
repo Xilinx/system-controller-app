@@ -294,7 +294,7 @@ static Command_t Commands[] = {
 
 char Command_Arg[STRLEN_MAX];
 char Target_Arg[STRLEN_MAX];
-char Value_Arg[SYSCMD_MAX];
+char Value_Arg[LSTRLEN_MAX];
 int C_Flag, T_Flag, V_Flag;
 static Command_t Command;
 
@@ -560,7 +560,8 @@ Constraint_Pre_Ops()
 		}
 
 		if (T_Flag &&
-		    (strcmp(Target_Arg, Constraints->Constraint[i].Target) != 0)) {
+		    ((strcmp(Target_Arg, Constraints->Constraint[i].Target) != 0) &&
+		     (strcmp("$ANY", Constraints->Constraint[i].Target) != 0))) {
 			continue;
 		}
 
@@ -570,7 +571,8 @@ Constraint_Pre_Ops()
 		}
 
 		if (V_Flag &&
-		    (strcmp(Value_Arg, Constraints->Constraint[i].Value) != 0)) {
+		    ((strcmp(Value_Arg, Constraints->Constraint[i].Value) != 0) &&
+		     (strcmp("$ANY", Constraints->Constraint[i].Value) != 0))) {
 			continue;
 		}
 
@@ -596,10 +598,18 @@ Constraint_Pre_Ops()
 		if (strcmp(Pre_Phases->Phase[i].Type, "External") == 0) {
 			SC_INFO("Executing external command: %s",
 				Pre_Phases->Phase[i].Command);
-			(void) sprintf(System_Cmd, "%s%s/%s %s", BIT_PATH, Board_Name,
-				       Pre_Phases->Phase[i].Command,
-				       ((Pre_Phases->Phase[i].Args != NULL) ?
-				       Pre_Phases->Phase[i].Args : ""));
+			if (strcmp(Pre_Phases->Phase[i].Args, "$PASSON") == 0) {
+				(void) sprintf(System_Cmd, "%s%s/%s %s %s",
+					       BIT_PATH, Board_Name,
+					       Pre_Phases->Phase[i].Command,
+					       Target_Arg, Value_Arg);
+			} else {
+				(void) sprintf(System_Cmd, "%s%s/%s %s",
+					       BIT_PATH, Board_Name,
+					       Pre_Phases->Phase[i].Command,
+					       ((Pre_Phases->Phase[i].Args != NULL) ?
+					       Pre_Phases->Phase[i].Args : ""));
+			}
 			SC_INFO("Command in full path: %s", System_Cmd);
 			FP = popen(System_Cmd, "r");
 			if (FP == NULL) {
@@ -608,10 +618,9 @@ Constraint_Pre_Ops()
 			}
 
 			while (fgets(Output, sizeof(Output), FP) != NULL) {
-				SC_INFO("\t%s", Output);
+				SC_PRINT_N("%s", Output);
 				if (strstr(Output, "ERROR: ") != NULL) {
-					SC_ERR("external command \'%s\' reported error",
-					       Pre_Phases->Phase[i].Command);
+					(void) pclose(FP);
 					return -1;
 				}
 			}

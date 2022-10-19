@@ -1280,6 +1280,7 @@ Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constrain
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			Validate_Str_Size(Value_Str, "Constraints", "Next", STRLEN_MAX);
+			(*Constraints)->Constraint[Item].Value = NULL;
 			if (strcmp(Value_Str, "Value") == 0) {
 				(*Index)++;
 				Value_Str = strndup(Json_File + Tokens[*Index].start,
@@ -1322,6 +1323,7 @@ Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constrain
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			Validate_Str_Size(Value_Str, "Pre_Phases", "Next", STRLEN_MAX);
+			Pre_Phases_Data->Phase[Sub_Item].Args = NULL;
 			if (strcmp(Value_Str, "Args") == 0) {
 				(*Index)++;
 				Value_Str = strndup(Json_File + Tokens[*Index].start,

@@ -2270,8 +2270,8 @@ int IO_Exp_Initialized(void)
 
 	IO_Exp = Plat_Devs->IO_Exp;
 	if (IO_Exp == NULL) {
-		SC_ERR("ioexp operation is not supported");
-		return -1;
+		SC_INFO("no ioexp device is present");
+		return 0;
 	}
 
 	for (int i = 0; i < IO_Exp->Numbers; i++) {

@@ -489,7 +489,7 @@
 				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
 				"Supported_Volts": [1.2],
 				"Voltage_Regulator": "VCCO_706",
-				"Default_Volt": 1.2
+				"Default_Volt": 1.1
 			},
 			"FMC_2" : {
 				"Name" : "FMC2",
@@ -498,16 +498,20 @@
 				"Presence_Labels": ["FMCP2_FMC_PRSNT_M2C_B", "FMCP2_FMCP_PRSNT_M2C_B"],
 				"Supported_Volts": [1.2],
 				"Voltage_Regulator": "VCCO_706",
-				"Default_Volt": 1.2
+				"Default_Volt": 1.1
 			}
 		},
 		"Constraints" : {
-			"PowerUp" : {
+			"Power_Up" : {
 				"Type" : "Complete",
 				"Command" : "setgpio",
-				"Target" : "SYSCTLR_UCD90320_RESET_B",
-				"Value" : "1",
+				"Target" : "SYSCTLR_UCD90320_CTLR_B",
+				"Value" : "0",
 				"Pre_Phases" : {
+					"DC_Detection" : {
+						"Type" : "External",
+						"Command" : "powerup.py"
+					},
 					"FMC_Detection" : {
 						"Type" : "Internal",
 						"Command" : "FMC_Autodetect_Vadj"

@@ -182,7 +182,7 @@
 				"Typical_Volt" : 0.8,
 				"Minimum_Volt" : 0.0,
 				"I2C_Bus" : "/dev/i2c-0",
-				"I2C_Address" : "0x62",
+				"I2C_Address" : "0x61",
 				"PMBus_VOUT_MODE" : 1,
 				"Page_Select" : 0
 			},
@@ -193,7 +193,7 @@
 				"Typical_Volt" : 0.8,
 				"Minimum_Volt" : 0.0,
 				"I2C_Bus" : "/dev/i2c-0",
-				"I2C_Address" : "0x62",
+				"I2C_Address" : "0x61",
 				"PMBus_VOUT_MODE" : 1,
 				"Page_Select" : 1
 			},
@@ -226,7 +226,7 @@
 				"Typical_Volt" : 1.5,
 				"Minimum_Volt" : 0.0,
 				"I2C_Bus" : "/dev/i2c-0",
-				"I2C_Address" : "0xC",
+				"I2C_Address" : "0x1A",
 				"PMBus_VOUT_MODE" : 1,
 				"Page_Select" : -1
 			},
@@ -486,7 +486,7 @@
 				"Name" : "FMC1",
 				"I2C_Bus" : "/dev/i2c-1",
 				"I2C_Address" : "0x50",
-				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
+				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B"],
 				"Supported_Volts": [1.2],
 				"Voltage_Regulator": "VCCO_706",
 				"Default_Volt": 1.1
@@ -495,7 +495,7 @@
 				"Name" : "FMC2",
 				"I2C_Bus" : "/dev/i2c-1",
 				"I2C_Address" : "0x51",
-				"Presence_Labels": ["FMCP2_FMC_PRSNT_M2C_B", "FMCP2_FMCP_PRSNT_M2C_B"],
+				"Presence_Labels": ["FMCP2_FMC_PRSNT_M2C_B"],
 				"Supported_Volts": [1.2],
 				"Voltage_Regulator": "VCCO_706",
 				"Default_Volt": 1.1

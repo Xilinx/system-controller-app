@@ -64,10 +64,10 @@ elif target == "VCC_CPM5N":
     address = 0x60
     channel = 1
 elif target == "VCC_IO_SOC":
-    address = 0x62
+    address = 0x61
     channel = 0
 elif target == "VCC_FPD":
-    address = 0x62
+    address = 0x61
     channel = 1
 else:
     print("ERROR: invalid voltage target")

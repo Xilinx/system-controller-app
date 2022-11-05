@@ -502,22 +502,6 @@
 			}
 		},
 		"Constraints" : {
-			"Power_Up" : {
-				"Type" : "Complete",
-				"Command" : "setgpio",
-				"Target" : "SYSCTLR_UCD90320_CTLR_B",
-				"Value" : "0",
-				"Pre_Phases" : {
-					"DC_Detection" : {
-						"Type" : "External",
-						"Command" : "powerup.py"
-					},
-					"FMC_Detection" : {
-						"Type" : "Internal",
-						"Command" : "FMC_Autodetect_Vadj"
-					}
-				}
-			},
 			"Get_VCCINT" : {
 				"Type" : "Terminate",
 				"Command" : "getvoltage",

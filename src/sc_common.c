@@ -547,8 +547,8 @@ FMCAutoVadj_Op(void)
 
 	FMCs = Plat_Devs->FMCs;
 	if (FMCs == NULL) {
-		SC_ERR("FMC operation is not supported");
-		return -1;
+		SC_INFO("FMC operation is not supported");
+		return 0;
 	}
 
 	/* Current boards support up to 2 FMC modules */

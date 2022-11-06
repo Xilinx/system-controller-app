@@ -3,7 +3,7 @@
 
 	"VN-P-B2197-00" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "voltage", "power", "gpio"]
+			"List" : ["eeprom", "bootmode", "clock", "voltage", "power", "gpio"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -20,6 +20,68 @@
 				"smap" : "0xa",
 				"dft" : "0xd",
 				"sd1_ls" : "0xe"
+			}
+		},
+		"CLOCK": {
+			"QSFP56G_0_CLK": {
+				"Name": "QSFP56G_0_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_0/set_rate",
+				"Default_Freq": 161.132,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x5D"
+			},
+			"QSFP56G_1_CLK": {
+				"Name": "QSFP56G_1_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_1/set_rate",
+				"Default_Freq": 322.265,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x5F"
+			},
+			"LPDDR5_C0_CLK": {
+				"Name": "LPDDR5_C0_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_2/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x58"
+			},
+			"LPDDR5_C2_CLK": {
+				"Name": "LPDDR5_C2_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_3/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x59"
+			},
+			"DDR5_UDIMM_CLK": {
+				"Name": "DDR5_UDIMM_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_4/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x56"
+			},
+			"DDR4_CLK": {
+				"Name": "DDR4_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_6/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x57"
 			}
 		},
 		"INA226" : {

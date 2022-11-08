@@ -72,6 +72,6 @@ elif name == "X-PRC-09":
     os.system(DIR + "set_tps546b24a.py VCCO_501 1.8")
     os.system(DIR + "set_tps546b24a.py VCCO_502 1.8")
 else:
-    print("ERROR: unsupported DC '" + name + "' is detected")
-    quit(-1)
+    print("WARNING: unsupported DC '" + name + "' is detected")
+    print("WARNING: voltage regulator 'VCCO_502' is not set properly")
 

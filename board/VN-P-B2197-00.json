@@ -73,6 +73,16 @@
 				"I2C_Bus": "/dev/i2c-1",
 				"I2C_Address": "0x56"
 			},
+			"PS_REFCLK": {
+				"Name": "PS_REFCLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_5/set_rate",
+				"Default_Freq": 33.333,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x55"
+			},
 			"DDR4_CLK": {
 				"Name": "DDR4_CLK",
 				"Type": "ProXO-XP",

@@ -3,7 +3,7 @@
 
 	"VN-P-B2197-00" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "voltage", "power", "gpio"]
+			"List" : ["eeprom", "bootmode", "clock", "voltage", "power", "gpio", "BIT"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -552,6 +552,26 @@
 			"DC_SYS_CTRL1" : "46 - DC_SYS_CTRL1",
 			"DC_SYS_CTRL0" : "46 - DC_SYS_CTRL0",
 			"SYSCTLR_PMBUS_ALERT" : "46 - SYSCTRL_PMBUS_ALERT"
+		},
+		"BITs": {
+			"BIT_CLOCKS_CHECK" : {
+				"Name" : "Check Clocks",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Clocks_Check"
+					}
+				}
+			},
+			"BIT_VOLTAGES_CHECK" : {
+				"Name" : "Check Voltages",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Voltages_Check"
+					}
+				}
+			}
 		},
 		"Constraints" : {
 			"Get_VCCINT" : {

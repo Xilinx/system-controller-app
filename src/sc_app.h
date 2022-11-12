@@ -358,7 +358,7 @@ typedef struct {
 
 typedef struct Constraints {
 	int Numbers;
-	Constraint_t Constraint[ITEMS_MAX];
+	Constraint_t Constraint[LITEMS_MAX];
 } Constraints_t;
 
 /*

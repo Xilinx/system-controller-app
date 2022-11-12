@@ -835,6 +835,66 @@
 						"Args" : "$PASSON"
 					}
 				}
+			},
+			"Get_Sensors" : {
+				"Type" : "Terminate",
+				"Command" : "getsensor",
+				"Target" : "$ANY",
+				"Pre_Phases" : {
+					"Sensors" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCCINT" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCCINT",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCC_CPM5N" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCC_CPM5N",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCC_IO_SOC" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCC_IO_SOC",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCC_FPD" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCC_FPD",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
 			}
 		}
 	}

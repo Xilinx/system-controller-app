@@ -52,6 +52,7 @@ def set_tps546b24a(bus, address, voltage):
 
 if len(sys.argv) != 3:
     print("ERROR: missing voltage target and value")
+    quit(-1)
 
 target = sys.argv[1]
 value = sys.argv[2]

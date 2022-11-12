@@ -45,6 +45,7 @@ def get_tps546b24a(bus, address):
 
 if len(sys.argv) != 2:
     print("ERROR: missing voltage target")
+    quit(-1)
 
 target = sys.argv[1]
 bus = "/dev/i2c-0"

@@ -62,16 +62,18 @@ if len(sys.argv) != 2:
 
 target = sys.argv[1]
 
-if (target == 'LP5_VDD2_1V05'):
+if (target in regulators and target in ina226s):
+    proc = subprocess.Popen(['/usr/bin/sensors', regulators.get(target), ina226s.get(target)], \
+                            stdout=subprocess.PIPE)
+elif (target in regulators):
+    proc = subprocess.Popen(['/usr/bin/sensors', regulators.get(target)], stdout=subprocess.PIPE)
+elif (target in ina226s):
+    proc = subprocess.Popen(['/usr/bin/sensors', ina226s.get(target)], stdout=subprocess.PIPE)
+else:
     print("ERROR: no information is available for '" + target + "'")
     quit(-1)
 
-if (target == 'VCCINT' or target == 'VCC_CPM5N' or target == 'VCC_IO_SOC' or target == 'VCC_FPD'):
-    proc = subprocess.Popen(['/usr/bin/sensors', regulators.get(target)], stdout=subprocess.PIPE)
-elif (target == 'VCCO_500' or target == 'VCCO_501' or target == 'VCCO_502' or target == 'VCCO_503'):
-    proc = subprocess.Popen(['/usr/bin/sensors', ina226s.get(target)], stdout=subprocess.PIPE)
-else:
-    proc = subprocess.Popen(['/usr/bin/sensors', regulators.get(target), ina226s.get(target)], stdout=subprocess.PIPE)
+total_current = 0
 
 while True:
     line = proc.stdout.readline().decode('ASCII')
@@ -91,10 +93,10 @@ while True:
         else:
             voltage = float(tokens[1])
 
-        print('Voltage(V):\t%.4f' % voltage)
-
     # Current
-    if (target == 'VCC_CPM5N' or target == 'VCC_FPD'):
+    if (target == 'VCCINT' or target == 'VCC_IO_SOC'):
+        out = 'iout1.'
+    elif (target == 'VCC_CPM5N' or target == 'VCC_FPD'):
         out = 'iout2:'
     else:
         out = 'iout1:'
@@ -106,7 +108,8 @@ while True:
         else:
             current = float(tokens[1])
 
-        print('Current(A):\t%.4f' % current)
+        if (target == 'VCCINT' or target == 'VCC_IO_SOC'):
+            total_current += current
 
     # Power
     if (target == 'VCCINT' or target == 'VCC_IO_SOC'):
@@ -123,5 +126,15 @@ while True:
         else:
             wattage = float(tokens[1])
 
-        print('Power(W):\t%.4f' % wattage)
+
+if (target in regulators):
+    print('Voltage(V):\t%.4f' % voltage)
+    if (target == 'VCCINT' or target == 'VCC_IO_SOC'):
+        print('Current(A):\t%.4f' % total_current)
+    else:
+        print('Current(A):\t%.4f' % current)
+
+if (target in ina226s or target == 'VCCINT' or target == 'VCC_CPM5N' or \
+    target == 'VCC_IO_SOC' or target == 'VCC_FPD'):
+    print('Power(W):\t%.4f' % wattage)
 

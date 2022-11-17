@@ -24,46 +24,6 @@
 			}
 		},
 		"CLOCK": {
-			"SI570_VERSAL_SYS": {
-				"Name": "Versal Sys Clk Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_ref_clk/set_rate",
-				"Default_Freq": 33.333,
-				"Upper_Freq": 160.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-12",
-				"I2C_Address": "0x5d"
-			},
-			"SI570_LPDDR4_CLK1": {
-				"Name": "LPDDR4 CLK1 Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk1/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 810.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-17",
-				"I2C_Address": "0x60"
-			},
-			"SI570_LPDDR4_CLK2": {
-				"Name": "LPDDR4 CLK2 Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk2/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 810.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-16",
-				"I2C_Address": "0x60"
-			},
-			"SI570_LPDDR4_CLK3": {
-				"Name": "LPDDR4 CLK3 Si570",
-				"Type": "Si570",
-				"Sysfs_Path": "/sys/devices/platform/si570_lpddr4_clk3/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 810.0,
-				"Lower_Freq": 10.0,
-				"I2C_Bus": "/dev/i2c-15",
-				"I2C_Address": "0x60"
-			},
 			"GTCLK1_OUT": {
 				"Name": "GTCLK1_OUT",
 				"Type": "RC21008A",
@@ -759,6 +719,51 @@
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "pl_uart/pl_uart_download.tcl",
 						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' message.\n"
+					}
+				}
+			},
+			"BIT_PROGRAM_QSPI" : {
+				"Name" : "Program QSPI",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'OK' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "qspi/program_qspi_download.tcl",
+						"Instruction" : "\n1- U-Boot prints logs about QSPI device detected and size of binary that has been programmed on the device.\n2- Click 'Pass' if you observe U-Boot serial flash ('SF') detected message.\n"
+					}
+				}
+			},
+			"BIT_QSPI_TEST" : {
+				"Name" : "QSPI Test",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n3- Click 'OK' when this is done.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "Assert_Reset",
+						"Instruction" : "\n1- Observe PL LEDs blinking, then PL LED3 and PL LED2 turn on in sequence.\n2- PL LED1 should be blinking.\n3- Do you see the PL LEDs 3 and 2 both on?\n4- Click 'Pass' if you observe it.\n"
+					},
+					"Level 2" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Set PL DIP, SW6 to '1111' (All Up).\n2- Set PL DIP, SW6 to '0000' (All Down).\n3- Observe PL LED1 turn on and PL LED0 blinking.\n4- Click 'Pass' if you observe it.\n"
+					},
+					"Level 3" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Do you see the PL LEDs 3 through 0 all on?\n3- Click 'Pass' if you observe it.\n"
+					},
+					"Level 4" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Build-In-Self-Test prompts a 'Feature to Test' menu.\n2- Individual BIST Tests can be selected from that menu to run.\n3- Click 'Pass' if you observe it.\n"
+					},
+					"Level 5" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Enter 'x' on the Versal console.\n2- BlinkBIST test assigns '1' for each 4 LEDs passing the test ('results = F').\n3- Click 'Pass' if you observe 'results = F'.\n"
 					}
 				}
 			}

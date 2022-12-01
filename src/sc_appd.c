@@ -89,7 +89,7 @@ extern int Get_GPIO(char *, int *);
 extern int Set_GPIO(char *, int);
 extern int EEPROM_Common(char *);
 extern int EEPROM_Board(char *, int);
-extern int EEPROM_MultiRecord(char *);
+extern int EEPROM_MultiRecord(char *, int);
 extern int Get_IDCODE(char *, int);
 extern int Get_Temperature(void);
 extern int Get_BootMode(int);
@@ -932,12 +932,7 @@ EEPROM_Ops(void)
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("Board Revision: %s", Buffer);
-		SC_PRINT("MAC Address 0: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
-		       In_Buffer[0x80], In_Buffer[0x81], In_Buffer[0x82],
-		       In_Buffer[0x83], In_Buffer[0x84], In_Buffer[0x85]);
-		SC_PRINT("MAC Address 1: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
-		       In_Buffer[0x86], In_Buffer[0x87], In_Buffer[0x88],
-		       In_Buffer[0x89], In_Buffer[0x8A], In_Buffer[0x8B]);
+		EEPROM_MultiRecord(In_Buffer, 1);
 		break;
 	case EEPROM_ALL:
 		EEPROM_Print_All(In_Buffer, 256, 16);
@@ -947,7 +942,7 @@ EEPROM_Ops(void)
 	case EEPROM_BOARD:
 		return EEPROM_Board(In_Buffer, 1);
 	case EEPROM_MULTIRECORD:
-		return EEPROM_MultiRecord(In_Buffer);
+		return EEPROM_MultiRecord(In_Buffer, 0);
 	default:
 		SC_ERR("invalid geteeprom target");
 		return -1;
@@ -3011,7 +3006,7 @@ int EBM_Ops(void)
 	case EEPROM_BOARD:
 		return EEPROM_Board(In_Buffer, 0);
 	case EEPROM_MULTIRECORD:
-		return EEPROM_MultiRecord(In_Buffer);
+		return EEPROM_MultiRecord(In_Buffer, 0);
 	default:
 		SC_ERR("invalid EBM target");
 		return -1;
@@ -3171,7 +3166,7 @@ int FMC_Ops(void)
 	case EEPROM_BOARD:
 		return EEPROM_Board(In_Buffer, 0);
 	case EEPROM_MULTIRECORD:
-		return EEPROM_MultiRecord(In_Buffer);
+		return EEPROM_MultiRecord(In_Buffer, 0);
 	default:
 		SC_ERR("invalid FMC value");
 		return -1;

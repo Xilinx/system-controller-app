@@ -876,7 +876,8 @@ EEPROM_Board(char *Buffer, int PCIe)
 	snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
 	SC_PRINT("0x%.2x - Revision:\t%s", (Offset + 1), Buf);
 	Offset = Offset + Length + 1;
-	if (PCIe == 1) {
+	/* Non-PCIe boards have a 'End of Field' value (0xC1) at this Offset */
+	if ((PCIe == 1) && (Buffer[Offset] != 0xC1)) {
 		Length = (Buffer[Offset] & 0x3F);
 		SC_PRINT_N("0x%.2x - PCIe Info:\t", (Offset + 1));
 		for (int i = 0; i < Length; i++) {
@@ -907,19 +908,27 @@ EEPROM_Board(char *Buffer, int PCIe)
 	return 0;
 }
 
+int Print_Filter;
+
 #define DC_OUTPUT	0x1
 #define DC_LOAD		0x2
 #define OEM_D2		0xD2
 #define OEM_D3		0xD3
 #define OEM_VITA_57_1	0xFA
+#define SC_PRINT_F(msg, ...) \
+	if (!Print_Filter) { \
+		SC_PRINT(msg, ##__VA_ARGS__); \
+	}
 
 int
-EEPROM_MultiRecord(char *Buffer)
+EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 {
 	int Offset;
 	int Type;
 	int Last_Record;
 	int Length;
+
+	Print_Filter = (MAC_Address) ? 1 : 0;
 
 	/* Common Header offset 0x5 points to Multirecord areas */
 	Offset = Buffer[5] * 8;
@@ -941,114 +950,138 @@ EEPROM_MultiRecord(char *Buffer)
 		Last_Record = Buffer[Offset + 1] & 0x80;
 		switch (Type) {
 		case DC_OUTPUT:
-			SC_PRINT("0x%.2x - Record Type:\t%.2x (DC Output)", Offset, Type);
+			SC_PRINT_F("0x%.2x - Record Type:\t%.2x (DC Output)", Offset, Type);
 			break;
 		case DC_LOAD:
-			SC_PRINT("0x%.2x - Record Type:\t%.2x (DC Load)", Offset, Type);
+			SC_PRINT_F("0x%.2x - Record Type:\t%.2x (DC Load)", Offset, Type);
 			break;
 		case OEM_D2:
-			SC_PRINT("0x%.2x - Record Type:\t%.2x (Mac ID)", Offset, Type);
+			SC_PRINT_F("0x%.2x - Record Type:\t%.2x (Mac ID)", Offset, Type);
 			break;
 		case OEM_D3:
-			SC_PRINT("0x%.2x - Record Type:\t%.2x (Memory)", Offset, Type);
+			SC_PRINT_F("0x%.2x - Record Type:\t%.2x (Memory)", Offset, Type);
 			break;
 		case OEM_VITA_57_1:
-			SC_PRINT("0x%.2x - Record Type:\t%.2x (Vita 57.1)", Offset, Type);
+			SC_PRINT_F("0x%.2x - Record Type:\t%.2x (Vita 57.1)", Offset, Type);
 			break;
 		default:
 			SC_ERR("unsupported multirecord type");
 			return -1;
 		}
 
-		SC_PRINT("0x%.2x - Record Format:\t%.2x", (Offset + 1),
-		       Buffer[Offset + 1]);
-		SC_PRINT("0x%.2x - Length:\t%.2x", (Offset + 2),
-		       Buffer[Offset + 2]);
-		SC_PRINT("0x%.2x - Record Check sum:\t%.2x", (Offset + 3),
-		       Buffer[Offset + 3]);
-		SC_PRINT("0x%.2x - Header Check sum:\t%.2x", (Offset + 4),
-		       Buffer[Offset + 4]);
+		SC_PRINT_F("0x%.2x - Record Format:\t%.2x", (Offset + 1),
+			   Buffer[Offset + 1]);
+		SC_PRINT_F("0x%.2x - Length:\t%.2x", (Offset + 2),
+			   Buffer[Offset + 2]);
+		Length = Buffer[Offset + 2];
+		SC_PRINT_F("0x%.2x - Record Check sum:\t%.2x", (Offset + 3),
+			   Buffer[Offset + 3]);
+		SC_PRINT_F("0x%.2x - Header Check sum:\t%.2x", (Offset + 4),
+			   Buffer[Offset + 4]);
 		if (Type == OEM_D2 || Type == OEM_D3) {
-			SC_PRINT("0x%.2x - Xilinx IANA ID:\t%.2x%.2x%.2x", (Offset + 5),
-			       Buffer[Offset + 5], Buffer[Offset + 6], Buffer[Offset + 7]);
+			SC_PRINT_F("0x%.2x - Xilinx IANA ID:\t%.2x%.2x%.2x", (Offset + 5),
+				   Buffer[Offset + 5], Buffer[Offset + 6], Buffer[Offset + 7]);
 		}
 
 		switch (Type) {
 		case DC_OUTPUT:
-			SC_PRINT("0x%.2x - Output Number:\t%.2x (Power Rail)",
-			       (Offset + 5), Buffer[Offset + 5]);
-			SC_PRINT("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)",
-			       (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
-			       (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
-			SC_PRINT("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)",
-			       (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
-			       (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
-			SC_PRINT("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)",
-			       (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
-			       (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
-			SC_PRINT("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)",
-			       (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
-			       (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
-			SC_PRINT("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)",
-			       (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
-			       (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
-			SC_PRINT("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)",
-			       (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
-			       (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
+			SC_PRINT_F("0x%.2x - Output Number:\t%.2x (Power Rail)",
+				   (Offset + 5), Buffer[Offset + 5]);
+			SC_PRINT_F("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)",
+				   (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
+				   (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
+			SC_PRINT_F("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)",
+				   (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
+				   (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
+			SC_PRINT_F("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)",
+				   (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
+				   (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
+			SC_PRINT_F("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)",
+				   (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
+				   (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
+			SC_PRINT_F("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)",
+				   (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
+				   (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
+			SC_PRINT_F("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)",
+				   (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
+				   (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
 			break;
 		case DC_LOAD:
 			if (Buffer[Offset + 5] == 0x0) {
-				SC_PRINT("0x%.2x - Output Number:\t%.2x (Voltage Adjust)",
-				       (Offset + 5), Buffer[Offset + 5]);
+				SC_PRINT_F("0x%.2x - Output Number:\t%.2x (Voltage Adjust)",
+					   (Offset + 5), Buffer[Offset + 5]);
 			} else if (Buffer[Offset + 5] <= 0xF) {
-				SC_PRINT("0x%.2x - Output Number:\t%.2x (Power Rail)",
-				       (Offset + 5), Buffer[Offset + 5]);
+				SC_PRINT_F("0x%.2x - Output Number:\t%.2x (Power Rail)",
+					   (Offset + 5), Buffer[Offset + 5]);
 			} else {
 				SC_ERR("unsupported DC Load output number");
 				return -1;
 			}
 
-			SC_PRINT("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)",
-			       (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
-			       (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
-			SC_PRINT("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)",
-			       (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
-			       (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
-			SC_PRINT("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)",
-			       (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
-			       (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
-			SC_PRINT("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)",
-			       (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
-			       (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
-			SC_PRINT("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)",
-			       (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
-			       (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
-			SC_PRINT("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)",
-			       (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
-			       (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
+			SC_PRINT_F("0x%.2x - Nominal Voltage:\t%.2x%.2x (%.2fV)",
+				   (Offset + 6), Buffer[Offset + 6], Buffer[Offset + 7],
+				   (float)(Buffer[Offset + 7] << 8 | Buffer[Offset + 6]) / 100.0);
+			SC_PRINT_F("0x%.2x - Spec'd Min Voltage:\t%.2x%.2x (%.2fV)",
+				   (Offset + 8), Buffer[Offset + 8], Buffer[Offset + 9],
+				   (float)(Buffer[Offset + 9] << 8 | Buffer[Offset + 8]) / 100.0);
+			SC_PRINT_F("0x%.2x - Spec'd Max Voltage:\t%.2x%.2x (%.2fV)",
+				   (Offset + 10), Buffer[Offset + 10], Buffer[Offset + 11],
+				   (float)(Buffer[Offset + 11] << 8 | Buffer[Offset + 10]) / 100.0);
+			SC_PRINT_F("0x%.2x - Spec'd Ripple Noise:\t%.2x%.2x (%dmV)",
+				   (Offset + 12), Buffer[Offset + 12], Buffer[Offset + 13],
+				   (Buffer[Offset + 13] << 8 | Buffer[Offset + 12]));
+			SC_PRINT_F("0x%.2x - Min Current Load:\t%.2x%.2x (%dmA)",
+				   (Offset + 14), Buffer[Offset + 14], Buffer[Offset + 15],
+				   (Buffer[Offset + 15] << 8 | Buffer[Offset + 14]));
+			SC_PRINT_F("0x%.2x - Max Current Load:\t%.2x%.2x (%dmA)",
+				   (Offset + 16), Buffer[Offset + 16], Buffer[Offset + 17],
+				   (Buffer[Offset + 17] << 8 | Buffer[Offset + 16]));
 			break;
 		case OEM_D2:
 			if (Buffer[Offset + 8] == 0x11) {
-				SC_PRINT("0x%.2x - Version Number:\t%.2x (SC Mac ID)",
-				       (Offset + 8), Buffer[Offset + 8]);
-				SC_PRINT("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
-				       (Offset + 9), Buffer[Offset + 9],
-				       Buffer[Offset + 10], Buffer[Offset + 11],
-				       Buffer[Offset + 12], Buffer[Offset + 13],
-				       Buffer[Offset + 14]);
+				SC_PRINT_F("0x%.2x - Version Number:\t%.2x (SC Mac ID)",
+					   (Offset + 8), Buffer[Offset + 8]);
+				SC_PRINT_F("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
+					   (Offset + 9), Buffer[Offset + 9],
+					   Buffer[Offset + 10], Buffer[Offset + 11],
+					   Buffer[Offset + 12], Buffer[Offset + 13],
+					   Buffer[Offset + 14]);
+				if (MAC_Address) {
+					SC_PRINT("MAC Address 0: %.2x:%.2x:%.2x:%.2x:%.2x",
+						 Buffer[Offset + 10], Buffer[Offset + 11],
+						 Buffer[Offset + 12], Buffer[Offset + 13],
+						 Buffer[Offset + 14]);
+				}
+
 			} else if (Buffer[Offset + 8] == 0x31) {
-				SC_PRINT("0x%.2x - Version Number:\t%.2x (Veral Mac ID)",
-				       (Offset + 8), Buffer[Offset + 8]);
-				SC_PRINT("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
-				       (Offset + 9), Buffer[Offset + 9],
-				       Buffer[Offset + 10], Buffer[Offset + 11],
-				       Buffer[Offset + 12], Buffer[Offset + 13],
-				       Buffer[Offset + 14]);
-				SC_PRINT("0x%.2x - Mac ID 1:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
-				       (Offset + 15), Buffer[Offset + 15],
-				       Buffer[Offset + 16], Buffer[Offset + 17],
-				       Buffer[Offset + 18], Buffer[Offset + 19],
-				       Buffer[Offset + 20]);
+				SC_PRINT_F("0x%.2x - Version Number:\t%.2x (Veral Mac ID)",
+					   (Offset + 8), Buffer[Offset + 8]);
+				SC_PRINT_F("0x%.2x - Mac ID 0:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
+					   (Offset + 9), Buffer[Offset + 9],
+					   Buffer[Offset + 10], Buffer[Offset + 11],
+					   Buffer[Offset + 12], Buffer[Offset + 13],
+					   Buffer[Offset + 14]);
+				if (MAC_Address) {
+					SC_PRINT("MAC Address 1: %.2x:%.2x:%.2x:%.2x:%.2x",
+						 Buffer[Offset + 10], Buffer[Offset + 11],
+						 Buffer[Offset + 12], Buffer[Offset + 13],
+						 Buffer[Offset + 14]);
+				}
+
+				if (Length > 0xA) {
+					SC_PRINT_F("0x%.2x - Mac ID 1:\t%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
+						   (Offset + 15), Buffer[Offset + 15],
+						   Buffer[Offset + 16], Buffer[Offset + 17],
+						   Buffer[Offset + 18], Buffer[Offset + 19],
+						   Buffer[Offset + 20]);
+					if (MAC_Address) {
+						SC_PRINT("MAC Address 2: %.2x:%.2x:%.2x:%.2x:%.2x",
+							 Buffer[Offset + 16], Buffer[Offset + 17],
+							 Buffer[Offset + 18], Buffer[Offset + 19],
+							 Buffer[Offset + 20]);
+					}
+				}
+
 			} else {
 				SC_ERR("unsupported D2 version number");
 				return -1;
@@ -1056,32 +1089,32 @@ EEPROM_MultiRecord(char *Buffer)
 
 			break;
 		case OEM_D3:
-			SC_PRINT("0x%.2x - Memory Type:\t%s", (Offset + 8),
-			       &Buffer[Offset + 8]);
+			SC_PRINT_F("0x%.2x - Memory Type:\t%s", (Offset + 8),
+				   &Buffer[Offset + 8]);
 			Length = strlen(&Buffer[Offset + 8]) + 1;
-			SC_PRINT("0x%.2x - Voltage Supply:\t%s", (Offset + 8 + Length),
-			       &Buffer[Offset + 8 + Length]);
+			SC_PRINT_F("0x%.2x - Voltage Supply:\t%s", (Offset + 8 + Length),
+				   &Buffer[Offset + 8 + Length]);
 			break;
 		case OEM_VITA_57_1:
-			SC_PRINT("0x%.2x - Organizationally Unique Identifier:\t%.2x%.2x%.2x",
-			       (Offset + 5), Buffer[Offset + 5], Buffer[Offset + 6],
-			       Buffer[Offset + 7]);
-			SC_PRINT("0x%.2x - Subtype Version:\t%.2x", (Offset + 8),
-			       Buffer[Offset + 8]);
-			SC_PRINT("0x%.2x - Connector Type:\t%.2x", (Offset + 9),
-			       Buffer[Offset + 9]);
-			SC_PRINT("0x%.2x - P1 Bank A Number Signals:\t%.2x", (Offset + 10),
-			       Buffer[Offset + 10]);
-			SC_PRINT("0x%.2x - P1 Bank B Number Signals:\t%.2x", (Offset + 11),
-			       Buffer[Offset + 11]);
-			SC_PRINT("0x%.2x - P2 Bank A Number Signals:\t%.2x", (Offset + 12),
-			       Buffer[Offset + 12]);
-			SC_PRINT("0x%.2x - P2 Bank B Number Signals:\t%.2x", (Offset + 13),
-			       Buffer[Offset + 13]);
-			SC_PRINT("0x%.2x - P1 GBT B Number Signals:\t%.2x", (Offset + 14),
-			       Buffer[Offset + 14]);
-			SC_PRINT("0x%.2x - Max Clock for TCK:\t%.2x (%dMhz)", (Offset + 15),
-			       Buffer[Offset + 15], Buffer[Offset + 15]);
+			SC_PRINT_F("0x%.2x - Organizationally Unique Identifier:\t%.2x%.2x%.2x",
+				   (Offset + 5), Buffer[Offset + 5], Buffer[Offset + 6],
+				   Buffer[Offset + 7]);
+			SC_PRINT_F("0x%.2x - Subtype Version:\t%.2x", (Offset + 8),
+				   Buffer[Offset + 8]);
+			SC_PRINT_F("0x%.2x - Connector Type:\t%.2x", (Offset + 9),
+				   Buffer[Offset + 9]);
+			SC_PRINT_F("0x%.2x - P1 Bank A Number Signals:\t%.2x", (Offset + 10),
+				   Buffer[Offset + 10]);
+			SC_PRINT_F("0x%.2x - P1 Bank B Number Signals:\t%.2x", (Offset + 11),
+				   Buffer[Offset + 11]);
+			SC_PRINT_F("0x%.2x - P2 Bank A Number Signals:\t%.2x", (Offset + 12),
+				   Buffer[Offset + 12]);
+			SC_PRINT_F("0x%.2x - P2 Bank B Number Signals:\t%.2x", (Offset + 13),
+				   Buffer[Offset + 13]);
+			SC_PRINT_F("0x%.2x - P1 GBT B Number Signals:\t%.2x", (Offset + 14),
+				   Buffer[Offset + 14]);
+			SC_PRINT_F("0x%.2x - Max Clock for TCK:\t%.2x (%dMhz)", (Offset + 15),
+				   Buffer[Offset + 15], Buffer[Offset + 15]);
 			break;
 		default:
 			SC_ERR("unsupported multirecord type");
@@ -1094,8 +1127,9 @@ EEPROM_MultiRecord(char *Buffer)
 			 * header in this record plus length of data in offset 0x2.
 			 */
 			Offset += (5 + Buffer[Offset + 2]);
-			SC_PRINT(" ");
+			SC_PRINT_F(" ");
 		}
+
 	} while (!Last_Record);
 
 	return 0;

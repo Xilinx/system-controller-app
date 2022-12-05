@@ -1047,7 +1047,7 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 					   Buffer[Offset + 12], Buffer[Offset + 13],
 					   Buffer[Offset + 14]);
 				if (MAC_Address) {
-					SC_PRINT("MAC Address 0: %.2x:%.2x:%.2x:%.2x:%.2x",
+					SC_PRINT("SC MAC: %.2x:%.2x:%.2x:%.2x:%.2x",
 						 Buffer[Offset + 10], Buffer[Offset + 11],
 						 Buffer[Offset + 12], Buffer[Offset + 13],
 						 Buffer[Offset + 14]);
@@ -1062,7 +1062,8 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 					   Buffer[Offset + 12], Buffer[Offset + 13],
 					   Buffer[Offset + 14]);
 				if (MAC_Address) {
-					SC_PRINT("MAC Address 1: %.2x:%.2x:%.2x:%.2x:%.2x",
+					SC_PRINT("Versal MAC%s: %.2x:%.2x:%.2x:%.2x:%.2x",
+						 ((Length > 0xA) ? " 1" : ""),
 						 Buffer[Offset + 10], Buffer[Offset + 11],
 						 Buffer[Offset + 12], Buffer[Offset + 13],
 						 Buffer[Offset + 14]);
@@ -1075,7 +1076,7 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 						   Buffer[Offset + 18], Buffer[Offset + 19],
 						   Buffer[Offset + 20]);
 					if (MAC_Address) {
-						SC_PRINT("MAC Address 2: %.2x:%.2x:%.2x:%.2x:%.2x",
+						SC_PRINT("Versal MAC 2: %.2x:%.2x:%.2x:%.2x:%.2x",
 							 Buffer[Offset + 16], Buffer[Offset + 17],
 							 Buffer[Offset + 18], Buffer[Offset + 19],
 							 Buffer[Offset + 20]);

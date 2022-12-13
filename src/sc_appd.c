@@ -91,7 +91,7 @@ extern int EEPROM_Common(char *);
 extern int EEPROM_Board(char *, int);
 extern int EEPROM_MultiRecord(char *, int);
 extern int Get_IDCODE(char *, int);
-extern int Get_Temperature(void);
+extern int Get_Temperature(Temperature_t *);
 extern int Get_BootMode(int);
 extern int Set_BootMode(BootMode_t *, int);
 extern int Get_IDT_8A34001(Clock_t *);
@@ -954,8 +954,16 @@ EEPROM_Ops(void)
 int
 Temperature_Ops(void)
 {
+	Temperature_t *Temperature;
+
+	Temperature = Plat_Devs->Temperature;
+	if (Temperature == NULL) {
+		SC_ERR("temp operation is not supported");
+		return -1;
+	}
+
 	if (Command.CmdId == LISTTEMP) {
-		SC_PRINT("Versal");
+		SC_PRINT("%s", Temperature->Name);
 		return 0;
 	}
 
@@ -965,12 +973,12 @@ Temperature_Ops(void)
 		return -1;
 	}
 
-	if (strcmp(Target_Arg, "Versal") != 0) {
+	if (strcmp(Target_Arg, Temperature->Name) != 0) {
 		SC_ERR("invalid gettemp target");
 		return -1;
 	}
 
-	return Get_Temperature();
+	return Get_Temperature(Temperature);
 }
 
 /*

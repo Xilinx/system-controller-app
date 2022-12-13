@@ -3,7 +3,7 @@
 
 	"VPK120": {
 		"FEATURE": {
-			"List" : ["eeprom", "bootmode", "clock", "voltage", "power",
+			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
 				"BIT", "gpio", "ioexp", "QSFP", "FMC"]
 		},
 		"BOOTMODES": {
@@ -441,6 +441,10 @@
 				"PMBus_VOUT_MODE": 0,
 				"Page_Select": -1
 			}
+		},
+		"Temperature": {
+			"Name": "Versal",
+			"Sensor": "xsysmoni2c-i2c-3-18"
 		},
 		"GPIO": {
 			"QSPI_CLK": "500 - SYSCTLR_MIO0_QSPI_CLK",

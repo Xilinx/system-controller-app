@@ -1642,11 +1642,32 @@ Get_IDCODE(char *Output, int Length)
 }
 
 int
-Get_Temperature(void)
+Get_Temperature(Temperature_t *Temperature)
 {
-	/* XXX - feature is not available yet */
-	SC_ERR("unable to get Versal temperature");
-	return -1;
+	FILE *FP;
+	char Buffer[SYSCMD_MAX];
+	char *Temp;
+
+	(void) sprintf(Buffer, "/usr/bin/sensors %s", Temperature->Sensor);
+	SC_INFO("Sensors Command: %s", Buffer);
+	FP = popen(Buffer, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke %s: %m", Buffer);
+		return -1;
+	}
+
+	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
+		if (strstr(Buffer, "temp") == NULL) {
+			continue;
+		}
+
+		(void) strtok(Buffer, " ");
+		Temp = strtok(NULL, " ");
+		SC_PRINT("Temperature(C):\t%s", Temp);
+	}
+
+	(void) pclose(FP);
+	return 0;
 }
 
 int

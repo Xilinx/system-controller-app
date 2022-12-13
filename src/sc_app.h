@@ -181,6 +181,14 @@ typedef struct Voltages {
 } Voltages_t;
 
 /*
+ * Temperature
+ */
+typedef struct {
+	char	*Name;
+	char	*Sensor;
+} Temperature_t;
+
+/*
  * IO Expander
  */
 typedef struct {
@@ -371,6 +379,7 @@ typedef struct {
 	INA226s_t *INA226s;
 	Power_Domains_t *Power_Domains;
 	Voltages_t *Voltages;
+	Temperature_t *Temperature;
 	DIMMs_t *DIMMs;
 	GPIOs_t *GPIOs;
 	IO_Exp_t *IO_Exp;

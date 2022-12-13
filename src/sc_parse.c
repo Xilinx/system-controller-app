@@ -35,6 +35,7 @@ int Parse_INA226(const char *, jsmntok_t *, int *, INA226s_t **);
 int Parse_PowerDomain(const char *, jsmntok_t *, int *, Power_Domains_t **,
                       INA226s_t *);
 int Parse_Voltage(const char *, jsmntok_t *, int *, Voltages_t **);
+int Parse_Temperature(const char *, jsmntok_t *, int *, Temperature_t **);
 int Parse_DIMM(const char *, jsmntok_t *, int *, DIMMs_t **);
 int Parse_GPIO(const char *, jsmntok_t *, int *, GPIOs_t **);
 int Parse_IO_EXP(const char *, jsmntok_t *, int *, IO_Exp_t **);
@@ -174,6 +175,11 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 		} else if (jsoneq(Json_File, &Tokens[i], "VOLTAGE") == 0) {
 			if (Parse_Voltage(Json_File, Tokens, &i,
 					  &Dev_Parse->Voltages) != 0) {
+				return -1;
+			}
+		} else if (jsoneq(Json_File, &Tokens[i], "Temperature") == 0) {
+			if (Parse_Temperature(Json_File, Tokens, &i,
+					  &Dev_Parse->Temperature) != 0) {
 				return -1;
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "DIMM") == 0) {
@@ -649,6 +655,36 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 
 		Voltage_Items++;
 	}
+
+	return 0;
+}
+
+int
+Parse_Temperature(const char *Json_File, jsmntok_t *Tokens, int *Index,
+		  Temperature_t **Temperature)
+{
+	char *Value_Str;
+
+	SC_INFO("********************* Temperature *********************");
+	*Temperature = (Temperature_t *)malloc(sizeof(Temperature_t));
+
+	*Index += 2;
+	Check_Attribute("Name", "Temperature");
+	Value_Str = strndup(Json_File + Tokens[*Index].start,
+			    Tokens[*Index].end - Tokens[*Index].start);
+	Validate_Str_Size(Value_Str, "Temperature", "Name", STRLEN_MAX);
+	(*Temperature)->Name = (char *)malloc(strlen(Value_Str) + 1);
+	strncpy((*Temperature)->Name, Value_Str, strlen(Value_Str) + 1);
+	SC_INFO("Name: %s", (*Temperature)->Name);
+
+	(*Index)++;
+	Check_Attribute("Sensor", "Temperature");
+	Value_Str = strndup(Json_File + Tokens[*Index].start,
+			    Tokens[*Index].end - Tokens[*Index].start);
+	Validate_Str_Size(Value_Str, "Temperature", "Sensor", STRLEN_MAX);
+	(*Temperature)->Sensor = (char *)malloc(strlen(Value_Str) + 1);
+	strncpy((*Temperature)->Sensor, Value_Str, strlen(Value_Str) + 1);
+	SC_INFO("Sensor: %s", (*Temperature)->Sensor);
 
 	return 0;
 }

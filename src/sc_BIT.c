@@ -232,8 +232,10 @@ Voltages_Check(void *Arg1, void *Arg2)
 			return -1;
 		}
 
-		if ((Voltage < Regulator->Minimum_Volt) ||
-		    (Voltage > Regulator->Maximum_Volt)) {
+		if (((Regulator->Minimum_Volt != -1) &&
+		     (Voltage < Regulator->Minimum_Volt)) ||
+		    ((Regulator->Maximum_Volt != -1) &&
+		     (Voltage > Regulator->Maximum_Volt))) {
 			SC_ERR("voltage for %s is out-of-range",
 			   Regulator->Name);
 			SC_PRINT("%s: FAIL", BIT_p->Name);

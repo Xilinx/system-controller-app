@@ -156,11 +156,14 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	unsigned int Value;
 
 	/* Check if setting the requested voltage is within range */
-	if ((1 == Access) && ((*Voltage < Regulator->Minimum_Volt) ||
-	    (*Voltage > Regulator->Maximum_Volt))) {
-		SC_ERR("valid voltage range is %.2f V - %.2f V",
-		       Regulator->Minimum_Volt, Regulator->Maximum_Volt);
-		return -1;
+	if ((1 == Access) && (Regulator->Minimum_Volt != -1) &&
+	    (Regulator->Maximum_Volt != -1)) {
+		if ((*Voltage < Regulator->Minimum_Volt) ||
+		    (*Voltage > Regulator->Maximum_Volt)) {
+			SC_ERR("valid voltage range is %.2f V - %.2f V",
+				Regulator->Minimum_Volt, Regulator->Maximum_Volt);
+			return -1;
+		}
 	}
 
 	FD = open(Regulator->I2C_Bus, O_RDWR);

@@ -23,10 +23,9 @@ if [ "`/usr/bin/pgrep dfx-mgrd`" != "" ]; then
     EEPROM=`/bin/ls /sys/bus/i2c/devices/1-0054/eeprom 2> /dev/null`
     BOARD=`/usr/sbin/ipmi-fru --fru-file=$EEPROM --interpret-oem-data | /usr/bin/awk -F": " '/FRU Board Product/ { print tolower ($2) }'`
     REVISION=`/usr/sbin/ipmi-fru --fru-file=$EEPROM --interpret-oem-data | /usr/bin/awk -F": " '/FRU Board Custom/ { print tolower ($2); exit }'`
-    PACKAGE=`/usr/bin/dfx-mgr-client -listPackage | /bin/grep "$BOARD"-"$REVISION"`
+    PACKAGE=`/usr/bin/dfx-mgr-client -listPackage | /bin/grep "$BOARD-$REVISION"`
     if [ "$PACKAGE" == "" ]; then
-        /bin/echo "ERROR: unable to start sc_appd due to missing board package"
-        exit -1
+        /bin/echo "WARNING: dfx-mgr has no package for $BOARD-$REVISION board"
     fi
 fi
 

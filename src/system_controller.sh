@@ -9,4 +9,25 @@ if [ $? -ne 0 ]; then
     /etc/init.d/syslog restart
 fi
 
+#
+# If dfx-mgrd is used to install the board package, wait until that
+# operation is complete before starting sc_appd.
+#
+if [ "`/usr/bin/pgrep dfx-mgrd`" != "" ]; then
+    COUNT=5
+    while [ $COUNT != 0 ] && [ ! -S "/tmp/dfx-mgrd.socket" ]; do
+        /bin/sleep 1
+        COUNT=`expr $COUNT - 1`
+    done
+
+    EEPROM=`/bin/ls /sys/bus/i2c/devices/1-0054/eeprom 2> /dev/null`
+    BOARD=`/usr/sbin/ipmi-fru --fru-file=$EEPROM --interpret-oem-data | /usr/bin/awk -F": " '/FRU Board Product/ { print tolower ($2) }'`
+    REVISION=`/usr/sbin/ipmi-fru --fru-file=$EEPROM --interpret-oem-data | /usr/bin/awk -F": " '/FRU Board Custom/ { print tolower ($2); exit }'`
+    PACKAGE=`/usr/bin/dfx-mgr-client -listPackage | /bin/grep "$BOARD"-"$REVISION"`
+    if [ "$PACKAGE" == "" ]; then
+        /bin/echo "ERROR: unable to start sc_appd due to missing board package"
+        exit -1
+    fi
+fi
+
 /usr/bin/sc_appd &

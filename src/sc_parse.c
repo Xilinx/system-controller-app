@@ -577,7 +577,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	int Voltage_Items = 0;
 
 	SC_INFO("********************* VOLTAGES *********************");
-	*VCCs = (Voltages_t *)malloc(sizeof(Voltages_t));
+	*VCCs = (Voltages_t *)calloc(1, sizeof(Voltages_t));
 
 	(*Index)++;
 	(*VCCs)->Numbers = Tokens[*Index].size;
@@ -652,6 +652,20 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*VCCs)->Voltage[Voltage_Items].Page_Select = atoi(Value_Str);
 		SC_INFO("Page Select: %i\n", (*VCCs)->Voltage[Voltage_Items].Page_Select);
+
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		if (strcmp(Value_Str, "Voltage_Multiplier") == 0) {
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*VCCs)->Voltage[Voltage_Items].Voltage_Multiplier = atoi(Value_Str);
+			SC_INFO("Voltage Multiplier: %i\n",
+				(*VCCs)->Voltage[Voltage_Items].Voltage_Multiplier);
+		} else {
+			(*Index)--;
+		}
 
 		Voltage_Items++;
 	}

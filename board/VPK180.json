@@ -244,7 +244,8 @@
 				"I2C_Bus": "/dev/i2c-4",
 				"I2C_Address": "0x45",
 				"PMBus_VOUT_MODE": 1,
-				"Page_Select": 0
+				"Page_Select": 0,
+				"Voltage_Multiplier": 2
 			},
 			"VOLTAGE_VCC_SOC": {
 				"Name": "VCC_SOC",

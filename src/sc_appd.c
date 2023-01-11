@@ -1205,6 +1205,10 @@ int Voltage_Ops(void)
 			return -1;
 		}
 
+		if (Regulator->Voltage_Multiplier != 0) {
+			Voltage *= Regulator->Voltage_Multiplier;
+		}
+
 		SC_PRINT("Voltage(V):\t%.2f", Voltage);
 
 		if (V_Flag != 0) {

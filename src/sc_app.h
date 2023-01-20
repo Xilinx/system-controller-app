@@ -31,6 +31,11 @@
 #define VOLTAGEFILE	Appfile("voltage")
 #define IDT8A34001FILE	Appfile("8A34001")
 
+#define BIT_PATH	INSTALLDIR"/BIT/"
+#define BOARD_PATH	INSTALLDIR"/board/"
+#define CFS_PATH	INSTALLDIR"/BIT/clock_files/"
+#define CUSTOM_CFS_PATH	INSTALLDIR"/.sc_app/clock_files/"
+
 /*
  * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code
  * to be able to split us from other syslog messages. For example,
@@ -462,8 +467,6 @@ typedef struct {
 			 export TCLLIBPATH=/usr/local/xilinx_vitis; \
 			 export TCL_LIBRARY=/usr/local/lib/tcl8.5"
 #define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
-#define BIT_PATH	INSTALLDIR"/BIT/"
-#define BOARD_PATH	INSTALLDIR"/board/"
 
 #define IDCODE_TCL	"idcode/idcode_check.tcl"
 #define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"

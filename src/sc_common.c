@@ -1170,28 +1170,40 @@ Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File)
 	}
 
 	if (TCS_File != NULL) {
-		(void) sprintf(TCS_File, "%s/clock_files/%s", BIT_PATH, CP1);
-		if (strstr(TCS_File, ".tcs") == NULL) {
+		if (strstr(CP1, ".tcs") == NULL) {
 			SC_ERR("argument %s is not a .tcs file", CP1);
 			return -1;
 		}
 
+		(void) sprintf(TCS_File, "%s%s", CFS_PATH, CP1);
+		SC_INFO(".tcs clock file: %s", TCS_File);
+
 		if (access(TCS_File, F_OK) != 0) {
-			SC_ERR("file %s doesn't exist: %m", TCS_File);
-			return -1;
+			(void) sprintf(TCS_File, "%s%s", CUSTOM_CFS_PATH, CP1);
+			SC_INFO(".tcs clock file: %s", TCS_File);
+			if (access(TCS_File, F_OK) != 0) {
+				SC_ERR("file %s doesn't exist: %m", CP1);
+				return -1;
+			}
 		}
 	}
 
 	if (TXT_File != NULL) {
-		(void) sprintf(TXT_File, "%s/clock_files/%s", BIT_PATH, CP2);
-		if (strstr(TXT_File, ".txt") == NULL) {
+		if (strstr(CP2, ".txt") == NULL) {
 			SC_ERR("argument %s is not a .txt file", CP2);
 			return -1;
 		}
 
+		(void) sprintf(TXT_File, "%s%s", CFS_PATH, CP2);
+		SC_INFO(".txt clock file: %s", TXT_File);
+
 		if (access(TXT_File, F_OK) != 0) {
-			SC_ERR("file %s doesn't exist: %m", TXT_File);
-			return -1;
+			(void) sprintf(TXT_File, "%s%s", CUSTOM_CFS_PATH, CP2);
+			SC_INFO(".txt clock file: %s", TXT_File);
+			if (access(TXT_File, F_OK) != 0) {
+				SC_ERR("file %s doesn't exist: %m", CP2);
+				return -1;
+			}
 		}
 	}
 

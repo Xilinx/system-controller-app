@@ -1663,7 +1663,7 @@ Get_Temperature(Temperature_t *Temperature)
 	char Buffer[SYSCMD_MAX];
 	char *Temp;
 
-	(void) sprintf(Buffer, "/usr/bin/sensors %s", Temperature->Sensor);
+	(void) sprintf(Buffer, "/usr/bin/sensors %s 2>&1", Temperature->Sensor);
 	SC_INFO("Sensors Command: %s", Buffer);
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
@@ -1672,6 +1672,13 @@ Get_Temperature(Temperature_t *Temperature)
 	}
 
 	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
+		SC_INFO("%s", Buffer);
+		if (strstr(Buffer, "ERROR: ") != NULL) {
+			SC_ERR("temperature is not available");
+			(void) pclose(FP);
+			return -1;
+		}
+
 		if (strstr(Buffer, "temp") == NULL) {
 			continue;
 		}

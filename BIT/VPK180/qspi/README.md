@@ -38,7 +38,7 @@ The `u-boot.elf` is built from [u-boot-xlnx](https://github.com/Xilinx/u-boot-xl
 
 	make xilinx_versal_virt_defconfig
 	sed -i -e '/CONFIG_BOOTDELAY/s/5/0/' .config
-	sed -i -e '/CONFIG_BOOTCOMMAND/s/"run distro_bootcmd"/"sf probe 0 0 0; sf erase 0 0x500000; sf write 0x80000 0 0x500000;"/' .config
+	sed -i -e '/CONFIG_BOOTCOMMAND/s/"run distro_bootcmd"/"sf probe 0 0 0; sf erase 0 0x1400000; sf write 0x80000 0 0x1400000;"/' .config
 	make CROSS_COMPILE=aarch64-linux-gnu- -j32
 
 File `blinkbist.bin` is the Build-In-Self-Test program that tests different aspects of the board.  This binary can be obtained from [XTP613 - VCK190 Board Interface Test](https://www.xilinx.com/member/forms/download/design-license.html?cid=b83eede2-f9d2-4e81-a393-67a1a8ba609e&filename=rdf0574-vck190-bit-c-2020-2.zip) link of [Versal AI Core Series VCK190 Evaluation Kit](https://www.xilinx.com/products/boards-and-kits/vck190.html#documentation) wiki page.  The location of BIST program is at `vck190_bit/BoardUI/tests/VCK190/qspi/blinkbist.mcs`.

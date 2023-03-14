@@ -50,6 +50,7 @@
 int Client_FD;
 char Sock_OutBuffer[SOCKBUF_MAX];
 char Board_Name[LSTRLEN_MAX];
+char Silicon_Revision[STRLEN_MAX];
 extern Plat_Devs_t *Plat_Devs;
 
 int Parse_Options(int, char **);
@@ -83,6 +84,7 @@ int IO_Exp_Initialized(void);
 static void String_2_Argv(char *, int *, char **);
 extern char *Appfile(char *);
 extern int Board_Identification(char *);
+extern int Silicon_Identification(char *);
 extern int Reset_Op(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
@@ -91,7 +93,6 @@ extern int Set_GPIO(char *, int);
 extern int EEPROM_Common(char *);
 extern int EEPROM_Board(char *, int);
 extern int EEPROM_MultiRecord(char *, int);
-extern int Get_IDCODE(char *, int);
 extern int Get_Temperature(Temperature_t *);
 extern int Get_BootMode(int);
 extern int Set_BootMode(BootMode_t *, int);
@@ -325,6 +326,11 @@ main()
 #endif
 	/* Identify the board */
 	if (Board_Identification(Board_Name) != 0) {
+		goto Out;
+	}
+
+	/* Identify the silicon */
+	if (Silicon_Identification(Silicon_Revision) != 0) {
 		goto Out;
 	}
 
@@ -671,7 +677,7 @@ Version_Ops(void)
 int
 Board_Ops(void)
 {
-	if (Board_Name == NULL) {
+	if (Board_Name[0] == 0) {
 		if (Board_Identification(Board_Name) != 0) {
 			return -1;
 		}
@@ -888,13 +894,11 @@ EEPROM_Ops(void)
 	switch (Target) {
 	case EEPROM_SUMMARY:
 		SC_PRINT("Language: %d", In_Buffer[0xA]);
-		if (Get_IDCODE(Buffer, STRLEN_MAX) != 0) {
-			SC_ERR("failed to get silicon revision");
+		if (Silicon_Identification(Silicon_Revision) != 0) {
 			return -1;
 		}
 
-		(void) strtok(Buffer, "\n");
-		SC_PRINT("Silicon Revision: %s", Buffer);
+		SC_PRINT("Silicon Revision: %s", Silicon_Revision);
 
 		/* Base build date for manufacturing is 1/1/1996 */
 		SC_INFO("Manufacturing date: [0xD] = %#x, [0xC] = %#x, [0xB] = %#x",

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,6 +31,7 @@ int Check_Config_File(char *, char *, int *);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
 extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int VCK190_QSFP_ModuleSelect(QSFP_t *, int);
+extern int Get_IDCODE(char *, int);
 
 char *
 Appfile(char *Filename)
@@ -138,6 +140,22 @@ Legacy:
 	}
 
 	Plat_Devs->OnBoard_EEPROM = OnBoard_EEPROM;
+	return 0;
+}
+
+int
+Silicon_Identification(char *Revision)
+{
+	if (Revision[0] == 0) {
+		if (Get_IDCODE(Revision, sizeof(Revision)) != 0) {
+			SC_ERR("failed to get silicon revision");
+			return -1;
+		}
+
+		(void) strtok(Revision, "\n");
+		SC_INFO("Silicon Revision: %s", Revision);
+	}
+
 	return 0;
 }
 

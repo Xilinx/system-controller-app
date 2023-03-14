@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -1173,7 +1174,14 @@ int Voltage_Ops(void)
 
 	if (Command.CmdId == LISTVOLTAGE) {
 		for (int i = 0; i < Voltages->Numbers; i++) {
-			SC_PRINT("%s", Voltages->Voltage[i].Name);
+			if (Voltages->Voltage[i].Voltage_Multiplier != 0) {
+				SC_PRINT("%s - (%.2f V)", Voltages->Voltage[i].Name,
+					 (Voltages->Voltage[i].Typical_Volt *
+					  Voltages->Voltage[i].Voltage_Multiplier));
+			} else {
+				SC_PRINT("%s - (%.2f V)", Voltages->Voltage[i].Name,
+					 Voltages->Voltage[i].Typical_Volt);
+			}
 		}
 
 		return 0;

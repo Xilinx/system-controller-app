@@ -493,6 +493,24 @@
 			"Name": "Versal",
 			"Sensor": "xsysmoni2c-i2c-3-18"
 		},
+		"GPIO_Group": {
+			"SW1": {
+				"Name": "SW1",
+				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW1 Readback": {
+				"Name": "SW1 Readback",
+				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3_READBACK",
+						"SYSCTLR_VERSAL_MODE2_READBACK",
+						"SYSCTLR_VERSAL_MODE1_READBACK",
+						"SYSCTLR_VERSAL_MODE0_READBACK"]
+			},
+			"SW3": {
+				"Name": "SW3",
+				"GPIO_Lines": ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
 		"GPIO": {
 			"QSPI_CLK": "500 - SYSCTLR_MIO0_QSPI_CLK",
 			"QSPI_DQ1": "500 - SYSCTLR_MIO1_QSPI_DQ1",

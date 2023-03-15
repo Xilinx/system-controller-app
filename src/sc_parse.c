@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -38,6 +39,7 @@ int Parse_Voltage(const char *, jsmntok_t *, int *, Voltages_t **);
 int Parse_Temperature(const char *, jsmntok_t *, int *, Temperature_t **);
 int Parse_DIMM(const char *, jsmntok_t *, int *, DIMMs_t **);
 int Parse_GPIO(const char *, jsmntok_t *, int *, GPIOs_t **);
+int Parse_GPIO_Group(const char *, jsmntok_t *, int *, GPIO_Groups_t **);
 int Parse_IO_EXP(const char *, jsmntok_t *, int *, IO_Exp_t **);
 int Parse_DaughterCard(const char *, jsmntok_t *, int *, Daughter_Card_t **);
 int Parse_SFP(const char *, jsmntok_t *, int *, SFPs_t **);
@@ -188,6 +190,11 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "GPIO") == 0) {
 			if (Parse_GPIO(Json_File, Tokens, &i, &Dev_Parse->GPIOs) != 0) {
+				return -1;
+			}
+		} else if (jsoneq(Json_File, &Tokens[i], "GPIO_Group") == 0) {
+			if (Parse_GPIO_Group(Json_File, Tokens, &i,
+					     &Dev_Parse->GPIO_Groups) != 0) {
 				return -1;
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "IO Exp") == 0) {
@@ -784,6 +791,55 @@ Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs
 		SC_INFO("Display Name: %s", (*GPIOs)->GPIO[Items].Display_Name);
 
 		Items++;
+	}
+
+	return 0;
+}
+
+int
+Parse_GPIO_Group(const char *Json_File, jsmntok_t *Tokens, int *Index,
+		 GPIO_Groups_t **GPIO_Groups)
+{
+	char *Value_Str;
+	int Group_Items = 0;
+	int Line_Items;
+
+	SC_INFO("********************* GPIO Groups *********************");
+	*GPIO_Groups = (GPIO_Groups_t *)malloc(sizeof(GPIO_Groups_t));
+
+	(*Index)++;
+	(*GPIO_Groups)->Numbers = Tokens[*Index].size;
+	Validate_Item_Size((*GPIO_Groups)->Numbers, "GPIO_Group", "GPIO_Group",
+			   ITEMS_MAX);
+	SC_INFO("Number of GPIO groups: %i", (*GPIO_Groups)->Numbers);
+	while (Group_Items < (*GPIO_Groups)->Numbers) {
+		*Index += 3;
+		Check_Attribute("Name", "GPIO_Group");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "GPIO_Group", "Name", STRLEN_MAX);
+		(*GPIO_Groups)->GPIO_Group[Group_Items].Name = Value_Str;
+		SC_INFO("GPIO Group: %s", (*GPIO_Groups)->GPIO_Group[Group_Items].Name);
+
+		(*Index)++;
+		Check_Attribute("GPIO_Lines", "GPIO_Group");
+		Line_Items = Tokens[*Index].size;
+		SC_INFO("Number of GPIO Lines: %d", Line_Items);
+		(*Index)++;
+		SC_INFO("GPIO Lines:");
+		char **GPIO_Lines = (char **)malloc(Line_Items * sizeof(char *));
+		for (int i = 0; i < Line_Items; i++) {
+			Value_Str = strndup(Json_File + Tokens[*Index + i].start,
+					    Tokens[*Index + i].end - Tokens[*Index + i].start);
+			Validate_Str_Size(Value_Str, "GPIO_Group", "GPIO_Lines", SYSCMD_MAX);
+			GPIO_Lines[i] = Value_Str;
+			SC_INFO("%s", GPIO_Lines[i]);
+		}
+
+		(*GPIO_Groups)->GPIO_Group[Group_Items].Numbers = Line_Items;
+		(*GPIO_Groups)->GPIO_Group[Group_Items].GPIO_Lines = GPIO_Lines;
+		*Index += (Line_Items - 1);
+		Group_Items++;
 	}
 
 	return 0;

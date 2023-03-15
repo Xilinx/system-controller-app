@@ -502,6 +502,17 @@
 				"I2C_Address_Thermal" : "0x18"
 			}
 		},
+		"GPIO_Group": {
+			"SW1": {
+				"Name": "SW1",
+				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW3": {
+				"Name": "SW3",
+				"GPIO_Lines": ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
 		"GPIO" : {
 			"DC_SYS_CTRL0" : "500 - DC_SYS_CTRL0",
 			"DC_SYS_CTRL1" : "500 - DC_SYS_CTRL1",

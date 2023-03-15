@@ -2209,8 +2209,11 @@ int GPIO_Ops(void)
 {
 	int Target_Index = -1;
 	GPIOs_t *GPIOs;
-	GPIO_t *GPIO;
+	GPIO_t *GPIO = NULL;
+	GPIO_Groups_t *GPIO_Groups;
+	GPIO_Group_t *GPIO_Group = NULL;
 	unsigned long int State;
+	unsigned long int Value = 0;
 
 	GPIOs = Plat_Devs->GPIOs;
 	if (GPIOs == NULL) {
@@ -2218,7 +2221,14 @@ int GPIO_Ops(void)
 		return -1;
 	}
 
+	GPIO_Groups = Plat_Devs->GPIO_Groups;
 	if (Command.CmdId == LISTGPIO) {
+		if (GPIO_Groups != NULL) {
+			for (int i = 0; i < GPIO_Groups->Numbers; i++) {
+				SC_PRINT("%s", GPIO_Groups->GPIO_Group[i].Name);
+			}
+		}
+
 		for (int i = 0; i < GPIOs->Numbers; i++) {
 			SC_PRINT("%s", GPIOs->GPIO[i].Display_Name);
 		}
@@ -2251,6 +2261,17 @@ int GPIO_Ops(void)
 		}
 	}
 
+	if (GPIO_Groups != NULL) {
+		for (int i = 0; i < GPIO_Groups->Numbers; i++) {
+			if (!strncmp(GPIO_Groups->GPIO_Group[i].Name, Target_Arg,
+				     STRLEN_MAX)) {
+				Target_Index = i;
+				GPIO_Group = &GPIO_Groups->GPIO_Group[Target_Index];
+				break;
+			}
+		}
+	}
+
 	if (Target_Index == -1) {
 		SC_ERR("invalid gpio target");
 		return -1;
@@ -2258,6 +2279,23 @@ int GPIO_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETGPIO:
+		if (GPIO_Group != NULL) {
+			for (int i = 0; i < GPIO_Group->Numbers; i++) {
+				if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+					     (int *)&State) != 0) {
+					SC_ERR("failed to get GPIO line %s",
+					       GPIO_Group->GPIO_Lines[i]);
+					return -1;
+				}
+
+				SC_INFO("%s: %d", GPIO_Group->GPIO_Lines[i], (int)State);
+				Value = ((Value << 1) | State);
+			}
+
+			SC_PRINT("%s:\t%#x", GPIO_Group->Name, (int)Value);
+			break;
+		}
+
 		if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State) != 0) {
 			SC_ERR("failed to get GPIO line %s", GPIO->Display_Name);
 			return -1;
@@ -2273,6 +2311,23 @@ int GPIO_Ops(void)
 		}
 
 		State = strtol(Value_Arg, NULL, 16);
+
+		if (GPIO_Group != NULL) {
+			for (int i = 0; i < GPIO_Group->Numbers; i++) {
+				Value = (State >> ((GPIO_Group->Numbers - 1) - i)) & 0x1;
+				SC_INFO("Set %s to %d", GPIO_Group->GPIO_Lines[i],
+					(int)Value);
+				if (Set_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+					     (int)Value) != 0) {
+					SC_ERR("failed to set GPIO line %s",
+					       GPIO_Group->GPIO_Lines[i]);
+					return -1;
+				}
+			}
+
+			break;
+		}
+
 		if ((State != 0) && (State != 1)) {
 			SC_ERR("invalid gpio value");
 			return -1;

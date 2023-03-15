@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -338,65 +339,80 @@ typedef struct DIMMs {
  * GPIO lines
  */
 typedef struct {
-	const char *Display_Name;
-	const char *Internal_Name;
+	const char	*Display_Name;
+	const char	*Internal_Name;
 } GPIO_t;
 
 typedef struct GPIOs {
-	int Numbers;
-	GPIO_t GPIO[LITEMS_MAX];
+	int		Numbers;
+	GPIO_t		GPIO[LITEMS_MAX];
 } GPIOs_t;
+
+/*
+ * GPIO group of lines
+ */
+typedef struct {
+	char		*Name;
+	int		Numbers;
+	char		**GPIO_Lines;
+} GPIO_Group_t;
+
+typedef struct {
+	int		Numbers;
+	GPIO_Group_t	GPIO_Group[ITEMS_MAX];
+} GPIO_Groups_t;
 
 /*
  * Command Constraints
  */
 typedef struct {
-	const char *Type;
-	const char *Command;
-	const char *Args;
+	const char	*Type;
+	const char	*Command;
+	const char	*Args;
 } Constraint_Phase_t;
 
 typedef struct {
-	int Numbers;
+	int		Numbers;
 	Constraint_Phase_t Phase[ITEMS_MAX];
 } Constraint_Phases_t;
 
 typedef struct {
-	const char *Type;
-	const char *Command;
-	const char *Target;
-	const char *Value;
+	const char	*Type;
+	const char	*Command;
+	const char	*Target;
+	const char	*Value;
 	Constraint_Phases_t *Pre_Phases;
 	Constraint_Phases_t *Post_Phases;
 } Constraint_t;
 
 typedef struct Constraints {
-	int Numbers;
-	Constraint_t Constraint[LITEMS_MAX];
+	int		Numbers;
+	Constraint_t	Constraint[LITEMS_MAX];
 } Constraints_t;
 
 /*
  * Board-specific Devices
  */
 typedef struct {
-	FeatureList_t *FeatureList;
-	BootModes_t *BootModes;
-	Clocks_t *Clocks;
-	INA226s_t *INA226s;
-	Power_Domains_t *Power_Domains;
-	Voltages_t *Voltages;
-	Temperature_t *Temperature;
-	DIMMs_t *DIMMs;
-	GPIOs_t *GPIOs;
-	IO_Exp_t *IO_Exp;
+	FeatureList_t	*FeatureList;
+	BootModes_t	*BootModes;
+	Clocks_t	*Clocks;
+	INA226s_t	*INA226s;
+	Power_Domains_t	*Power_Domains;
+	Voltages_t	*Voltages;
+	Temperature_t	*Temperature;
+	DIMMs_t		*DIMMs;
+	GPIOs_t		*GPIOs;
+	GPIO_Groups_t	*GPIO_Groups;
+	IO_Exp_t	*IO_Exp;
 	OnBoard_EEPROM_t *OnBoard_EEPROM;
-	Daughter_Card_t *Daughter_Card;
-	SFPs_t *SFPs;
-	QSFPs_t *QSFPs;
-	FMCs_t *FMCs;
-	Workarounds_t *Workarounds;
-	BITs_t *BITs;
-	Constraints_t *Constraints;
+	Daughter_Card_t	*Daughter_Card;
+	SFPs_t		*SFPs;
+	QSFPs_t		*QSFPs;
+	FMCs_t		*FMCs;
+	Workarounds_t	*Workarounds;
+	BITs_t		*BITs;
+	Constraints_t	*Constraints;
 } Plat_Devs_t;
 
 #define I2C_READ(FD, Address, Len, Out, In, Return) \

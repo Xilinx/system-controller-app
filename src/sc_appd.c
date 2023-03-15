@@ -2493,6 +2493,7 @@ int SFP_List(void)
 		 * the I2C device address.
 		 */
 		if (read(FD, Buffer, 1) != 1) {
+			SC_PRINT("%s - Not connected", SFP->Name);
 			(void) close(FD);
 			continue;
 		}
@@ -2647,7 +2648,7 @@ int QSFP_List(void)
 	for (int i = 0; i < QSFPs->Numbers; i++) {
 		QSFP = &QSFPs->QSFP[i];
 		if (QSFP->Type == qsfp) {
-			SC_PRINT("%s", QSFP->Name);
+			SC_PRINT("%s - Connection unknown", QSFP->Name);
 			continue;
 		}
 
@@ -2676,6 +2677,7 @@ int QSFP_List(void)
 		 * the I2C device address.
 		 */
 		if (read(FD, Buffer, 1) != 1) {
+			SC_PRINT("%s - Not connected", QSFP->Name);
 			(void) QSFP_ModuleSelect(QSFP, 0);
 			(void) close(FD);
 			continue;
@@ -2946,6 +2948,7 @@ int EBM_List(void)
 	 * the I2C device address.
 	 */
 	if (read(FD, Buffer, 1) != 1) {
+		SC_PRINT("%s - Not connected", Daughter_Card->Name);
 		(void) close(FD);
 		return 0;
 	}
@@ -3072,6 +3075,7 @@ int FMC_List(void)
 		 */
 		Out_Buffer[0] = 0x0;
 		if (write(FD, Out_Buffer, 1) != 1) {
+			SC_PRINT("%s - Not connected", FMC->Name);
 			(void) close(FD);
 			continue;
 		}

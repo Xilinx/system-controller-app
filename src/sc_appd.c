@@ -42,9 +42,10 @@
  * 1.16 - Added 'board' command to return name of the board.
  * 1.17 - Added 'getbootmode' and enhanced 'setbootmode' commands.
  * 1.18 - Added 'setgpio' command.
+ * 1.19 - Consolidate support for all SFP transceiver variants.
  */
 #define MAJOR	1
-#define MINOR	18
+#define MINOR	19
 
 #define GPIOLINE	"ZU4_TRIGGER"
 
@@ -73,7 +74,6 @@ int DDR_Ops(void);
 int GPIO_Ops(void);
 int IO_Exp_Ops(void);
 int SFP_Ops(void);
-int QSFP_Ops(void);
 int EBM_Ops(void);
 int FMC_Ops(void);
 int (*Workaround_Op)(void *);
@@ -101,7 +101,7 @@ extern int Set_BootMode(BootMode_t *, int);
 extern int Get_IDT_8A34001(Clock_t *);
 extern int Set_IDT_8A34001(Clock_t *, char *, int);
 extern int Restore_IDT_8A34001(Clock_t *);
-extern int QSFP_ModuleSelect(QSFP_t *, int);
+extern int QSFP_ModuleSelect(SFP_t *, int);
 extern int FMCAutoVadj_Op(void);
 extern int Check_Config_File(char *, char *, int *);
 
@@ -171,9 +171,6 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	listSFP - list the plugged SFP transceiver targets\n\
 	getSFP - get the transceiver information of <target> SFP\n\
 \n\
-	listQSFP - list the plugged QSFP transceiver targets\n\
-	getQSFP - get the transceiver information of <target> QSFP\n\
-\n\
 	listEBM - list the plugged EBM daughter card targets\n\
 	getEBM - get the content of EEPROM on <target> EBM card for either <value>:\n\
 		 'all', 'common', 'board', or 'multirecord'\n\
@@ -228,8 +225,6 @@ typedef enum {
 	RESTOREIOEXP,
 	LISTSFP,
 	GETSFP,
-	LISTQSFP,
-	GETQSFP,
 	LISTEBM,
 	GETEBM,
 	LISTFMC,
@@ -288,8 +283,6 @@ static Command_t Commands[] = {
 	{ .CmdId = RESTOREIOEXP, .CmdStr = "restoreioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = LISTSFP, .CmdStr = "listSFP", .CmdOps = SFP_Ops, },
 	{ .CmdId = GETSFP, .CmdStr = "getSFP", .CmdOps = SFP_Ops, },
-	{ .CmdId = LISTQSFP, .CmdStr = "listQSFP", .CmdOps = QSFP_Ops, },
-	{ .CmdId = GETQSFP, .CmdStr = "getQSFP", .CmdOps = QSFP_Ops, },
 	{ .CmdId = LISTEBM, .CmdStr = "listEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = GETEBM, .CmdStr = "getEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = LISTFMC, .CmdStr = "listFMC", .CmdOps = FMC_Ops, },
@@ -2539,15 +2532,27 @@ int SFP_List(void)
 	SFPs = Plat_Devs->SFPs;
 	for (int i = 0; i < SFPs->Numbers; i++) {
 		SFP = &SFPs->SFP[i];
+		if (SFP->Type == qsfp) {
+			SC_PRINT("%s - Connection unknown", SFP->Name);
+			continue;
+		}
+
+		if (QSFP_ModuleSelect(SFP, 1) != 0) {
+			return -1;
+		}
+
 		FD = open(SFP->I2C_Bus, O_RDWR);
 		if (FD < 0) {
 			SC_ERR("failed to access I2C bus %s: %m", SFP->I2C_Bus);
+			(void) QSFP_ModuleSelect(SFP, 0);
 			return -1;
 		}
 
 		if (ioctl(FD, I2C_SLAVE_FORCE, SFP->I2C_Address) < 0) {
 			SC_ERR("failed to configure I2C bus for access to "
 			       "device address %#x: %m", SFP->I2C_Address);
+			(void) QSFP_ModuleSelect(SFP, 0);
+			(void) close(FD);
 			return -1;
 		}
 
@@ -2558,11 +2563,14 @@ int SFP_List(void)
 		 */
 		if (read(FD, Buffer, 1) != 1) {
 			SC_PRINT("%s - Not connected", SFP->Name);
+			(void) QSFP_ModuleSelect(SFP, 0);
 			(void) close(FD);
 			continue;
 		}
 
 		SC_PRINT("%s", SFP->Name);
+		(void) QSFP_ModuleSelect(SFP, 0);
+		(void) close(FD);
 	}
 
 	return 0;
@@ -2580,6 +2588,7 @@ int SFP_Ops(void)
 	int FD;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
+	int I2C_Address;
 	int Ret = 0;
 
 	SFPs = Plat_Devs->SFPs;
@@ -2611,219 +2620,34 @@ int SFP_Ops(void)
 		return -1;
 	}
 
+	if (QSFP_ModuleSelect(SFP, 1) != 0) {
+		return -1;
+	}
+
 	FD = open(SFP->I2C_Bus, O_RDWR);
 	if (FD < 0) {
 		SC_ERR("unable to access I2C bus %s: %m", SFP->I2C_Bus);
-		return -1;
+		Ret = -1;
+		goto Out;
 	}
 
 	switch (Command.CmdId) {
 	case GETSFP:
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x14;	// 0x14-0x23: Vendor Name
-		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		SC_PRINT("Manufacturer (0x14-0x23):\t%s", In_Buffer);
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x28;	// 0x28-0x37: Part Number
-		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		SC_PRINT("Part Number (0x28-0x37):\t%s", In_Buffer);
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x44;	// 0x44-0x53: Serial Number
-		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		SC_PRINT("Serial Number (0x44-0x53):\t%s", In_Buffer);
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x60;	// 0x60-0x61: Temperature Monitor
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		Value = (In_Buffer[0] << 8) | In_Buffer[1];
-		Value = (Value & 0x7FFF) - (Value & 0x8000);
-		/* Each bit of low byte is equivalent to 1/256 celsius */
-		SC_PRINT("Temperature(C) (0x60-0x61):\t%.2f", ((float)Value / 256));
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x62;	// 0x62-0x63: Voltage Sense
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		Value = (In_Buffer[0] << 8) | In_Buffer[1];
-		/* Each bit is 100 uV */
-		SC_PRINT("Supply Voltage(V) (0x62-0x63):\t%.2f", ((float)Value * 0.0001));
-
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		Out_Buffer[0] = 0x70;	// 0x70-0x71: Alarm
-		I2C_READ(FD, SFP->I2C_Address + 1, 2, Out_Buffer, In_Buffer, Ret);
-		if (Ret != 0) {
-			(void) close(FD);
-			return Ret;
-		}
-
-		SC_PRINT("Alarm (0x70-0x71):\t%#x", (In_Buffer[0] << 8) | In_Buffer[1]);
-		break;
-
-	default:
-		SC_ERR("invalid SFP command");
-		(void) close(FD);
-		return -1;
-	}
-
-	(void) close(FD);
-	return 0;
-}
-
-int QSFP_List(void)
-{
-	QSFPs_t *QSFPs;
-	QSFP_t *QSFP;
-	int FD;
-	char Buffer[STRLEN_MAX];
-
-	QSFPs = Plat_Devs->QSFPs;
-	for (int i = 0; i < QSFPs->Numbers; i++) {
-		QSFP = &QSFPs->QSFP[i];
-		if (QSFP->Type == qsfp) {
-			SC_PRINT("%s - Connection unknown", QSFP->Name);
-			continue;
-		}
-
-		if (QSFP_ModuleSelect(QSFP, 1) != 0) {
-			return -1;
-		}
-
-		FD = open(QSFP->I2C_Bus, O_RDWR);
-		if (FD < 0) {
-			SC_ERR("failed to access I2C bus %s: %m", QSFP->I2C_Bus);
-			(void) QSFP_ModuleSelect(QSFP, 0);
-			return -1;
-		}
-
-		if (ioctl(FD, I2C_SLAVE_FORCE, QSFP->I2C_Address) < 0) {
-			SC_ERR("failed to configure I2C bus for access to "
-			       "device address %#x: %m", QSFP->I2C_Address);
-			(void) QSFP_ModuleSelect(QSFP, 0);
-			(void) close(FD);
-			return -1;
-		}
-
-		/*
-		 * If the read operation fails, it indicates that there is
-		 * no QSFP device plugged into the connector referenced by
-		 * the I2C device address.
-		 */
-		if (read(FD, Buffer, 1) != 1) {
-			SC_PRINT("%s - Not connected", QSFP->Name);
-			(void) QSFP_ModuleSelect(QSFP, 0);
-			(void) close(FD);
-			continue;
-		}
-
-		SC_PRINT("%s", QSFP->Name);
-		(void) QSFP_ModuleSelect(QSFP, 0);
-		(void) close(FD);
-	}
-
-	return 0;
-}
-
-/*
- * QSFP Operations
- */
-int QSFP_Ops(void)
-{
-	int Target_Index = -1;
-	unsigned long int Value;
-	QSFPs_t *QSFPs;
-	QSFP_t *QSFP;
-	int FD;
-	char In_Buffer[STRLEN_MAX];
-	char Out_Buffer[STRLEN_MAX];
-	int Ret = 0;
-
-	QSFPs = Plat_Devs->QSFPs;
-	if (QSFPs == NULL) {
-		SC_ERR("QSFP operation is not supported");
-		return -1;
-	}
-
-	if (Command.CmdId == LISTQSFP) {
-		return QSFP_List();
-	}
-
-	/* Validate the QSFP target */
-	if (T_Flag == 0) {
-		SC_ERR("no QSFP target");
-		return -1;
-	}
-
-	for (int i = 0; i < QSFPs->Numbers; i++) {
-		if (strcmp(Target_Arg, (char *)QSFPs->QSFP[i].Name) == 0) {
-			Target_Index = i;
-			QSFP = &QSFPs->QSFP[Target_Index];
-			break;
-		}
-	}
-
-	if (Target_Index == -1) {
-		SC_ERR("invalid QSFP target");
-		return -1;
-	}
-
-	if (QSFP_ModuleSelect(QSFP, 1) != 0) {
-		return -1;
-	}
-
-	FD = open(QSFP->I2C_Bus, O_RDWR);
-	if (FD < 0) {
-		SC_ERR("unable to access I2C bus %s: %m", QSFP->I2C_Bus);
-		Ret = -1;
-		goto Out;
-	}
-
-	switch (Command.CmdId) {
-	case GETQSFP:
-		(void) memset(Out_Buffer, 0, STRLEN_MAX);
-		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (QSFP->Type == qsfp) {
+		if (SFP->Type == sfp) {
+			Out_Buffer[0] = 0x14;	// 0x14-0x23: Vendor Name
+		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Vendor Name
-		} else if (QSFP->Type == qsfpdd) {
+		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
 			Out_Buffer[0] = 0x81;	// 0x81-0x90: Vendor Name
 		} else {
-			SC_ERR("Unsupported QSFP");
+			SC_ERR("Unsupported SFP");
 			Ret = -1;
 			goto Out;
 		}
 
-		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
@@ -2833,17 +2657,19 @@ int QSFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (QSFP->Type == qsfp) {
+		if (SFP->Type == sfp) {
+			Out_Buffer[0] = 0x28;	// 0x28-0x37: Part Number
+		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
-		} else if (QSFP->Type == qsfpdd) {
+		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
 			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Part Number
 		} else {
-			SC_ERR("Unsupported QSFP");
+			SC_ERR("Unsupported SFP");
 			Ret = -1;
 			goto Out;
 		}
 
-		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
@@ -2853,17 +2679,19 @@ int QSFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (QSFP->Type == qsfp) {
+		if (SFP->Type == sfp) {
+			Out_Buffer[0] = 0x44;	// 0x44-0x53: Serial Number
+		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
-		} else if (QSFP->Type == qsfpdd) {
+		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
 			Out_Buffer[0] = 0xA6;	// 0xA6-0xB5: Serial Number
 		} else {
-			SC_ERR("Unsupported QSFP");
+			SC_ERR("Unsupported SFP");
 			Ret = -1;
 			goto Out;
 		}
 
-		I2C_READ(FD, QSFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
+		I2C_READ(FD, SFP->I2C_Address, 16, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
@@ -2873,17 +2701,21 @@ int QSFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (QSFP->Type == qsfp) {
+		I2C_Address = SFP->I2C_Address;
+		if (SFP->Type == sfp) {
+			Out_Buffer[0] = 0x60;	// 0x60-0x61: Temperature
+			I2C_Address = SFP->I2C_Address + 1;
+		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature
-		} else if (QSFP->Type == qsfpdd) {
+		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
 			Out_Buffer[0] = 0xE;	// 0xE-0xF: Temperature
 		} else {
-			SC_ERR("Unsupported QSFP");
+			SC_ERR("Unsupported SFP");
 			Ret = -1;
 			goto Out;
 		}
 
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		I2C_READ(FD, I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
@@ -2898,17 +2730,19 @@ int QSFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (QSFP->Type == qsfp) {
+		if (SFP->Type == sfp) {
+			Out_Buffer[0] = 0x62;	// 0x62-0x63: Supply Voltage
+		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
-		} else if (QSFP->Type == qsfpdd) {
+		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
 			Out_Buffer[0] = 0x10;	// 0x10-0x11: Supply Voltage
 		} else {
-			SC_ERR("Unsupported QSFP");
+			SC_ERR("Unsupported SFP");
 			Ret = -1;
 			goto Out;
 		}
 
-		I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+		I2C_READ(FD, I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
 			goto Out;
 		}
@@ -2920,11 +2754,23 @@ int QSFP_Ops(void)
 		SC_PRINT("Supply Voltage(V) (%#x-%#x):\t%.2f", Out_Buffer[0],
 			 (Out_Buffer[0] + 1), ((float)Value * 0.0001));
 
-		if (QSFP->Type == qsfp) {
+		if (SFP->Type == sfp) {
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x70;	// 0x70-0x71: Alarm
+			I2C_READ(FD, I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			SC_PRINT("Alarm (0x70-0x71):\t%#x", (In_Buffer[0] << 8) |
+				 In_Buffer[1]);
+
+		} else if (SFP->Type == qsfp) {
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x3;	// 0x3-0x4: Alarms
-			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			I2C_READ(FD, I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 			if (Ret != 0) {
 				goto Out;
 			}
@@ -2935,7 +2781,7 @@ int QSFP_Ops(void)
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x6;	// 0x6-0x7: Alarms
-			I2C_READ(FD, QSFP->I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
+			I2C_READ(FD, I2C_Address, 2, Out_Buffer, In_Buffer, Ret);
 			if (Ret != 0) {
 				goto Out;
 			}
@@ -2946,7 +2792,7 @@ int QSFP_Ops(void)
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x9;	// 0x9-0xC: Alarms
-			I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
+			I2C_READ(FD, I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
 			if (Ret != 0) {
 				goto Out;
 			}
@@ -2955,11 +2801,11 @@ int QSFP_Ops(void)
 				 In_Buffer[1]), ((In_Buffer[2] << 8) |
 				 In_Buffer[3]));
 
-		} else if (QSFP->Type == qsfpdd) {
+		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x8;	// 0x8-0xB: Alarms
-			I2C_READ(FD, QSFP->I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
+			I2C_READ(FD, I2C_Address, 4, Out_Buffer, In_Buffer, Ret);
 			if (Ret != 0) {
 				goto Out;
 			}
@@ -2969,7 +2815,7 @@ int QSFP_Ops(void)
 				 In_Buffer[3]));
 
 		} else {
-			SC_ERR("Unsupported QSFP");
+			SC_ERR("Unsupported SFP");
 			Ret = -1;
 			goto Out;
 		}
@@ -2977,12 +2823,12 @@ int QSFP_Ops(void)
 		break;
 
 	default:
-		SC_ERR("invalid QSFP command");
+		SC_ERR("invalid SFP command");
 		Ret = -1;
 	}
 
 Out:
-	(void) QSFP_ModuleSelect(QSFP, 0);
+	(void) QSFP_ModuleSelect(SFP, 0);
 	(void) close(FD);
 	return Ret;
 }

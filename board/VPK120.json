@@ -5,7 +5,7 @@
 	"VPK120": {
 		"FEATURE": {
 			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
-				"BIT", "gpio", "ioexp", "QSFP", "FMC"]
+				"BIT", "gpio", "ioexp", "SFP", "FMC"]
 		},
 		"BOOTMODES": {
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -574,7 +574,7 @@
 			"I2C_Bus": "/dev/i2c-0",
 			"I2C_Address": "0x20"
 		},
-		"QSFPs": {
+		"SFPs": {
 			"QSFPDD_0": {
 				"Name": "QSFPDD1",
 				"Type": "qsfpdd",

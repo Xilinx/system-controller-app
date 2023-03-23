@@ -5,7 +5,7 @@
 	"VCK190" : {
 		"FEATURE" : {
 			"List" : ["eeprom", "bootmode", "clock", "voltage", "power",
-				"powerdomain", "BIT", "ddr", "gpio", "ioexp", "SFP", "QSFP",
+				"powerdomain", "BIT", "ddr", "gpio", "ioexp", "SFP",
 				"EBM", "FMC"]
 		},
 		"BOOTMODES" : {
@@ -591,16 +591,16 @@
 		"SFPs" : {
 			"SFP_0" : {
 				"Name" : "zSFP-0",
+				"Type" : "sfp",
 				"I2C_Bus" : "/dev/i2c-19",
 				"I2C_Address" : "0x50"
 			},
 			"SFP_1" : {
 				"Name" : "zSFP-1",
+				"Type" : "sfp",
 				"I2C_Bus" : "/dev/i2c-20",
 				"I2C_Address" : "0x50"
-			}
-		},
-		"QSFPs" : {
+			},
 			"QSFP_0" : {
 				"Name" : "zQSFP1",
 				"Type" : "qsfp",

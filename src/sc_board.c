@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -81,7 +82,7 @@ VCK190_ES1_Vccaux_Workaround(void *Arg)
  * programmed to drive QSFP1_MODSKLL_LS low, the QSFP will not respond.
  */
 int
-VCK190_QSFP_ModuleSelect(QSFP_t *Arg, int State)
+VCK190_QSFP_ModuleSelect(SFP_t *Arg, int State)
 {
 	FILE *FP;
 	char Output[STRLEN_MAX] = { 0 };
@@ -90,7 +91,7 @@ VCK190_QSFP_ModuleSelect(QSFP_t *Arg, int State)
 	char *Directory, *Filename;
 
 	if (State != 0 && State != 1) {
-		SC_ERR("invalid QSFP module select state");
+		SC_ERR("invalid SFP module select state");
 		return -1;
 	}
 

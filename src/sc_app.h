@@ -236,8 +236,16 @@ typedef struct {
 /*
  * SFP Transceivers
  */
+typedef enum {
+	sfp,
+	qsfp,
+	qsfpdd,
+	osfp
+} SFP_Type;
+
 typedef struct {
 	char	*Name;
+	SFP_Type	Type;
 	char	*I2C_Bus;
 	int	I2C_Address;
 } SFP_t;
@@ -246,26 +254,6 @@ typedef struct SFPs {
 	int	Numbers;
 	SFP_t	SFP[ITEMS_MAX];
 } SFPs_t;
-
-/*
- * QSFP Transceivers
- */
-typedef enum {
-	qsfp,
-	qsfpdd,
-} QSFP_Type;
-
-typedef struct {
-	char	*Name;
-	QSFP_Type	Type;
-	char	*I2C_Bus;
-	int	I2C_Address;
-} QSFP_t;
-
-typedef struct QSFPs {
-	int	Numbers;
-	QSFP_t	QSFP[ITEMS_MAX];
-} QSFPs_t;
 
 /*
  * FMC Cards
@@ -408,7 +396,6 @@ typedef struct {
 	OnBoard_EEPROM_t *OnBoard_EEPROM;
 	Daughter_Card_t	*Daughter_Card;
 	SFPs_t		*SFPs;
-	QSFPs_t		*QSFPs;
 	FMCs_t		*FMCs;
 	Workarounds_t	*Workarounds;
 	BITs_t		*BITs;

@@ -30,7 +30,7 @@ int Get_GPIO(char *, int *);
 int Check_Config_File(char *, char *, int *);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
 extern int VCK190_ES1_Vccaux_Workaround(void *);
-extern int VCK190_QSFP_ModuleSelect(QSFP_t *, int);
+extern int VCK190_QSFP_ModuleSelect(SFP_t *, int);
 extern int Get_IDCODE(char *, int);
 
 char *
@@ -1916,7 +1916,7 @@ Set_BootMode(BootMode_t *BootMode, int Method)
 }
 
 int
-QSFP_ModuleSelect(QSFP_t *QSFP, int State)
+QSFP_ModuleSelect(SFP_t *SFP, int State)
 {
 	IO_Exp_t *IO_Exp;
 	int i, j;
@@ -1927,21 +1927,35 @@ QSFP_ModuleSelect(QSFP_t *QSFP, int State)
 	unsigned int Value;
 
 	if (State != 0 && State != 1) {
-		SC_ERR("invalid QSFP module select state");
+		SC_ERR("invalid SFP module select state");
 		return -1;
 	}
 
 	/*
-	 * For boards that use PDI to enable QSFP module select, there
-	 * is nothing to do for 'State == 0'.
+	 * In current board designs, the SFP modules of type 'sfp' and
+	 * 'osfp' don't require the module to be selected before it is
+	 * accessed.
 	 */
-	if (QSFP->Type == qsfp) {
+	if (SFP->Type == sfp || SFP->Type == osfp) {
+		return 0;
+	}
+
+	/*
+	 * In boards that need to use a PDI to enable SFP module select,
+	 * there is nothing to do for 'State == 0'.
+	 */
+	if (SFP->Type == qsfp) {
 		if (State == 1) {
-			return VCK190_QSFP_ModuleSelect(QSFP, State);
+			return VCK190_QSFP_ModuleSelect(SFP, State);
 		} else {
 			return 0;
 		}
 	}
+
+	/*
+	 * The following code enables the SFP module select for type
+	 * 'qsfpdd' in current board designs.
+	 */
 
 	IO_Exp = Plat_Devs->IO_Exp;
 
@@ -1958,7 +1972,7 @@ QSFP_ModuleSelect(QSFP_t *QSFP, int State)
 	 * revert the same bit to 1.
 	 */
 	for (i = 0, j = 8; i < 8; i++, j--) {
-		if (strstr(IO_Exp->Labels[i], QSFP->Name) != NULL) {
+		if (strstr(IO_Exp->Labels[i], SFP->Name) != NULL) {
 			Found = 1;
 			break;
 		}
@@ -1968,7 +1982,7 @@ QSFP_ModuleSelect(QSFP_t *QSFP, int State)
 
 	if (!Found) {
 		for (i = 8, j = 8; i < 16; i++, j--) {
-			if (strstr(IO_Exp->Labels[i], QSFP->Name) != NULL) {
+			if (strstr(IO_Exp->Labels[i], SFP->Name) != NULL) {
 				break;
 			}
 		}

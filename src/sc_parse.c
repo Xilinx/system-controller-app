@@ -43,7 +43,6 @@ int Parse_GPIO_Group(const char *, jsmntok_t *, int *, GPIO_Groups_t **);
 int Parse_IO_EXP(const char *, jsmntok_t *, int *, IO_Exp_t **);
 int Parse_DaughterCard(const char *, jsmntok_t *, int *, Daughter_Card_t **);
 int Parse_SFP(const char *, jsmntok_t *, int *, SFPs_t **);
-int Parse_QSFP(const char *, jsmntok_t *, int *, QSFPs_t **);
 int Parse_FMC(const char *, jsmntok_t *, int *, FMCs_t **);
 int Parse_Workaround(const char *, jsmntok_t *, int *, Workarounds_t **);
 int Parse_BIT(const char *, jsmntok_t *, int *, BITs_t **);
@@ -208,10 +207,6 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "SFPs") == 0) {
 			if (Parse_SFP(Json_File, Tokens, &i, &Dev_Parse->SFPs) != 0) {
-				return -1;
-			}
-		} else if (jsoneq(Json_File, &Tokens[i], "QSFPs") == 0) {
-			if (Parse_QSFP(Json_File, Tokens, &i, &Dev_Parse->QSFPs) != 0) {
 				return -1;
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "FMCs") == 0) {
@@ -964,89 +959,46 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 
 	(*Index)++;
 	(*SFPs)->Numbers = Tokens[*Index].size;
-	Validate_Item_Size((*SFPs)->Numbers, "SFP", "SFP", ITEMS_MAX);
+	Validate_Item_Size((*SFPs)->Numbers, "SFPs", "SFPs", ITEMS_MAX);
 	SC_INFO("Number of SFPs: %i", (*SFPs)->Numbers);
 	while (Item < (*SFPs)->Numbers) {
 		*Index += 3;
-		Check_Attribute("Name", "SFP");
+		Check_Attribute("Name", "SFPs");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "SFP", "Name", STRLEN_MAX);
-		(*SFPs)->SFP[Item].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*SFPs)->SFP[Item].Name, Value_Str, strlen(Value_Str) + 1);
+		Validate_Str_Size(Value_Str, "SFPs", "Name", STRLEN_MAX);
+		(*SFPs)->SFP[Item].Name = Value_Str;
 		SC_INFO("Name: %s", (*SFPs)->SFP[Item].Name);
 
 		(*Index)++;
-		Check_Attribute("I2C_Bus", "SFP");
+		Check_Attribute("Type", "SFPs");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "SFP", "I2C_Bus", STRLEN_MAX);
-		(*SFPs)->SFP[Item].I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*SFPs)->SFP[Item].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+		SC_INFO("Type: %s", Value_Str);
+		if (strcmp(Value_Str, "sfp") == 0) {
+			(*SFPs)->SFP[Item].Type = sfp;
+		} else if (strcmp(Value_Str, "qsfp") == 0) {
+			(*SFPs)->SFP[Item].Type = qsfp;
+		} else if (strcmp(Value_Str, "qsfpdd") == 0) {
+			(*SFPs)->SFP[Item].Type = qsfpdd;
+		} else if (strcmp(Value_Str, "osfp") == 0) {
+			(*SFPs)->SFP[Item].Type = osfp;
+		}
+
+		(*Index)++;
+		Check_Attribute("I2C_Bus", "SFPs");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "SFPs", "I2C_Bus", STRLEN_MAX);
+		(*SFPs)->SFP[Item].I2C_Bus = Value_Str;
 		SC_INFO("I2C Bus: %s", (*SFPs)->SFP[Item].I2C_Bus);
 
 		(*Index)++;
-		Check_Attribute("I2C_Address", "SFP");
+		Check_Attribute("I2C_Address", "SFPs");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr: %s", Value_Str);
 		(*SFPs)->SFP[Item].I2C_Address = (int)strtol(Value_Str, NULL, 0);
-
-		Item++;
-	}
-
-	return 0;
-}
-
-int
-Parse_QSFP(const char *Json_File, jsmntok_t *Tokens, int *Index, QSFPs_t **QSFPs)
-{
-	char *Value_Str;
-	int Item = 0;
-
-	SC_INFO("******************** QSFPs ********************");
-	*QSFPs = (QSFPs_t *)malloc(sizeof(QSFPs_t));
-
-	(*Index)++;
-	(*QSFPs)->Numbers = Tokens[*Index].size;
-	Validate_Item_Size((*QSFPs)->Numbers, "QSFP", "QSFP", ITEMS_MAX);
-	SC_INFO("Number of QSFPs: %i", (*QSFPs)->Numbers);
-	while (Item < (*QSFPs)->Numbers) {
-		*Index += 3;
-		Check_Attribute("Name", "QSFP");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "QSFP", "Name", STRLEN_MAX);
-		(*QSFPs)->QSFP[Item].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*QSFPs)->QSFP[Item].Name, Value_Str, strlen(Value_Str) + 1);
-		SC_INFO("Name: %s", (*QSFPs)->QSFP[Item].Name);
-
-		(*Index)++;
-		Check_Attribute("Type", "QSFP");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		SC_INFO("Type: %s", Value_Str);
-		if (strcmp(Value_Str, "qsfp") == 0) {
-			(*QSFPs)->QSFP[Item].Type = qsfp;
-		} else if (strcmp(Value_Str, "qsfpdd") == 0) {
-			(*QSFPs)->QSFP[Item].Type = qsfpdd;
-		}
-
-		(*Index)++;
-		Check_Attribute("I2C_Bus", "QSFP");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "QSFP", "I2C_Bus", STRLEN_MAX);
-		(*QSFPs)->QSFP[Item].I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*QSFPs)->QSFP[Item].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
-		SC_INFO("I2C Bus: %s", (*QSFPs)->QSFP[Item].I2C_Bus);
-
-		(*Index)++;
-		Check_Attribute("I2C_Address", "QSFP");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		SC_INFO("I2C Addr: %s", Value_Str);
-		(*QSFPs)->QSFP[Item].I2C_Address = (int)strtol(Value_Str, NULL, 0);
 
 		Item++;
 	}

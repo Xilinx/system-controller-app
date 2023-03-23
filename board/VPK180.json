@@ -5,7 +5,7 @@
 	"VPK180": {
 		"FEATURE": {
 			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
-				"BIT", "gpio", "ioexp", "SFP", "QSFP", "FMC"]
+				"BIT", "gpio", "ioexp", "SFP", "FMC"]
 		},
 		"BOOTMODES": {
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -581,26 +581,28 @@
 		"SFPs" : {
 			"SFPDD1" : {
 				"Name" : "SFPDD1",
+				"Type": "sfp",
 				"I2C_Bus" : "/dev/i2c-20",
 				"I2C_Address" : "0x50"
 			},
 			"SFPDD2" : {
 				"Name" : "SFPDD2",
+				"Type": "sfp",
 				"I2C_Bus" : "/dev/i2c-21",
 				"I2C_Address" : "0x50"
 			},
 			"SFPDD3" : {
 				"Name" : "SFPDD3",
+				"Type": "sfp",
 				"I2C_Bus" : "/dev/i2c-22",
 				"I2C_Address" : "0x50"
 			},
 			"SFPDD4" : {
 				"Name" : "SFPDD4",
+				"Type": "sfp",
 				"I2C_Bus" : "/dev/i2c-23",
 				"I2C_Address" : "0x50"
-			}
-		},
-		"QSFPs": {
+			},
 			"QSFPDD1": {
 				"Name": "QSFPDD1",
 				"Type": "qsfpdd",
@@ -635,6 +637,12 @@
 				"Name": "QSFPDD6",
 				"Type": "qsfpdd",
 				"I2C_Bus": "/dev/i2c-18",
+				"I2C_Address": "0x50"
+			},
+			"OSFP": {
+				"Name": "OSFP",
+				"Type": "osfp",
+				"I2C_Bus": "/dev/i2c-14",
 				"I2C_Address": "0x50"
 			}
 		},

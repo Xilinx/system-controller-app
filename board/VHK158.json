@@ -5,7 +5,7 @@
 	"VHK158": {
 		"FEATURE": {
 			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
-				"BIT", "ddr", "gpio", "ioexp", "QSFP", "FMC"]
+				"BIT", "ddr", "gpio", "ioexp", "SFP", "FMC"]
 		},
 		"BOOTMODES": {
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -768,7 +768,7 @@
 			"I2C_Bus": "/dev/i2c-0",
 			"I2C_Address": "0x20"
 		},
-		"QSFPs": {
+		"SFPs": {
 			"QSFP1" : {
 				"Name" : "QSFP1",
 				"Type" : "qsfp",

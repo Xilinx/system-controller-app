@@ -68,9 +68,6 @@
 		listSFP - list the plugged SFP transceiver targets
 		getSFP - get the transceiver information of <target> SFP
 
-		listQSFP - list the plugged QSFP transceiver targets
-		getQSFP - get the transceiver information of <target> QSFP
-
 		listEBM - list the plugged EBM daughter card targets
 		getEBM - get the content of EEPROM on <target> EBM card for either <value>:
 			 'all', 'common', 'board', or 'multirecord'

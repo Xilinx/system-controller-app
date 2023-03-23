@@ -616,6 +616,7 @@
 		"SFPs" : {
 			"SFP" : {
 				"Name" : "SFP",
+				"Type" : "sfp",
 				"I2C_Bus" : "/dev/i2c-11",
 				"I2C_Address" : "0x50"
 			}

@@ -144,10 +144,20 @@ Legacy:
 }
 
 int
-Silicon_Identification(char *Revision)
+Silicon_Identification(char *Revision, int Length)
 {
+	int Count = 5;
+	int Ret;
+
 	if (Revision[0] == 0) {
-		if (Get_IDCODE(Revision, sizeof(Revision)) != 0) {
+		/* Retry in case XSDB connection is not ready */
+		do {
+			sleep(1);
+			Ret = Get_IDCODE(Revision, Length);
+			Count--;
+		} while (Ret != 0 && Count != 0);
+
+		if (Ret != 0) {
 			SC_ERR("failed to get silicon revision");
 			return -1;
 		}
@@ -1503,7 +1513,7 @@ Reset_IDT_8A34001(void)
 		return -1;
 	}
 
-	sleep (1);
+	sleep(1);
 
 	Value = 0x20;   // De-assert reset
 	if (Access_IO_Exp(IO_Exp, 1, 0x2, &Value) != 0) {

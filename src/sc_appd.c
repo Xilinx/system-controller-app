@@ -86,7 +86,7 @@ void *Fancontrol(void*);
 static void String_2_Argv(char *, int *, char **);
 extern char *Appfile(char *);
 extern int Board_Identification(char *);
-extern int Silicon_Identification(char *);
+extern int Silicon_Identification(char *, int);
 extern int Reset_Op(void);
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
@@ -326,7 +326,8 @@ main()
 	}
 
 	/* Identify the silicon */
-	if (Silicon_Identification(Silicon_Revision) != 0) {
+	if (Silicon_Identification(Silicon_Revision,
+				   sizeof(Silicon_Revision)) != 0) {
 		goto Out;
 	}
 
@@ -896,7 +897,8 @@ EEPROM_Ops(void)
 	switch (Target) {
 	case EEPROM_SUMMARY:
 		SC_PRINT("Language: %d", In_Buffer[0xA]);
-		if (Silicon_Identification(Silicon_Revision) != 0) {
+		if (Silicon_Identification(Silicon_Revision,
+					   sizeof(Silicon_Revision)) != 0) {
 			return -1;
 		}
 

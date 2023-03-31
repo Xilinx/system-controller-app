@@ -307,6 +307,7 @@ main()
 	int Ret = -1;
 	int Valid_Command;
 	pthread_t Thread_Id;
+	pthread_attr_t Thread_Attr;
 
 	SC_OPENLOG("sc_app");
 	SC_INFO(">>> Begin");
@@ -368,7 +369,18 @@ main()
 	}
 
 	/* Create a thread to manage fancontrol process */
-	if (pthread_create(&Thread_Id, NULL, Fancontrol, NULL) != 0) {
+	if (pthread_attr_init(&Thread_Attr) != 0) {
+		SC_ERR("failed to initialize pthread attributes");
+		goto Out;
+	}
+
+	if (pthread_attr_setdetachstate(&Thread_Attr,
+				        PTHREAD_CREATE_DETACHED) != 0) {
+		SC_ERR("failed to set pthread detached attributes");
+		goto Out;
+	}
+
+	if (pthread_create(&Thread_Id, &Thread_Attr, Fancontrol, NULL) != 0) {
 		SC_ERR("failed to start fancontrol thread");
 		goto Out;
 	}

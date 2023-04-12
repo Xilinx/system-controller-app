@@ -238,6 +238,7 @@ typedef struct {
  */
 typedef enum {
 	sfp,
+	sfpdd,
 	qsfp,
 	qsfpdd,
 	osfp

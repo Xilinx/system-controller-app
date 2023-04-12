@@ -581,25 +581,25 @@
 		"SFPs" : {
 			"SFPDD1" : {
 				"Name" : "SFPDD1",
-				"Type": "sfp",
+				"Type": "sfpdd",
 				"I2C_Bus" : "/dev/i2c-20",
 				"I2C_Address" : "0x50"
 			},
 			"SFPDD2" : {
 				"Name" : "SFPDD2",
-				"Type": "sfp",
+				"Type": "sfpdd",
 				"I2C_Bus" : "/dev/i2c-21",
 				"I2C_Address" : "0x50"
 			},
 			"SFPDD3" : {
 				"Name" : "SFPDD3",
-				"Type": "sfp",
+				"Type": "sfpdd",
 				"I2C_Bus" : "/dev/i2c-22",
 				"I2C_Address" : "0x50"
 			},
 			"SFPDD4" : {
 				"Name" : "SFPDD4",
-				"Type": "sfp",
+				"Type": "sfpdd",
 				"I2C_Bus" : "/dev/i2c-23",
 				"I2C_Address" : "0x50"
 			},

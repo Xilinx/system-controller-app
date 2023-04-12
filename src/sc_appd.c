@@ -2633,7 +2633,8 @@ int SFP_Ops(void)
 			Out_Buffer[0] = 0x14;	// 0x14-0x23: Vendor Name
 		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Vendor Name
-		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
+		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
+			   SFP->Type == osfp) {
 			Out_Buffer[0] = 0x81;	// 0x81-0x90: Vendor Name
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2655,7 +2656,8 @@ int SFP_Ops(void)
 			Out_Buffer[0] = 0x28;	// 0x28-0x37: Part Number
 		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
-		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
+		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
+			   SFP->Type == osfp) {
 			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Part Number
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2677,7 +2679,8 @@ int SFP_Ops(void)
 			Out_Buffer[0] = 0x44;	// 0x44-0x53: Serial Number
 		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
-		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
+		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
+			   SFP->Type == osfp) {
 			Out_Buffer[0] = 0xA6;	// 0xA6-0xB5: Serial Number
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2701,7 +2704,8 @@ int SFP_Ops(void)
 			I2C_Address = SFP->I2C_Address + 1;
 		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature
-		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
+		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
+			   SFP->Type == osfp) {
 			Out_Buffer[0] = 0xE;	// 0xE-0xF: Temperature
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2728,7 +2732,8 @@ int SFP_Ops(void)
 			Out_Buffer[0] = 0x62;	// 0x62-0x63: Supply Voltage
 		} else if (SFP->Type == qsfp) {
 			Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
-		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
+		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
+			   SFP->Type == osfp) {
 			Out_Buffer[0] = 0x10;	// 0x10-0x11: Supply Voltage
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2759,6 +2764,21 @@ int SFP_Ops(void)
 
 			SC_PRINT("Alarm (0x70-0x71):\t%#x", (In_Buffer[0] << 8) |
 				 In_Buffer[1]);
+
+		} else if (SFP->Type == sfpdd) {
+			(void) memset(Out_Buffer, 0, STRLEN_MAX);
+			(void) memset(In_Buffer, 0, STRLEN_MAX);
+			Out_Buffer[0] = 0x5;	// 0x5-0xD: Alarms
+			I2C_READ(FD, I2C_Address, 9, Out_Buffer, In_Buffer, Ret);
+			if (Ret != 0) {
+				goto Out;
+			}
+
+			SC_PRINT("Alarms (0x5-0xd):\t%#x %#x %#x %#x %#x",
+				 ((In_Buffer[0] << 8) | In_Buffer[1]),
+				 ((In_Buffer[2] << 8) | In_Buffer[3]),
+				 ((In_Buffer[4] << 8) | In_Buffer[5]),
+				 ((In_Buffer[6] << 8) | In_Buffer[7]), In_Buffer[8]);
 
 		} else if (SFP->Type == qsfp) {
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);

@@ -977,6 +977,8 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 		SC_INFO("Type: %s", Value_Str);
 		if (strcmp(Value_Str, "sfp") == 0) {
 			(*SFPs)->SFP[Item].Type = sfp;
+		} else if (strcmp(Value_Str, "sfpdd") == 0) {
+			(*SFPs)->SFP[Item].Type = sfpdd;
 		} else if (strcmp(Value_Str, "qsfp") == 0) {
 			(*SFPs)->SFP[Item].Type = qsfp;
 		} else if (strcmp(Value_Str, "qsfpdd") == 0) {

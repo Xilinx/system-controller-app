@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 #
-# Copyright (c) 2022 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -41,7 +41,10 @@ def get_tps53681(bus, address, channel):
     #print("data[0] = %x, data[1] = %x" % (msgs[1].data[0], msgs[1].data[1]))
 
     # The first step is equal to 0.25V with additional steps incremented by DAC_step volts
-    voltage = (((msgs[1].data[0] - 1) * DAC_step) + 0.25)
+    if msgs[1].data[0] == 0:
+        voltage = 0
+    else:
+        voltage = (((msgs[1].data[0] - 1) * DAC_step) + 0.25)
 
     i2c.close()
 

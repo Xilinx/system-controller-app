@@ -888,7 +888,7 @@ EEPROM_Board(char *Buffer, int PCIe)
 	Offset = Offset + Length + 1;
 	Length = (Buffer[Offset] & 0x3F);
 	if (Length == 1) {
-		SC_PRINT("0x%.2x - FRU ID:\t%.2x", Offset, Buffer[Offset + 1]);
+		SC_PRINT("0x%.2x - FRU ID:\t%.2x", (Offset + 1), Buffer[Offset + 1]);
 	} else {
 		snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
 		SC_PRINT("0x%.2x - FRU ID:\t%s", (Offset + 1), Buf);

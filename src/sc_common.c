@@ -146,18 +146,8 @@ Legacy:
 int
 Silicon_Identification(char *Revision, int Length)
 {
-	int Count = 5;
-	int Ret;
-
 	if (Revision[0] == 0) {
-		/* Retry in case XSDB connection is not ready */
-		do {
-			sleep(1);
-			Ret = Get_IDCODE(Revision, Length);
-			Count--;
-		} while (Ret != 0 && Count != 0);
-
-		if (Ret != 0) {
+		if (Get_IDCODE(Revision, Length) != 0) {
 			SC_ERR("failed to get silicon revision");
 			return -1;
 		}

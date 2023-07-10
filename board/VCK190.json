@@ -98,8 +98,8 @@
 				"I2C_Bus" : "/dev/i2c-15",
 				"I2C_Address" : "0x60"
 			},
-			"SI570_HSPD" : {
-				"Name" : "HSPD Si570",
+			"SI570_HSDP" : {
+				"Name" : "HSDP Si570",
 				"Type" : "Si570",
 				"Sysfs_Path" : "/sys/devices/platform/si570_hsdp_clk/set_rate",
 				"Default_Freq" : 156.25,

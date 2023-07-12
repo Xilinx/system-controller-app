@@ -1,6 +1,10 @@
 #! /bin/sh
 
 #
+# Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+#
+
 # Configure syslogd to log sc_app messages into a separate file.
 #
 /bin/grep -e '^local3' /etc/syslog.conf

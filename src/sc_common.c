@@ -1635,10 +1635,17 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
 	char Buffer[SYSCMD_MAX];
-	char *Directory, *Filename;
+	char TclCmd[STRLEN_MAX]; /* TCL file and or argument with space delimter */
+	char *Directory, *Filename, *TclFile, *TestBitIndex;
 	int Ret = 0;
 
-	(void) sprintf(Buffer, "%s%s/%s", BIT_PATH, Board_Name, TCL_File);
+	(void) strcpy(TclCmd, TCL_File);
+
+	/* Get TCL file name and test index seperated by space */
+	TclFile = strtok(TclCmd, " ");
+	TestBitIndex = strtok(NULL, " ");
+
+	(void) sprintf(Buffer, "%s%s", BIT_PATH, TclFile);
 	if (access(Buffer, F_OK) != 0) {
 		SC_ERR("failed to access file %s: %m", Buffer);
 		return -1;
@@ -1652,8 +1659,10 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 	(void) JTAG_Op(1);
 	Directory = strdup(Buffer);
 	Filename = strdup(Buffer);
-	(void) sprintf(System_Cmd, "cd %s; %s; %s %s 2>&1", dirname(Directory),
-		       XSDB_ENV, XSDB_CMD, basename(Filename));
+	/* System_Cmd: cd BIT/Board_Name; XSDB_ENV; XSDB_CMD TCL_FILE TestBitIndex */
+	(void) sprintf(System_Cmd, "cd %s/%s; %s; %s ../%s %s 2>&1",
+		       dirname(Directory), Board_Name, XSDB_ENV, XSDB_CMD,
+		       basename(Filename), (NULL == TestBitIndex) ? "" : TestBitIndex);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
@@ -1668,10 +1677,15 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 	if (strstr(Output, "no targets found") != NULL) {
 		SC_ERR("could not connect to Versal through jtag");
 		Ret = -1;
+	} else if (strstr(Output, "Fail") != NULL) {
+		SC_ERR("Test failed");
+		Ret = -1;
 	}
 
 Out:
 	(void) JTAG_Op(0);
+	free(Directory);
+	free(Filename);
 	return Ret;
 }
 
@@ -1808,7 +1822,7 @@ Set_AltBootMode(int Value)
 	char *Directory, *Filename;
 	int Ret = 0;
 
-	(void) sprintf(Buffer, "%s%s/%s", BIT_PATH, Board_Name, BOOTMODE_TCL);
+	(void) sprintf(Buffer, "%s%s", BIT_PATH, BOOTMODE_TCL);
 	if (access(Buffer, F_OK) != 0) {
 		SC_ERR("failed to access file %s: %m", Buffer);
 		return -1;
@@ -1837,6 +1851,8 @@ Set_AltBootMode(int Value)
 
 Out:
 	(void) JTAG_Op(0);
+	free(Directory);
+	free(Filename);
 	return Ret;
 }
 

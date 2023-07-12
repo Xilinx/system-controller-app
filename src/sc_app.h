@@ -472,8 +472,8 @@ typedef struct {
 			 export TCL_LIBRARY=/usr/local/lib/tcl8.5"
 #define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
 
-#define IDCODE_TCL	"idcode/idcode_check.tcl"
-#define BOOTMODE_TCL	"boot_mode/alt_boot_mode.tcl"
+#define IDCODE_TCL	"idcode_verify.tcl"
+#define BOOTMODE_TCL	"alt_boot_mode.tcl"
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))

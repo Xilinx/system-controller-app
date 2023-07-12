@@ -627,9 +627,38 @@
 				"Plat_Workaround_Op" : "VCK190_ES1_Vccaux_Workaround"
 			}
 		},
-		"BITs" : {
+		"BITs": {
+			"BIT_IDCODE_VERIFY" : {
+				"Name" : "IDCODE Verify",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "idcode_verify.tcl"
+					}
+				}
+			},
+			"BIT_EFUSE_VERIFY" : {
+				"Name" : "EFUSE Verify",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "read_efuse.tcl"
+					}
+				}
+			},
+			"BIT_VOLTAGES_CHECK" : {
+				"Name" : "Verify Voltages",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Voltages_Check"
+					}
+				}
+			},
 			"BIT_CLOCKS_CHECK" : {
-				"Name" : "Check Clocks",
+				"Name" : "Verify Clock Settings",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -637,23 +666,23 @@
 					}
 				}
 			},
-			"BIT_IDCODE_CHECK" : {
-				"Name" : "IDCODE Check",
+			"BIT_CLOCKS_OUTPUT_TEST" : {
+				"Name" : "Clocks Output Test",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "idcode/idcode_check.tcl"
+						"TCL_File" : "versal_bit_download.tcl 0x01"
 					}
 				}
 			},
-			"BIT_EFUSE_CHECK" : {
-				"Name" : "EFUSE Check",
+			"BIT_RTC_CLOCK_VERIFY" : {
+				"Name" : "RTC Clock Verify",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "efuse/read_efuse.tcl"
+						"TCL_File" : "versal_bit_download.tcl 0x02"
 					}
 				}
 			},
@@ -675,17 +704,8 @@
 					}
 				}
 			},
-			"BIT_VOLTAGES_CHECK" : {
-				"Name" : "Check Voltages",
-				"Manual" : 0,
-				"BIT Levels" : {
-					"Level 0" : {
-						"Plat_BIT_Op" : "Voltages_Check"
-					}
-				}
-			},
-			"BIT_DDRMC_1_TEST" : {
-				"Name" : "DDRMC_1 Test",
+			"BIT_DDRMC_1_CAL_TEST" : {
+				"Name" : "DDRMC_1 Cal Test",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -693,8 +713,8 @@
 					}
 				}
 			},
-			"BIT_DDRMC_2_TEST" : {
-				"Name" : "DDRMC_2 Test",
+			"BIT_DDRMC_2_CAL_TEST" : {
+				"Name" : "DDRMC_2 Cal Test",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -702,12 +722,32 @@
 					}
 				}
 			},
-			"BIT_DDRMC_4_TEST" : {
-				"Name" : "DDRMC_4 Test",
+			"BIT_DDRMC_4_CAL_TEST" : {
+				"Name" : "DDRMC_4 Cal Test",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "DDRMC_4_Test"
+					}
+				}
+			},
+			"BIT_DRAM_MEM_TEST" : {
+				"Name" : "DRAM Mem Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x08"
+					}
+				}
+			},
+			"BIT_QSPI_TEST" : {
+				"Name" : "QSPI Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x10"
 					}
 				}
 			},
@@ -721,53 +761,53 @@
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "pl_uart/pl_uart_download.tcl",
+						"TCL_File" : "versal_bit_download.tcl 0x20",
 						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' message.\n"
 					}
 				}
 			},
-			"BIT_PROGRAM_QSPI" : {
-				"Name" : "Program QSPI",
+			"BIT_LEDS_TEST" : {
+				"Name" : "LEDs Test",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Click 'OK' when this is done.\n"
+						"Instruction" : "\n1- Observe LED1 to LED4 blinking, then turn on/off in sequence.\n2- Click 'OK' when you are ready.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "qspi/program_qspi_download.tcl",
-						"Instruction" : "\n1- U-Boot prints logs about QSPI device detected and size of binary that has been programmed on the device.\n2- Click 'Pass' if you observe U-Boot serial flash ('SF') detected message.\n"
+						"TCL_File" : "versal_bit_download.tcl 0x40",
+						"Instruction" : "\n1- Did you see the LEDs sequencing and blinking?\n2- Click 'Pass' if you observe it.\n"
 					}
 				}
 			},
-			"BIT_QSPI_TEST" : {
-				"Name" : "QSPI Test",
+			"BIT_BUTTONS_TEST" : {
+				"Name" : "Buttons Test",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 1st com port (Versal console), baud rate 115200\n2- Set SW1 to 0100 (Up, Down, Up, Up, left to right) for testing QSPI.\n3- Click 'OK' when this is done.\n"
+						"Instruction" : "\n1- Press Push Buttons SW4 followed by SW5 and then any \n2- Click 'OK' when you are ready.\n"
 					},
 					"Level 1" : {
-						"Plat_BIT_Op" : "Assert_Reset",
-						"Instruction" : "\n1- Observe PL LEDs blinking, then PL LED3 and PL LED2 turn on in sequence.\n2- PL LED1 should be blinking.\n3- Do you see the PL LEDs 3 and 2 both on?\n4- Click 'Pass' if you observe it.\n"
-					},
-					"Level 2" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x80",
+						"Instruction" : "\n1- Click 'OK'.\n"
+					}
+				}
+			},
+			"BIT_DIP_SWITCHES_TEST" : {
+				"Name" : "DIP Switches Test",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Set PL DIP, SW6 to '1111' (All Up).\n2- Set PL DIP, SW6 to '0000' (All Down).\n3- Observe PL LED1 turn on and PL LED0 blinking.\n4- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- Turn On and Turn Off DIP Switches SW6 \n2- Click 'OK' when you are ready.\n"
 					},
-					"Level 3" : {
-						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Press the 2 Push buttons (SW4 and SW5) in any order.\n2- Do you see the PL LEDs 3 through 0 all on?\n3- Click 'Pass' if you observe it.\n"
-					},
-					"Level 4" : {
-						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Build-In-Self-Test prompts a 'Feature to Test' menu.\n2- Individual BIST Tests can be selected from that menu to run.\n3- Click 'Pass' if you observe it.\n"
-					},
-					"Level 5" : {
-						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Enter 'x' on the Versal console.\n2- BlinkBIST test assigns '1' for each 4 LEDs passing the test ('results = F').\n3- Click 'Pass' if you observe 'results = F'.\n"
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x100",
+						"Instruction" : "\n1- Click 'OK'.\n"
 					}
 				}
 			}

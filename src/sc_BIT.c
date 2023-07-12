@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -317,7 +318,7 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 
-	(void) sprintf(Buffer, "%s%s/ddrmc_%d/", BIT_PATH, Board_Name, *DDRMC);
+	(void) sprintf(Buffer, "%s", BIT_PATH);
 	(void) sprintf(System_Cmd, "%sddrmc_check.py", Buffer);
 	if (access(System_Cmd, F_OK) != 0) {
 		SC_ERR("failed to access file %s: %m", System_Cmd);
@@ -325,8 +326,8 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	}
 
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d", Buffer,
-		       *DDRMC);
+	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s",
+				Buffer, *DDRMC, Board_Name);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

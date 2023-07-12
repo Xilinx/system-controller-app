@@ -6,13 +6,14 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <libgen.h>
 #include "sc_app.h"
 
-#define QSFP_MODSEL_TCL	"qsfp_set_modsel/qsfp_download.tcl"
+#define QSFP_MODSEL_TCL	"qsfp_download.tcl"
 
 extern Plat_Devs_t *Plat_Devs;
 
@@ -89,6 +90,7 @@ VCK190_QSFP_ModuleSelect(SFP_t *Arg, int State)
 	char System_Cmd[SYSCMD_MAX];
 	char Buffer[SYSCMD_MAX];
 	char *Directory, *Filename;
+	int Ret = 0;
 
 	if (State != 0 && State != 1) {
 		SC_ERR("invalid SFP module select state");
@@ -106,7 +108,7 @@ VCK190_QSFP_ModuleSelect(SFP_t *Arg, int State)
 	}
 
 	/* State == 1 */
-	(void) sprintf(Buffer, "%s%s/%s", BIT_PATH, Board_Name, QSFP_MODSEL_TCL);
+	(void) sprintf(Buffer, "%s%s", BIT_PATH, QSFP_MODSEL_TCL);
 	if (access(Buffer, F_OK) != 0) {
 		SC_ERR("failed to access file %s: %m", Buffer);
 		return -1;
@@ -115,23 +117,30 @@ VCK190_QSFP_ModuleSelect(SFP_t *Arg, int State)
 	(void) JTAG_Op(1);
 	Directory = strdup(Buffer);
 	Filename = strdup(Buffer);
-	(void) sprintf(System_Cmd, "cd %s; %s; %s %s 2>&1", dirname(Directory),
+	/* System_Cmd: cd BIT/Board_Name; XSDB_ENV; XSDB_CMD TCL_FILE */
+	(void) sprintf(System_Cmd, "cd %s/%s; %s; %s %s 2>&1",
+		       dirname(Directory), Board_Name,
 		       XSDB_ENV, XSDB_CMD, basename(Filename));
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
 		SC_ERR("failed to invoke xsdb: %m");
-		return -1;
+		Ret = -1;
+		goto Out;
 	}
 
 	(void) fgets(Output, sizeof(Output), FP);
 	(void) pclose(FP);
 	SC_INFO("XSDB Output: %s", Output);
-	(void) JTAG_Op(0);
 	if (strstr(Output, "no targets found") != NULL) {
 		SC_ERR("could not connect to Versal through jtag");
-		return -1;
+		Ret = -1;
 	}
 
-	return 0;
+Out:
+	(void) JTAG_Op(0);
+	free(Directory);
+	free(Filename);
+
+	return Ret;
 }

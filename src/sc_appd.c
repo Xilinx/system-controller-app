@@ -15,7 +15,6 @@
 #include <errno.h>
 #include <signal.h>
 #include <gpiod.h>
-#include <pthread.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
 #include "sc_app.h"
@@ -306,7 +305,6 @@ main()
 	char *Argv[ITEMS_MAX];
 	int Ret = -1;
 	int Valid_Command;
-	pthread_t Thread_Id;
 
 	SC_OPENLOG("sc_app");
 	SC_INFO(">>> Begin");
@@ -364,12 +362,6 @@ main()
 	/* Applying any workaround */
 	if (Apply_Workarounds() != 0) {
 		SC_ERR("failed to apply workarounds");
-		goto Out;
-	}
-
-	/* Create a thread to manage fancontrol process */
-	if (pthread_create(&Thread_Id, NULL, Fancontrol, NULL) != 0) {
-		SC_ERR("failed to start fancontrol thread");
 		goto Out;
 	}
 
@@ -3481,88 +3473,4 @@ FMC_Autodetect_Vadj()
 	}
 
 	return 0;
-}
-
-void *
-Fancontrol(void *Arg)
-{
-	__attribute__((unused)) void *Ignore = Arg;
-	Temperature_t *Temperature;
-	FILE *FP;
-	char Buffer[SYSCMD_MAX];
-	int No_Temp;
-
-	Temperature = Plat_Devs->Temperature;
-	if (Temperature == NULL) {
-		SC_INFO("temp operation is not supported");
-		return NULL;
-	}
-
-	if (strcmp(Temperature->Name, "Versal") != 0) {
-		SC_INFO("Versal's temperature is not being monitored");
-		return NULL;
-	}
-
-	while (1) {
-		No_Temp = 0;
-
-		/* Check every 5 seconds */
-		(void) sleep(5);
-
-		/*
-		 * If there is an active fancontrol process, then there is
-		 * nothing more to do now.  If there is a pid file but there
-		 * is no active process, remove the stale file.
-		 */
-		FP = fopen("/var/run/fancontrol.pid", "r");
-		if (FP != NULL) {
-			(void) fgets(Buffer, sizeof(Buffer), FP);
-			(void) fclose(FP);
-			if (kill(atoi(Buffer), 0) == 0) {
-				continue;
-			}
-
-			(void) sprintf(Buffer, "/bin/rm /var/run/fancontrol.pid");
-			FP = popen(Buffer, "r");
-			if (FP == NULL) {
-				SC_ERR("failed to invoke %s: %m", Buffer);
-				return NULL;
-			}
-
-			SC_INFO("Command: %s", Buffer);
-			(void) pclose(FP);
-		}
-
-		(void) sprintf(Buffer, "/usr/bin/sensors %s 2>&1",
-			       Temperature->Sensor);
-		FP = popen(Buffer, "r");
-		if (FP == NULL) {
-			SC_ERR("failed to invoke %s: %m", Buffer);
-			return NULL;
-		}
-
-		/* If sensors is not reporting a valid temp, check back later */
-		while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
-			if (strstr(Buffer, "ERROR: ") != NULL) {
-				No_Temp = 1;
-				break;
-			}
-		}
-
-		(void) pclose(FP);
-		if (No_Temp == 1) {
-			continue;
-		}
-
-		/* There is a valid temp, so start the fancontrol process */
-		(void) sprintf(Buffer, "/bin/systemctl start fancontrol");
-		FP = popen(Buffer, "r");
-		if (FP == NULL) {
-			SC_ERR("failed to invoke %s: %m", Buffer);
-			return NULL;
-		}
-
-		SC_INFO("Command: %s", Buffer);
-		(void) pclose(FP);
-	}
 }

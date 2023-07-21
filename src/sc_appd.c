@@ -2309,15 +2309,39 @@ int GPIO_Ops(void)
 		State = strtol(Value_Arg, NULL, 16);
 
 		if (GPIO_Group != NULL) {
-			for (int i = 0; i < GPIO_Group->Numbers; i++) {
-				Value = (State >> ((GPIO_Group->Numbers - 1) - i)) & 0x1;
-				SC_INFO("Set %s to %d", GPIO_Group->GPIO_Lines[i],
-					(int)Value);
-				if (Set_GPIO((char *)GPIO_Group->GPIO_Lines[i],
-					     (int)Value) != 0) {
-					SC_ERR("failed to set GPIO line %s",
-					       GPIO_Group->GPIO_Lines[i]);
-					return -1;
+			if (GPIO_Group->Type == RW) {
+				for (int i = 0; i < GPIO_Group->Numbers; i++) {
+					Value = (State >> ((GPIO_Group->Numbers - 1) - i)) & 0x1;
+					SC_INFO("Set %s to %d", GPIO_Group->GPIO_Lines[i],
+							(int)Value);
+					if (Set_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+								(int)Value) != 0) {
+						SC_ERR("failed to set GPIO line %s",
+								GPIO_Group->GPIO_Lines[i]);
+						return -1;
+					}
+				}
+			}
+			else if (GPIO_Group->Type == OD) {
+				for (int i = 0; i < GPIO_Group->Numbers; i++) {
+					Value = (State >> ((GPIO_Group->Numbers - 1) - i)) & 0x1;
+					SC_INFO("Set %s to %d", GPIO_Group->GPIO_Lines[i],
+							(int)Value);
+					if (Value == 0) {
+						if (Set_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+									(int)Value) != 0) {
+							SC_ERR("failed to set GPIO line %s",
+									GPIO_Group->GPIO_Lines[i]);
+							return -1;
+						}
+					} else {
+						if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+									(int *)&Value) != 0) {
+							SC_ERR("failed to set GPIO line %s",
+									GPIO_Group->GPIO_Lines[i]);
+							return -1;
+						}
+					}
 				}
 			}
 
@@ -2329,9 +2353,25 @@ int GPIO_Ops(void)
 			return -1;
 		}
 
-		if (Set_GPIO((char *)GPIO->Internal_Name, (int)State) != 0) {
-			SC_ERR("failed to set GPIO line %s", GPIO->Display_Name);
-			return -1;
+		if (GPIO->Type == RW) {
+			if (Set_GPIO((char *)GPIO->Internal_Name, (int)State) != 0) {
+				SC_ERR("failed to set GPIO line %s", GPIO->Display_Name);
+				return -1;
+			}
+		} else if (GPIO->Type == OD) {
+			if (State == 0) {
+				// Open drain.  Only set to 0
+				if (Set_GPIO((char *)GPIO->Internal_Name, (int)State) != 0) {
+					SC_ERR("failed to set GPIO line %s", GPIO->Display_Name);
+					return -1;
+				}
+			} else {
+				// Get will set the IO to an inputer when user sets to 1
+				if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State) != 0) {
+					SC_ERR("failed to get GPIO line %s", GPIO->Display_Name);
+					return -1;
+				}
+			}
 		}
 
 		break;

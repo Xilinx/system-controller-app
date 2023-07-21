@@ -48,6 +48,7 @@ int Parse_Workaround(const char *, jsmntok_t *, int *, Workarounds_t **);
 int Parse_BIT(const char *, jsmntok_t *, int *, BITs_t **);
 int Parse_Constraint(const char *, jsmntok_t *, int *, Constraints_t **);
 
+const char * GPIO_Type_Str[] = { IO_TYPES };
 #define Check_Attribute(Attribute, Feature) { \
 	Value_Str = strndup(Json_File + Tokens[*Index].start, \
 			    Tokens[*Index].end - Tokens[*Index].start); \
@@ -761,6 +762,8 @@ int
 Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs)
 {
 	char *Value_Str;
+	char *Typestr;
+	int Len;
 	int Items = 0;
 
 	SC_INFO("********************* GPIOS *********************");
@@ -775,8 +778,23 @@ Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "GPIO", "Internal_Name", STRLEN_MAX);
+		Len = strlen(Value_Str);
+		Typestr = Value_Str + (Len - 3);
+
+		(*GPIOs)->GPIO[Items].Type = RW;
+		if (!strncmp(Typestr, "_RO", 4)) {
+			(*GPIOs)->GPIO[Items].Type = RO;
+			Value_Str[Len-3] = 0;
+		} else if (!strncmp(Typestr, "_RW", 4)) {
+			(*GPIOs)->GPIO[Items].Type = RW;
+			Value_Str[Len-3] = 0;
+		} else if (!strncmp(Typestr, "_OD", 4)) {
+			(*GPIOs)->GPIO[Items].Type = OD;
+			Value_Str[Len-3] = 0;
+		}
+
 		(*GPIOs)->GPIO[Items].Internal_Name = Value_Str;
-		SC_INFO("Internal Name: %s", (*GPIOs)->GPIO[Items].Internal_Name);
+		SC_INFO("Internal Name: %s, Type: %s", (*GPIOs)->GPIO[Items].Internal_Name, GPIO_Type_Str[(*GPIOs)->GPIO[Items].Type]);
 
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
@@ -815,6 +833,21 @@ Parse_GPIO_Group(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Validate_Str_Size(Value_Str, "GPIO_Group", "Name", STRLEN_MAX);
 		(*GPIO_Groups)->GPIO_Group[Group_Items].Name = Value_Str;
 		SC_INFO("GPIO Group: %s", (*GPIO_Groups)->GPIO_Group[Group_Items].Name);
+
+		(*Index)++;
+		Check_Attribute("Type", "GPIO_Group");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "GPIO_Group", "Type", STRLEN_MAX);
+		(*GPIO_Groups)->GPIO_Group[Group_Items].Type = RW;
+		if (!strncmp(Value_Str, "RO", 3)) {
+			(*GPIO_Groups)->GPIO_Group[Group_Items].Type = RO;
+		} else if (!strncmp(Value_Str, "RW", 3)) {
+			(*GPIO_Groups)->GPIO_Group[Group_Items].Type = RW;
+		} else if (!strncmp(Value_Str, "OD", 3)) {
+			(*GPIO_Groups)->GPIO_Group[Group_Items].Type = OD;
+		}
+		SC_INFO("GPIO Type: %s", GPIO_Type_Str[(*GPIO_Groups)->GPIO_Group[Group_Items].Type]);
 
 		(*Index)++;
 		Check_Attribute("GPIO_Lines", "GPIO_Group");

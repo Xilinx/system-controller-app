@@ -327,9 +327,17 @@ typedef struct DIMMs {
 /*
  * GPIO lines
  */
+
+#define IO_TYPES ENC(RW)ENC(RO)ENC(OD)
+#define ENC(x) x,
+enum io_type_e { IO_TYPES };
+#undef ENC
+#define ENC(x) #x,
+
 typedef struct {
 	const char	*Display_Name;
 	const char	*Internal_Name;
+	enum io_type_e	Type;
 } GPIO_t;
 
 typedef struct GPIOs {
@@ -344,6 +352,7 @@ typedef struct {
 	char		*Name;
 	int		Numbers;
 	char		**GPIO_Lines;
+	enum io_type_e	Type;
 } GPIO_Group_t;
 
 typedef struct {

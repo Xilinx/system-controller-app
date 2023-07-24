@@ -1660,9 +1660,9 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 	Directory = strdup(Buffer);
 	Filename = strdup(Buffer);
 	/* System_Cmd: cd BIT/Board_Name; XSDB_ENV; XSDB_CMD TCL_FILE TestBitIndex */
-	(void) sprintf(System_Cmd, "cd %s/%s; %s; %s ../%s %s 2>&1",
+	(void) sprintf(System_Cmd, "cd %s/%s; %s; %s %s %s 2>&1",
 		       dirname(Directory), Board_Name, XSDB_ENV, XSDB_CMD,
-		       basename(Filename), (NULL == TestBitIndex) ? "" : TestBitIndex);
+		       Filename, (NULL == TestBitIndex) ? "" : TestBitIndex);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
@@ -1831,8 +1831,10 @@ Set_AltBootMode(int Value)
 	(void) JTAG_Op(1);
 	Directory = strdup(Buffer);
 	Filename = strdup(Buffer);
+
+	/* System_Cmd: cd BIT/Board_Name; XSDB_ENV; XSDB_CMD TCL_FILE Value */
 	(void) sprintf(System_Cmd, "cd %s; %s; %s %s %x 2>&1", dirname(Directory),
-		       XSDB_ENV, XSDB_CMD, basename(Filename), Value);
+		       XSDB_ENV, XSDB_CMD, Filename, Value);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

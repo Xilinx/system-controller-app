@@ -652,6 +652,15 @@
 					}
 				}
 			},
+			"BIT_DDRMC_3_CAL_TEST" : {
+				"Name" : "DDRMC_3 Cal Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_3_Test"
+					}
+				}
+			},
 			"BIT_DRAM_MEM_TEST" : {
 				"Name" : "DRAM Mem Test",
 				"Manual" : 0,

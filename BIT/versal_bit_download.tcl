@@ -61,7 +61,8 @@ if {$revision == 0} {
 }
 
 # Download the PDI file
-append pdi $revision_str "system_wrapper.pdi"
+set pdi $revision_str
+append pdi "system_wrapper.pdi"
 device program $pdi
 
 # Download the ELF file and run it on APU

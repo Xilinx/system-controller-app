@@ -2131,8 +2131,8 @@ int DDR_Ops(void)
 		 *
 		 * Byte 0x2 - DRAM Type = (0xC: DDR4 SDRAM)
 		 * Byte 0x4 - DRAM Size (lower nibble) =
-		 *			(0: 0Mb, 1: 512Mb, 2: 1Gb, 3: 2Gb, 4: 4Gb,
-		 *			 5: 8Gb, 6: 16Gb)
+		 *			(0: 0MB, 1: 512MB, 2: 1GB, 3: 2GB, 4: 4GB,
+		 *			 5: 8GB, 6: 16GB)
 		 * Byte 0xE - Thermal Sensor = (0x0: No, 0x80: Yes)
 		 */
 		SC_INFO("DRAM Type: %#x", In_Buffer[2]);
@@ -2140,7 +2140,7 @@ int DDR_Ops(void)
 
 		SC_INFO("DRAM Size: %#x", In_Buffer[4]);
 		DRAM_Size_Index = In_Buffer[4] & 0xF;
-		SC_PRINT("Size(%cb):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'),
+		SC_PRINT("Size(%cB):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'),
 			 SDRAM_Size[DRAM_Size_Index]);
 
 		SC_INFO("Thermal Sensor: %#x", In_Buffer[0xE]);

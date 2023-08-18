@@ -27,6 +27,7 @@ extern int Display_Instruction(void *, void *);
 extern int Assert_Reset(void *, void *);
 extern int Reset_IDT_8A34001(void);
 extern int Check_Config_File(char *, char *, int *);
+extern int Boot_Config_PDI(char *);
 
 int jsoneq(const char *, jsmntok_t *, const char *);
 int Parse_Feature(const char *, jsmntok_t *, int *, FeatureList_t **);
@@ -47,6 +48,7 @@ int Parse_FMC(const char *, jsmntok_t *, int *, FMCs_t **);
 int Parse_Workaround(const char *, jsmntok_t *, int *, Workarounds_t **);
 int Parse_BIT(const char *, jsmntok_t *, int *, BITs_t **);
 int Parse_Constraint(const char *, jsmntok_t *, int *, Constraints_t **);
+int Parse_BootConfig(const char *, jsmntok_t *, int *);
 
 const char * GPIO_Type_Str[] = { IO_TYPES };
 #define Check_Attribute(Attribute, Feature) { \
@@ -226,6 +228,10 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 		} else if (jsoneq(Json_File, &Tokens[i], "Constraints") == 0) {
 			if (Parse_Constraint(Json_File, Tokens, &i,
 					     &Dev_Parse->Constraints) != 0) {
+				return -1;
+			}
+		} else if (jsoneq(Json_File, &Tokens[i], "Boot Config") == 0) {
+			if (Parse_BootConfig(Json_File, Tokens, &i) != 0) {
 				return -1;
 			}
 		}
@@ -1433,6 +1439,32 @@ Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constrain
 
 		(*Constraints)->Constraint[Item].Pre_Phases = Pre_Phases_Data;
 		Item++;
+	}
+
+	return 0;
+}
+
+int
+Parse_BootConfig(const char *Json_File, jsmntok_t *Tokens, int *Index)
+{
+	char *Value_Str;
+	int Numbers;
+
+	SC_INFO("*************** Boot Config ****************");
+
+	(*Index)++;
+	Numbers = Tokens[*Index].size;
+	for (int i = 0; i < Numbers; i++) {
+		(*Index)++;
+		Check_Attribute("PDI", "Boot Config");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "Boot Config", "PDI", LSTRLEN_MAX);
+		SC_INFO("PDI: %s", Value_Str);
+		if (Boot_Config_PDI(Value_Str) != 0) {
+			SC_ERR("failed to set boot config for PDI %s", Value_Str);
+			return -1;
+		}
 	}
 
 	return 0;

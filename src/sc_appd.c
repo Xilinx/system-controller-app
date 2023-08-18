@@ -331,14 +331,14 @@ main()
 #ifdef GIT_COMMIT
 	SC_INFO("Commit:    %s", GIT_COMMIT);
 #endif
-	/* Identify the board */
-	if (Board_Identification(Board_Name) != 0) {
-		goto Out;
-	}
-
 	/* Identify the silicon */
 	if (Silicon_Identification(Silicon_Revision,
 				   sizeof(Silicon_Revision)) != 0) {
+		goto Out;
+	}
+
+	/* Identify the board */
+	if (Board_Identification(Board_Name) != 0) {
 		goto Out;
 	}
 
@@ -3613,6 +3613,7 @@ Boot_Set_Voltages(void)
 	return 0;
 }
 
+/* This routine loads any PDI that is set to be loaded at boot time */
 int
 Boot_Load_PDI(void)
 {

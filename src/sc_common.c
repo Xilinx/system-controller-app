@@ -22,7 +22,7 @@
 Plat_Devs_t *Plat_Devs;
 
 char SC_APP_File[SYSCMD_MAX];
-extern char Board_Name[];
+extern char Silicon_Revision[];
 extern OnBoard_EEPROM_t Common_OnBoard_EEPROM;
 extern OnBoard_EEPROM_t Legacy_OnBoard_EEPROM;
 
@@ -117,7 +117,7 @@ Board_Identification(char *Board_Name)
 {
 	OnBoard_EEPROM_t *OnBoard_EEPROM;
 
-	Plat_Devs = (Plat_Devs_t *)malloc(sizeof(Plat_Devs_t));
+	Plat_Devs = (Plat_Devs_t *)calloc(1, sizeof(Plat_Devs_t));
 
 	OnBoard_EEPROM = &Common_OnBoard_EEPROM;
 	SC_INFO("Accessing 'Common_OnBoard_EEPROM'");
@@ -2226,6 +2226,35 @@ Check_Config_File(char *Name, char *Value, int *Found)
 
 		(void) fclose(FP);
 	}
+
+	return 0;
+}
+
+int
+Boot_Config_PDI(char *Entry)
+{
+	char PDI_File[STRLEN_MAX];
+	char Buffer[SYSCMD_MAX];
+
+	/*
+	 * If PDIFILE does already exist, that indicates a manual PDI boot
+	 * configuration has been perfomed on this system.  A manual configuration
+	 * overrides any default setting read from the JSON file.
+	 */
+	if (access(PDIFILE, F_OK) == 0) {
+		return 0;
+	}
+
+	/* For default PDI, adjust the name based on version of silicon */
+	(void) strcpy(PDI_File, Entry);
+	if ((strcmp(PDI_File, DEFAULT_PDI) == 0) &&
+	    (strcmp(Silicon_Revision, "ES1") == 0)) {
+		(void) sprintf(PDI_File, "es1_%s", DEFAULT_PDI);
+	}
+
+	(void) sprintf(Buffer, "echo '%s' > %s; sync", PDI_File, PDIFILE);
+	SC_INFO("Command: %s", Buffer);
+	system(Buffer);
 
 	return 0;
 }

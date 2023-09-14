@@ -1703,7 +1703,6 @@ Get_Temperature(Temperature_t *Temperature)
 	char *Temp;
 
 	(void) sprintf(Buffer, "/usr/bin/sensors %s 2>&1", Temperature->Sensor);
-	SC_INFO("Sensors Command: %s", Buffer);
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
 		SC_ERR("failed to invoke %s: %m", Buffer);
@@ -1711,14 +1710,13 @@ Get_Temperature(Temperature_t *Temperature)
 	}
 
 	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
-		SC_INFO("%s", Buffer);
 		if (strstr(Buffer, "ERROR: ") != NULL) {
 			SC_ERR("temperature is not available");
 			(void) pclose(FP);
 			return -1;
 		}
 
-		if (strstr(Buffer, "temp") == NULL) {
+		if (strstr(Buffer, "temp1") == NULL) {
 			continue;
 		}
 

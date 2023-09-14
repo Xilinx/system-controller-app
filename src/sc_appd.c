@@ -405,7 +405,10 @@ main()
 		}
 
 		Valid_Command = 0;
-		SC_INFO(">>> Command: %s", InBuffer);
+		if (strstr(InBuffer, Commands[GETTEMP].CmdStr) == NULL) {
+			SC_INFO(">>> Command: %s", InBuffer);
+		}
+
 		String_2_Argv(InBuffer, &Argc, &Argv[0]);
 
 		if (Parse_Options(Argc, Argv) != 0) {

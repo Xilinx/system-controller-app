@@ -55,8 +55,8 @@
 					"OUT6DesiredFrequency", "OUT7DesiredFrequency",
 					"OUT8DesiredFrequency", "OUT9DesiredFrequency",
 					"OUT10DesiredFrequency", "OUT11DesiredFrequency"],
-				"I2C_Bus" : "/dev/i2c-9",
-				"I2C_Address" : "0x5f"
+				"I2C_Bus" : "/dev/i2c-18",
+				"I2C_Address" : "0x5b"
 			},
 			"SI570_REF" : {
 				"Name" : "Versal Sys Clk Si570",

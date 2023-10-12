@@ -36,6 +36,9 @@
 #define BOARD_PATH	INSTALLDIR"/board/"
 #define CFS_PATH	INSTALLDIR"/BIT/clock_files/"
 #define CUSTOM_CFS_PATH	INSTALLDIR"/.sc_app/clock_files/"
+#define SCRIPT_PATH	INSTALLDIR"/script/"
+
+#define PROGRAM_8A34001 "8A34001_eeprom.py"
 
 /*
  * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code

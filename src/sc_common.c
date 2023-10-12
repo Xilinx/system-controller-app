@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <string.h>
 #include <time.h>
 #include <math.h>
@@ -28,6 +29,7 @@ extern OnBoard_EEPROM_t Legacy_OnBoard_EEPROM;
 int Set_AltBootMode(int);
 int Get_GPIO(char *, int *);
 int Check_Config_File(char *, char *, int *);
+int Set_IDT_8A34001(Clock_t *, char *, int);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
 extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int VCK190_QSFP_ModuleSelect(SFP_t *, int);
@@ -1158,46 +1160,64 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 }
 
 static int
-Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File)
+Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_or_BIN_File)
 {
 	char *CP1 = NULL;
 	char *CP2 = NULL;
+	char TXT_File[LSTRLEN_MAX];
+	char BIN_File[LSTRLEN_MAX];
 	int Begin = 0;
 	int Length = strlen(Clock_Files);
 
-	for (int i = 0; i < Length; i++) {
-		if (isspace(Clock_Files[i]) != 0) {
-			Begin = 0;
-			Clock_Files[i] = '\0';
-		} else {
-			if (Begin == 0) {
-				if (CP1 == NULL) {
-					CP1 = &Clock_Files[i];
-				} else {
-					CP2 = &Clock_Files[i];
-				}
+	if (strstr(Clock_Files, " ") == NULL) {
+		if (strstr(Clock_Files, ".bin") != NULL) {
+			Clock_Files = strtok(Clock_Files, ".");
+		}
 
-				Begin = 1;
+		if (strstr(Clock_Files, "\n") != NULL) {
+			Clock_Files = strtok(Clock_Files, "\n");
+		}
+
+		CP1 = Clock_Files;
+		CP2 = CP1;
+	} else {
+		for (int i = 0; i < Length; i++) {
+			if (isspace(Clock_Files[i]) != 0) {
+				Begin = 0;
+				Clock_Files[i] = '\0';
+			} else {
+				if (Begin == 0) {
+					if (CP1 == NULL) {
+						CP1 = &Clock_Files[i];
+					} else {
+						CP2 = &Clock_Files[i];
+					}
+
+					Begin = 1;
+				}
 			}
+		}
+
+		CP1 = strtok(CP1, ".");
+		CP2 = strtok(CP2, ".");
+
+		if (strcmp(CP1, CP2) != 0) {
+			SC_ERR("%s.tcs and %s.txt files do not have the same name", CP1, CP2);
+			return -1;
 		}
 	}
 
 	if ((CP1 == NULL) || (CP2 == NULL)) {
-		SC_ERR("two clock files are required");
+		SC_ERR("two clock files or one bin file are required");
 		return -1;
 	}
 
 	if (TCS_File != NULL) {
-		if (strstr(CP1, ".tcs") == NULL) {
-			SC_ERR("argument %s is not a .tcs file", CP1);
-			return -1;
-		}
-
-		(void) sprintf(TCS_File, "%s%s", CFS_PATH, CP1);
+		(void) sprintf(TCS_File, "%s%s.tcs", CFS_PATH, CP1);
 		SC_INFO(".tcs clock file: %s", TCS_File);
 
 		if (access(TCS_File, F_OK) != 0) {
-			(void) sprintf(TCS_File, "%s%s", CUSTOM_CFS_PATH, CP1);
+			(void) sprintf(TCS_File, "%s%s.tcs", CUSTOM_CFS_PATH, CP1);
 			SC_INFO(".tcs clock file: %s", TCS_File);
 			if (access(TCS_File, F_OK) != 0) {
 				SC_ERR("file %s doesn't exist: %m", CP1);
@@ -1206,19 +1226,18 @@ Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File)
 		}
 	}
 
-	if (TXT_File != NULL) {
-		if (strstr(CP2, ".txt") == NULL) {
-			SC_ERR("argument %s is not a .txt file", CP2);
-			return -1;
-		}
+	if (TXT_or_BIN_File != NULL) {
+		(void) sprintf(TXT_or_BIN_File, "%s%s", CFS_PATH, CP2);
+		(void) sprintf(TXT_File, "%s.txt", TXT_or_BIN_File);
+		(void) sprintf(BIN_File, "%s.bin", TXT_or_BIN_File);
+		SC_INFO(".txt/.bin clock file: %s", TXT_or_BIN_File);
 
-		(void) sprintf(TXT_File, "%s%s", CFS_PATH, CP2);
-		SC_INFO(".txt clock file: %s", TXT_File);
-
-		if (access(TXT_File, F_OK) != 0) {
-			(void) sprintf(TXT_File, "%s%s", CUSTOM_CFS_PATH, CP2);
-			SC_INFO(".txt clock file: %s", TXT_File);
-			if (access(TXT_File, F_OK) != 0) {
+		if ((access(TXT_File, F_OK) != 0) || (access(BIN_File, F_OK) != 0)) {
+			(void) sprintf(TXT_or_BIN_File, "%s%s", CUSTOM_CFS_PATH, CP2);
+			(void) sprintf(TXT_File, "%s.txt", TXT_or_BIN_File);
+			(void) sprintf(BIN_File, "%s.bin", TXT_or_BIN_File);
+			SC_INFO(".txt/.bin clock file: %s", TXT_or_BIN_File);
+			if ((access(TXT_File, F_OK) != 0) || (access(BIN_File, F_OK) != 0)) {
 				SC_ERR("file %s doesn't exist: %m", CP2);
 				return -1;
 			}
@@ -1231,12 +1250,18 @@ Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File)
 int
 Get_IDT_8A34001(Clock_t *Clock)
 {
+	DIR *D;
 	FILE *FP;
 	char Buffer[SYSCMD_MAX];
+	char *Bus;
 	char Label[STRLEN_MAX];
 	char Frequency[STRLEN_MAX];
 	IDT_8A34001_Data_t *Clock_Data;
+	char System_Cmd[SYSCMD_MAX];
 	char TCS_File[SYSCMD_MAX];
+	int Image_Blank = 1;
+	int Found = 0;
+	struct dirent *Dir;
 
 	if (Clock->Type_Data == NULL) {
 		SC_ERR("no data is available for 8A34001 clock");
@@ -1249,6 +1274,117 @@ Get_IDT_8A34001(Clock_t *Clock)
 	 * If there is no '8A34001' file, that means the chip has not
 	 * been set since boot time.
 	 */
+	(void) sprintf(Buffer, "%s%s", SCRIPT_PATH, PROGRAM_8A34001);
+	if (access(Buffer, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", Buffer);
+		return -1;
+	}
+
+	Bus = strtok(Clock->I2C_Bus, "/dev/i2c-");
+	(void) sprintf(System_Cmd, "cd %s; python3 %s -f %sblank_image.bin -b %i -d %i -v",
+		            SCRIPT_PATH, PROGRAM_8A34001, CFS_PATH, atoi(Bus), Clock->I2C_Address);
+	SC_INFO("Command: %s", System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (NULL == FP) {
+		SC_ERR("failed to invoke %s: %m", System_Cmd);
+		pclose(FP);
+		return -1;
+	}
+
+	while (fgets(Buffer, sizeof(Buffer), FP)) {
+		SC_INFO("Script output: %s", Buffer);
+		if (strstr(Buffer, "Data mismatch") != NULL) {
+			SC_INFO("8A34001 image detected");
+			Image_Blank = 0;
+		}
+	}
+
+	(void) pclose(FP);
+
+	if (0 == Image_Blank) {
+		D = opendir(CFS_PATH);
+		if (NULL == D) {
+			SC_ERR("failed to open directory: %m");
+			return -1;
+		}
+
+		Dir = readdir(D);
+		while ((NULL != Dir) && (0 == Found)) {
+			if ((strstr(Dir->d_name, ".bin") != NULL) && (strcmp(Dir->d_name, "blank_image.bin") != 0)) {
+				(void) sprintf(System_Cmd, "cd %s; python3 %s -f %s%s -b %i -d %i -v",
+								SCRIPT_PATH, PROGRAM_8A34001, CFS_PATH, Dir->d_name, atoi(Bus), Clock->I2C_Address);
+				SC_INFO("Command: %s", System_Cmd);
+				FP = popen(System_Cmd, "r");
+				if (NULL == FP) {
+					SC_ERR("failed to invoke %s: %m", System_Cmd);
+					pclose(FP);
+					return -1;
+				}
+
+				while (fgets(Buffer, sizeof(Buffer), FP)) {
+					SC_INFO("Script output: %s", Buffer);
+					if (strstr(Buffer, "Verification Complete") != NULL) {
+						SC_INFO("8A34001 image: %s", Dir->d_name);
+						Found = 1;
+						if (Set_IDT_8A34001(Clock, strtok(Dir->d_name, ".bin"), 0) != 0) {
+							SC_ERR("failed to configure 8A34001");
+							return -1;
+						}
+
+					}
+				}
+
+				(void) pclose(FP);
+			}
+
+			Dir = readdir(D);
+		}
+
+		closedir(D);
+
+		if (0 == Found) {
+			D = opendir(CUSTOM_CFS_PATH);
+			if (NULL == D) {
+				SC_ERR("failed to open directory: %m");
+				return -1;
+			}
+
+			Dir = readdir(D);
+			while ((NULL != Dir) && (0 == Found)) {
+				if ((strstr(Dir->d_name, ".bin") != NULL) && (strcmp(Dir->d_name, "blank_image.bin") != 0)) {
+					(void) sprintf(System_Cmd, "cd %s; python3 %s -f %s%s -b %i -d %i -v",
+									SCRIPT_PATH, PROGRAM_8A34001, CUSTOM_CFS_PATH, Dir->d_name, atoi(Bus), Clock->I2C_Address);
+					SC_INFO("Command: %s", System_Cmd);
+					FP = popen(System_Cmd, "r");
+					if (NULL == FP) {
+						SC_ERR("failed to invoke %s: %m", System_Cmd);
+						pclose(FP);
+						return -1;
+					}
+
+					while (fgets(Buffer, sizeof(Buffer), FP)) {
+						SC_INFO("Script output: %s", Buffer);
+						if (strstr(Buffer, "Verification Complete") != NULL) {
+							SC_INFO("8A34001 image: %s", Dir->d_name);
+							Found = 1;
+							if (Set_IDT_8A34001(Clock, strtok(Dir->d_name, ".bin"), 0) != 0) {
+								SC_ERR("failed to configure 8A34001");
+								return -1;
+							}
+
+						}
+					}
+
+					(void) pclose(FP);
+				}
+
+				Dir = readdir(D);
+			}
+
+			closedir(D);
+		}
+	}
+
 	if (access(IDT8A34001FILE, F_OK) != 0) {
 		for (int i = 0; i < Clock_Data->Number_Label; i++) {
 			SC_PRINT("%s:\t0 MHz/PPS", Clock_Data->Display_Label[i]);
@@ -1317,18 +1453,25 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	int FD;
 	char Buffer[SYSCMD_MAX];
 	int Size;
+	char BIN_File[SYSCMD_MAX];
 	char Data_String[SYSCMD_MAX];
 	char Data[SYSCMD_MAX];
+	char System_Cmd[SYSCMD_MAX];
+	char TXT_or_BIN_File[SYSCMD_MAX];
 	char TXT_File[SYSCMD_MAX];
+	char *Bus;
 	char *Walk;
 	char Offset, Nibble_1, Nibble_2;
 	int j;
 	int Ret = 0;
 
 	(void) strcpy(Buffer, Clock_Files);
-	if (Check_Clock_Files(Buffer, NULL, TXT_File) != 0) {
+	if (Check_Clock_Files(Buffer, NULL, TXT_or_BIN_File) != 0) {
 		return -1;
 	}
+
+	(void) sprintf(TXT_File, "%.300s.txt", TXT_or_BIN_File);
+	(void) sprintf(BIN_File, "%.300s.bin", TXT_or_BIN_File);
 
 	FD = open(Clock->I2C_Bus, O_RDWR);
 	if (FD < 0) {
@@ -1431,24 +1574,41 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 
 	/* Update the 'clock' file for the case of setboot mode */
 	if (Mode == 1) {
-		/* Remove the old entry, if any */
-		(void) sprintf(Buffer, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
-			       Clock->Name, CLOCKFILE);
-		SC_INFO("Command: %s", Buffer);
-		system(Buffer);
-
-		(void) sprintf(Buffer, "%s:\t%s\n", Clock->Name, Clock_Files);
-		FP = fopen(CLOCKFILE, "a");
-		if (FP == NULL) {
-			SC_ERR("failed to append clock file: %m");
+		(void) sprintf(Buffer, "%s%s", SCRIPT_PATH, PROGRAM_8A34001);
+		if (access(Buffer, F_OK) != 0) {
+			SC_ERR("failed to access file %s: %m", Buffer);
 			return -1;
 		}
 
-		SC_INFO("Append: %s", Buffer);
-		(void) fprintf(FP, "%s", Buffer);
-		(void) fflush(FP);
-		(void) fsync(fileno(FP));
-		(void) fclose(FP);
+		Bus = strtok(Clock->I2C_Bus, "/dev/i2c-");
+		(void) sprintf(System_Cmd, "cd %s; python3 %s -f %.300s -b %i -d %i",
+		                SCRIPT_PATH, PROGRAM_8A34001, BIN_File, atoi(Bus), Clock->I2C_Address);
+		SC_INFO("Command: %s", System_Cmd);
+		FP = popen(System_Cmd, "r");
+		if (NULL == FP) {
+			SC_ERR("failed to invoke %s: %m", System_Cmd);
+			pclose(FP);
+			return -1;
+		}
+
+		while (fgets(Buffer, sizeof(Buffer), FP)) {
+			SC_INFO("Script output: %s", Buffer);
+			if (strstr(Buffer, "Addr ") != NULL) {
+				continue;
+			} else if (strstr(Buffer, "Filename") != NULL) {
+				continue;
+			} else {
+				SC_ERR("Failed to program 8A34001 eeprom");
+				(void) pclose(FP);
+				return -1;
+			}
+		}
+
+		if (pclose(FP) == 0) {
+			SC_INFO("Successful flash of 8A34001 eeprom");
+		} else {
+			SC_ERR("Error programming 8A34001 eeprom");
+		}
 	}
 
 	return 0;
@@ -1471,9 +1631,10 @@ Restore_IDT_8A34001(Clock_t *Clock)
 	}
 
 	/* Remove the '8A34001' file, if any */
-	(void) sprintf(Buffer, "rm %s 2> /dev/NULL; sync", IDT8A34001FILE);
-	SC_INFO("Command: %s", Buffer);
-	system(Buffer);
+	if (Set_IDT_8A34001(Clock, "8A34001_2020-0318_156MHz", 1) != 0) {
+		SC_ERR("Could not restore 8A34001 to default configuration");
+		return -1;
+	}
 
 	/* Remove the previous entry from 'clock' file, if any */
 	(void) sprintf(Buffer, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; sync",

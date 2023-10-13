@@ -799,6 +799,16 @@
 					}
 				}
 			},
+			"BIT_CLOCKS_OUTPUT_TEST" : {
+				"Name" : "Clocks Output Test",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x01"
+					}
+				}
+			},
 			"BIT_RTC_CLOCK_VERIFY" : {
 				"Name" : "RTC Clock Verify",
 				"Manual" : 0,

@@ -18,7 +18,7 @@
 		},
 		"CLOCK": {
 			"SYS_CLK_0": {
-				"Name": "SYS_CLK_0",
+				"Name": "SYS_CLK_0/1/2",
 				"Type": "RC21008A",
 				"Sysfs_Path": "/sys/devices/platform/sys_clk_0/set_rate",
 				"Default_Freq": 200.0,
@@ -27,40 +27,10 @@
 				"I2C_Bus": "/dev/i2c-9",
 				"I2C_Address": "0x9"
 			},
-			"SYS_CLK_1": {
-				"Name": "SYS_CLK_1",
-				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_1/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 300.0,
-				"Lower_Freq": 150.0,
-				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
-			},
-			"SYS_CLK_2": {
-				"Name": "SYS_CLK_2",
-				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_2/set_rate",
-				"Default_Freq": 200.0,
-				"Upper_Freq": 300.0,
-				"Lower_Freq": 150.0,
-				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
-			},
 			"GTCLK1_OUT6": {
-				"Name": "GTCLK1_OUT6",
+				"Name": "GTCLK1_OUT6/7",
 				"Type": "RC21008A",
 				"Sysfs_Path": "/sys/devices/platform/gtclk1_out6/set_rate",
-				"Default_Freq": 100.0,
-				"Upper_Freq": 600.0,
-				"Lower_Freq": 50.0,
-				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
-			},
-			"GTCLK1_OUT7": {
-				"Name": "GTCLK1_OUT7",
-				"Type": "RC21008A",
-				"Sysfs_Path": "/sys/devices/platform/gtclk1_out7/set_rate",
 				"Default_Freq": 100.0,
 				"Upper_Freq": 600.0,
 				"Lower_Freq": 50.0,

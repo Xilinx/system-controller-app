@@ -121,6 +121,7 @@ EBM_EEPROM_Check(void *Arg1, void *Arg2)
 	__attribute__((unused)) void *Ignore = Arg2;
 	Daughter_Card_t *Daughter_Card;
 	int FD;
+	char Buffer[1];
 
 	Daughter_Card = Plat_Devs->Daughter_Card;
 	if (Daughter_Card == NULL) {
@@ -136,6 +137,14 @@ EBM_EEPROM_Check(void *Arg1, void *Arg2)
 	}
 
 	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card->I2C_Address) < 0) {
+		SC_ERR("failed to configure I2C bus for access to "
+		       "device address %#x: %m", Daughter_Card->I2C_Address);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
+		(void) close(FD);
+		return -1;
+	}
+
+	if (read(FD, Buffer, 1) != 1) {
 		SC_ERR("unable to access EEPROM device %#x",
 		       Daughter_Card->I2C_Address);
 		SC_PRINT("%s: FAIL", BIT_p->Name);

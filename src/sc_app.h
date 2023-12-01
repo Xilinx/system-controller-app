@@ -40,23 +40,12 @@
 
 #define PROGRAM_8A34001 "8A34001_eeprom.py"
 
-/*
- * Use busybox-syslog for logging and pick LOG_LOCAL3 facility code
- * to be able to split us from other syslog messages. For example,
- * to save the sc_app messages to /var/log/local3.log file add
- * "local3.*  /var/log/local3.log" to /etc/syslog.conf
- *
- * Assumes system controller has FEATURE_SYSLOG_INFO
- */
-#define SC_OPENLOG(ident) openlog(ident, LOG_PID, LOG_LOCAL3)
-#define SC_INFO(msg, ...) syslog(LOG_INFO, msg, ##__VA_ARGS__)
+#define SC_INFO(msg, ...) fprintf(stdout, msg "\n", ##__VA_ARGS__);
 #define SC_ERR(msg, ...) do { \
 		extern int Client_FD; \
 		extern char Sock_OutBuffer[]; \
-		syslog(LOG_ERR, msg, ##__VA_ARGS__); \
-		if (0 == Client_FD) { \
-			fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
-		} else { \
+		fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
+		if (Client_FD) { \
 			sprintf(Sock_OutBuffer, "ERROR: " msg "\n", ##__VA_ARGS__); \
 			send(Client_FD, Sock_OutBuffer, strlen(Sock_OutBuffer), MSG_NOSIGNAL); \
 		} \
@@ -64,10 +53,8 @@
 #define SC_PRINT(msg, ...) do { \
 		extern int Client_FD; \
 		extern char Sock_OutBuffer[]; \
-		syslog(LOG_INFO, msg, ##__VA_ARGS__); \
-		if (0 == Client_FD) { \
-			fprintf(stdout, msg "\n", ##__VA_ARGS__); \
-		} else { \
+		fprintf(stdout, msg "\n", ##__VA_ARGS__); \
+		if (Client_FD) { \
 			sprintf(Sock_OutBuffer, msg "\n", ##__VA_ARGS__); \
 			send(Client_FD, Sock_OutBuffer, strlen(Sock_OutBuffer), MSG_NOSIGNAL); \
 		} \
@@ -75,10 +62,8 @@
 #define SC_PRINT_N(msg, ...) do { \
 		extern int Client_FD; \
 		extern char Sock_OutBuffer[]; \
-		syslog(LOG_INFO, msg, ##__VA_ARGS__); \
-		if (0 == Client_FD) { \
-			fprintf(stdout, msg, ##__VA_ARGS__); \
-		} else { \
+		fprintf(stdout, msg, ##__VA_ARGS__); \
+		if (Client_FD) { \
 			sprintf(Sock_OutBuffer, msg, ##__VA_ARGS__); \
 			send(Client_FD, Sock_OutBuffer, strlen(Sock_OutBuffer), MSG_NOSIGNAL); \
 		} \

@@ -5,14 +5,6 @@
 # Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
 #
 
-# Configure syslogd to log sc_app messages into a separate file.
-#
-/bin/grep -e '^local3' /etc/syslog.conf
-if [ $? -ne 0 ]; then
-    /bin/echo 'local3.*  /var/log/local3.log' >> /etc/syslog.conf
-    /etc/init.d/syslog restart
-fi
-
 #
 # If dfx-mgrd is used to install the board package, wait until that
 # operation is complete before starting sc_appd.

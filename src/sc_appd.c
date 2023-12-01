@@ -306,7 +306,6 @@ main()
 	int Ret = -1;
 	int Valid_Command;
 
-	SC_OPENLOG("sc_app");
 	SC_INFO(">>> Begin");
 
 	/* Log the version of sc_app */
@@ -433,6 +432,7 @@ main()
 		}
 
 		(void) (*Command.CmdOps)();
+		fflush(stdout);
 Next:
 		for (int i = 0; i < Argc; i++) {
 			free(Argv[i]);

@@ -8,35 +8,13 @@
 set PGG1 0xf1110054
 set PGG3 0xf111005C
 
-proc switch_to_jtag {} {
-   # Enable ISO
-   mwr -force 0xf1120000 0xffbff
-
-   # Switch to JTAG boot mode
-   mwr -force 0xf1260200 0x0100
-
-   # Set Multi-boot address to 0
-   mwr -force 0xF1110004 0x0
-
-   # SYSMON_REF_CTRL is switched to NPI by user PDI so ensure its
-   # switched back
-   mwr -force 0xF1260138 0
-   mwr -force 0xF1260320 0x77
-
-   # Perform reset
-   rst -system
-}
+source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
 connect -xvc-url TCP:127.0.0.1:2542
 targets -set -nocase -filter {name =~ "*Versal*"}
-switch_to_jtag
 
 # Get the IDCODE
-set idcode_reg [mrd -force 0xF11A0000]
-set idcode_str [lindex [split $idcode_reg ":"] 1]
-set idcode_str [string map {" " ""} $idcode_str]
-set idcode_str [string map {"\n" ""} $idcode_str]
-set idcode [expr 0x$idcode_str]
+set idcode [read_reg 0xF11A0000]
 
 # Determine silicon revision
 #
@@ -63,7 +41,19 @@ if {$revision == 0} {
 # Download the PDI file
 set pdi $revision_str
 append pdi "system_wrapper.pdi"
-device program $pdi
+
+set image_info [exec /usr/share/system-controller-app/BIT/get_image_info.sh $pdi]
+set image_id [lindex $image_info 0]
+set image_uid [lindex $image_info 1]
+
+set uid_reg [unique_id $image_id]
+if {$image_uid != $uid_reg} {
+    switch_to_jtag
+    puts "Loading $pdi"
+    device program $pdi
+} else {
+    puts "PDI already loaded"
+}
 
 # Download the ELF file and run it on APU
 targets -set -nocase -filter {name =~ "*A72*0"}

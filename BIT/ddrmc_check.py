@@ -17,6 +17,7 @@
 import os
 import sys
 import time
+import subprocess
 from chipscopy import create_session
 
 if len(sys.argv) != 3:
@@ -30,8 +31,29 @@ BOARD_NAME = str(sys.argv[2])
 CS_URL = os.getenv("CS_SERVER_URL", "TCP:localhost:3042")
 HW_URL = os.getenv("HW_SERVER_URL", "TCP:localhost:3121")
 
+# Read the Versal UUID registers
+def get_unique_id (versal_device, image_id):
+    # Read the ImageInfoTable Address
+    ImageInfoTableAddr = 0xF2014040
+    offset = versal_device.memory_read(ImageInfoTableAddr)[0]
+    if (offset == 0xdeadbeef or offset == 0):
+        return 0xdeadbeef
+
+    # Get the length of the ImageInfo Table
+    length = versal_device.memory_read(ImageInfoTableAddr + 8)[0] & 0xffff
+
+    # Parse the image info table until we find the requested image_id and return the UUID
+    img = 0
+    while img < length:
+        image_id_reg = versal_device.memory_read(offset)[0]
+        if image_id_reg == image_id:
+            return versal_device.memory_read(offset + 4)[0]
+        img += 1
+        offset = offset + 16
+
+    return 0xdeadbeef
+
 with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL) as session:
-    time.sleep(5)
     check_for_device = True
     start_time = time.time()
     while check_for_device:
@@ -61,9 +83,20 @@ with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL) as session:
         print("ERROR: unsupported revision")
         quit(-1)
 
-    PDI_FILE = Revision_Str + "system_wrapper.pdi"
-    # Program the PDI
-    versal_device.program(BOARD_NAME + "/" + PDI_FILE)
+    PDI_FILE = BOARD_NAME + "/" + Revision_Str + "system_wrapper.pdi"
+
+    result = subprocess.check_output(['/usr/share/system-controller-app/BIT/get_image_info.sh', PDI_FILE ]).decode("utf-8")
+    result = result.split()
+    image_id = int(result[0], 0)
+    image_uid = int(result[1], 0)
+
+    unique_id = get_unique_id(versal_device, image_id)
+
+    if (image_uid != unique_id):
+        # Program the PDI
+        versal_device.program(PDI_FILE)
+    else:
+        print("PDI already loaded")
 
     # Discover debug cores
     versal_device.discover_and_setup_cores()

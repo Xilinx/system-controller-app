@@ -18,7 +18,7 @@ extern Plat_Devs_t *Plat_Devs;
 extern char Board_Name[];
 extern int Access_Regulator(Voltage_t *, float *, int);
 extern int Reset_Op(void);
-extern int XSDB_Op(const char *, char *, int);
+extern int XSDB_Op(const char *, const char *, char *, int);
 extern int JTAG_Op(int);
 
 /*
@@ -83,6 +83,9 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	BIT_t *BIT_p = Arg1;
 	int Level = *(int *)Arg2;
 	char Output[STRLEN_MAX] = { 0 };
+	char TCL_File[STRLEN_MAX], TCL_Args[STRLEN_MAX];
+	char TclCmd[STRLEN_MAX]; /* TCL file and or argument with space delimter */
+	char *TclFile, *TestBitIndex;
 	int Ret;
 
 	if (Level > BIT_p->Levels) {
@@ -94,7 +97,17 @@ XSDB_BIT(void *Arg1, void *Arg2)
 		SC_PRINT("%s", BIT_p->Level[Level].Instruction);
 	}
 
-	Ret = XSDB_Op(BIT_p->Level[Level].TCL_File, Output, STRLEN_MAX);
+	(void) strcpy(TclCmd, BIT_p->Level[Level].TCL_File);
+	TclFile = strtok(TclCmd, " ");
+	(void) sprintf(TCL_File, "%s%s", BIT_PATH, TclFile);
+	TestBitIndex = strtok(NULL, " ");
+	if (TestBitIndex == NULL) {
+		(void) sprintf(TCL_Args, "%s", Board_Name);
+	} else {
+		(void) sprintf(TCL_Args, "%s %s", Board_Name, TestBitIndex);
+	}
+
+	Ret = XSDB_Op(TCL_File, TCL_Args, Output, STRLEN_MAX);
 	if (Ret != 0) {
 		SC_ERR("failed the xsdb operation");
 		if (!BIT_p->Manual) {

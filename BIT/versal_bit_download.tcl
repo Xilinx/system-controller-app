@@ -13,34 +13,17 @@ source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 connect -xvc-url TCP:127.0.0.1:2542
 targets -set -nocase -filter {name =~ "*Versal*"}
 
-# Get the IDCODE
-set idcode [read_reg 0xF11A0000]
-
-# Determine silicon revision
-#
-# IDCODE[11:0] = 0x93	// Xilinx Manufacturer
-set mask [expr 0xFFF]
-if {($idcode & $mask) != 0x93} {
-   puts "ERROR: invalid manufacturer!"
-   disconnect
-   exit -1
-}
-
-# IDCODE[31:28]		// Silicon Revision
-set revision [expr $idcode >> 28]
-if {$revision == 0} {
-   set revision_str "es1_"
-} elseif {$revision == 1} {
-   set revision_str ""
-} else {
-   puts "ERROR: unsupported revision!"
-   disconnect
-   exit -1
+set board [lindex $argv 0]
+set revision_str [silicon_revision]
+if {$revision_str == "invalid"} {
+    puts "Fail"
+    disconnect
+    exit -1
 }
 
 # Download the PDI file
-set pdi $revision_str
-append pdi "system_wrapper.pdi"
+set pdi $board
+append pdi "/" $revision_str "system_wrapper.pdi"
 
 set image_info [exec /usr/share/system-controller-app/BIT/get_image_info.sh $pdi]
 set image_id [lindex $image_info 0]
@@ -58,12 +41,14 @@ if {$image_uid != $uid_reg} {
 # Download the ELF file and run it on APU
 targets -set -nocase -filter {name =~ "*A72*0"}
 rst -clear-registers -skip-activate-subsystem -processor
-dow versal_bit.elf
+set elf $board
+append elf "/" versal_bit.elf
+dow $elf
 con
 after 1000
 
 # Set BIT test index
-mwr $PGG1 [lindex $argv 0]
+mwr $PGG1 [lindex $argv 1]
 
 # Wait for test status
 set stat 0

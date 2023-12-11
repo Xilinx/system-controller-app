@@ -11,9 +11,9 @@ proc swap32 {n} {
 
 # Read the DONE bit from the device status
 proc check_done {} {
-    set stat [ device status jtag_status ]
-    set DONE_IDX [ lsearch $stat DONE ]
-    return [ lindex $stat [ expr $DONE_IDX + 3 ] ]
+    set stat [device status jtag_status]
+    set DONE_IDX [lsearch $stat DONE]
+    return [lindex $stat [expr $DONE_IDX + 3]]
 }
 
 # read a register and return it as a proper integer value
@@ -117,4 +117,31 @@ proc switch_to_jtag {} {
 
    # Perform reset
    rst -system
+}
+
+# Return silicon revision string based on the IDCODE
+proc silicon_revision {} {
+   # Get the IDCODE
+   set idcode [read_reg 0xF11A0000]
+
+   # Determine silicon revision
+   #
+   # IDCODE[11:0] = 0x93   // Xilinx Manufacturer
+   set mask [expr 0xFFF]
+   if {($idcode & $mask) != 0x93} {
+      revision_str "invalid"
+      return $revision_str
+   }
+
+   # IDCODE[31:28]         // Silicon Revision
+   set revision [expr $idcode >> 28]
+   if {$revision == 0} {
+      set revision_str "es1_"
+   } elseif {$revision == 1} {
+      set revision_str ""
+   } else {
+      set revision_str "invalid"
+   }
+
+   return $revision_str
 }

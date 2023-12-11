@@ -42,9 +42,10 @@
  * 1.17 - Added 'getbootmode' and enhanced 'setbootmode' commands.
  * 1.18 - Added 'setgpio' command.
  * 1.19 - Consolidate support for all SFP transceiver variants.
+ * 1.20 - Added load PDI support.
  */
 #define MAJOR	1
-#define MINOR	19
+#define MINOR	20
 
 #define GPIOLINE	"ZU4_TRIGGER"
 
@@ -75,10 +76,12 @@ int IO_Exp_Ops(void);
 int SFP_Ops(void);
 int EBM_Ops(void);
 int FMC_Ops(void);
+int PDI_Ops(void);
 int (*Workaround_Op)(void *);
 int FMC_Autodetect_Vadj(void);
-int Set_Clocks(void);
-int Set_Voltages(void);
+int Boot_Set_Clocks(void);
+int Boot_Set_Voltages(void);
+int Boot_Load_PDI(void);
 int Apply_Workarounds(void);
 int IO_Exp_Initialized(void);
 void *Fancontrol(void*);
@@ -103,6 +106,7 @@ extern int Restore_IDT_8A34001(Clock_t *);
 extern int QSFP_ModuleSelect(SFP_t *, int);
 extern int FMCAutoVadj_Op(void);
 extern int Check_Config_File(char *, char *, int *);
+extern int XSDB_Op(const char *, const char *, char *, int);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -177,6 +181,10 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	listFMC - list the plugged FMCs\n\
 	getFMC - get the content of EEPROM on <target> FMC for either <value>:\n\
 		 'all', 'common', 'board', or 'multirecord'\n\
+\n\
+	loadPDI - load <target> PDI to Versal\n\
+	setbootPDI - set <target> PDI to be loaded to Versal at boot time\n\
+	resetbootPDI - remove any boot PDI that has been set\n\
 ";
 
 typedef enum {
@@ -228,6 +236,9 @@ typedef enum {
 	GETEBM,
 	LISTFMC,
 	GETFMC,
+	LOADPDI,
+	SETBOOTPDI,
+	RESETBOOTPDI,
 	COMMAND_MAX,
 } CmdId_t;
 
@@ -286,6 +297,9 @@ static Command_t Commands[] = {
 	{ .CmdId = GETEBM, .CmdStr = "getEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = LISTFMC, .CmdStr = "listFMC", .CmdOps = FMC_Ops, },
 	{ .CmdId = GETFMC, .CmdStr = "getFMC", .CmdOps = FMC_Ops, },
+	{ .CmdId = LOADPDI, .CmdStr = "loadPDI", .CmdOps = PDI_Ops, },
+	{ .CmdId = SETBOOTPDI, .CmdStr = "setbootPDI", .CmdOps = PDI_Ops, },
+	{ .CmdId = RESETBOOTPDI, .CmdStr = "resetbootPDI", .CmdOps = PDI_Ops, },
 };
 
 char Command_Arg[STRLEN_MAX];
@@ -344,15 +358,20 @@ main()
 	}
 
 	/* Set custom clock frequency */
-	if (Set_Clocks() != 0) {
+	if (Boot_Set_Clocks() != 0) {
 		SC_ERR("failed to set clock frequency");
 		goto Out;
 	}
 
 	/* Set custom regulator voltage */
-	if (Set_Voltages() != 0) {
+	if (Boot_Set_Voltages() != 0) {
 		SC_ERR("failed to set regulator voltage");
 		goto Out;
+	}
+
+	/* Load PDI */
+	if (Boot_Load_PDI() != 0) {
+		SC_ERR("failed to load PDI");
 	}
 
 	/* No pre-set boot mode is supported */
@@ -507,15 +526,15 @@ Parse_Options(int argc, char **argv)
 			break;
 		case 'c':
 			C_Flag = 1;
-			strcpy(Command_Arg, optarg);
+			(void) strncpy(Command_Arg, optarg, sizeof(Command_Arg));
 			break;
 		case 't':
 			T_Flag = 1;
-			strcpy(Target_Arg, optarg);
+			(void) strncpy(Target_Arg, optarg, sizeof(Target_Arg));
 			break;
 		case 'v':
 			V_Flag = 1;
-			strcpy(Value_Arg, optarg);
+			(void) strncpy(Value_Arg, optarg, sizeof(Value_Arg));
 			break;
 		case '?':
 			SC_ERR("invalid argument");
@@ -3171,6 +3190,109 @@ int FMC_Ops(void)
 }
 
 /*
+ * If the PDI filename passed in PDI_File argument is the default
+ * PDI (system_wrapper.pdi or es1_system_wrapper.pdi), validate
+ * that it matches the silicon revision.  The Full_Path argument
+ * returns the full path of PDI_File. 
+ */
+static int
+Validate_PDI(const char *PDI_File, char *Full_Path)
+{
+	char Default_ES1_PDI[STRLEN_MAX];
+
+	if (strcmp(PDI_File, DEFAULT_PDI) == 0 &&
+	    strcmp(Silicon_Revision, "PROD") != 0) {
+		SC_ERR("invalid default PDI");
+		return -1;
+	}
+
+	(void) sprintf(Default_ES1_PDI, "es1_%s", DEFAULT_PDI);
+	if (strcmp(PDI_File, Default_ES1_PDI) == 0 &&
+	    strcmp(Silicon_Revision, "ES1") != 0) {
+		SC_ERR("invalid default PDI");
+		return -1;
+	}
+
+	if (Full_Path == NULL) {
+		SC_ERR("storage Full_Path is not allocated");
+		return -1;
+	}
+
+	(void) sprintf(Full_Path, "%s%s/%s", BIT_PATH, Board_Name, PDI_File);
+	if (access(Full_Path, F_OK) == 0) {
+		return 0;
+	}
+
+	(void) sprintf(Full_Path, "%s%s", CUSTOM_PDIS_PATH, PDI_File);
+	if (access(Full_Path, F_OK) == 0) {
+		return 0;
+	}
+
+	SC_ERR("could not locate PDI file %s", PDI_File);
+	return -1;
+}
+
+int
+PDI_Ops(void)
+{
+	char PDI_Path[SYSCMD_MAX], TCL_Path[SYSCMD_MAX];
+	char Output[SYSCMD_MAX] = { 0 };
+
+	switch (Command.CmdId) {
+	case LOADPDI:
+		if (T_Flag == 0) {
+			SC_ERR("no target for PDI command");
+			return -1;
+		}
+
+		if (Validate_PDI(Target_Arg, PDI_Path) != 0) {
+			return -1;
+		}
+
+		if (Reset_Op() != 0) {
+			return -1;
+		}
+
+		SC_INFO("Full PDI path: %s", PDI_Path);
+		(void) sprintf(TCL_Path, "%s%s", SCRIPT_PATH, PDI_LOAD_TCL);
+		if (XSDB_Op(TCL_Path, PDI_Path, Output, sizeof(Output)) != 0) {
+			SC_ERR("failed to download PDI");
+			return -1;
+		}
+
+		break;
+
+	case SETBOOTPDI:
+		if (T_Flag == 0) {
+			SC_ERR("no target for PDI command");
+			return -1;
+		}
+
+		if (Validate_PDI(Target_Arg, PDI_Path) != 0) {
+			return -1;
+		}
+
+		(void) sprintf(Output, "echo '%s' > %s; sync", Target_Arg, PDIFILE);
+		SC_INFO("Command: %s", Output);
+		system(Output);
+		break;
+
+	case RESETBOOTPDI:
+		/* Leave an empty PDIFILE */
+		(void) sprintf(Output, "rm %s; touch %s; sync", PDIFILE, PDIFILE);
+		SC_INFO("Command: %s", Output);
+		system(Output);
+		break;
+
+	default:
+		SC_ERR("invalid PDI command");
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
  * On VCK190/VMK180 boards, the GPIO line 11 is used to determine when to apply
  * the vccaux workaround for ES1 part.
  */ 
@@ -3376,7 +3498,7 @@ Apply_Workarounds(void)
  * This routine sets any custom clock frequency defined by the user.
  */
 int
-Set_Clocks(void)
+Boot_Set_Clocks(void)
 {
 	FILE *FP;
 	int FD;
@@ -3447,7 +3569,7 @@ Set_Clocks(void)
  * This routine sets any custom regulator voltage defined by the user.
  */
 int
-Set_Voltages(void)
+Boot_Set_Voltages(void)
 {
 	FILE *FP;
 	Voltages_t *Voltages;
@@ -3488,6 +3610,46 @@ Set_Voltages(void)
 	}
 
 	(void) fclose(FP);
+	return 0;
+}
+
+int
+Boot_Load_PDI(void)
+{
+	FILE *FP;
+	char PDI_Path[SYSCMD_MAX], TCL_Path[SYSCMD_MAX];
+	char Buffer[SYSCMD_MAX] = { 0 };
+
+	/* If there is no PDIFILE, there is nothing to do */
+	if (access(PDIFILE, F_OK) != 0) {
+		return 0;
+	}
+
+	FP = fopen(PDIFILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read file %s: %m", PDIFILE);
+		return -1;
+	}
+
+	/* If PDIFILE is empty, there is nothing to do */
+	if (fgets(Buffer, sizeof(Buffer), FP) == NULL) {
+		return 0;
+	}
+
+	/* Strip the new line character */
+	(void) strtok(Buffer, "\n");
+	SC_INFO("Load PDI file: %s", Buffer);
+	if (Validate_PDI(Buffer, PDI_Path) != 0) {
+		return -1;
+	}
+
+	SC_INFO("Full PDI path: %s", PDI_Path);
+	(void) sprintf(TCL_Path, "%s%s", SCRIPT_PATH, PDI_LOAD_TCL);
+	if (XSDB_Op(TCL_Path, PDI_Path, Buffer, sizeof(Buffer)) != 0) {
+		SC_ERR("failed to download PDI");
+		return -1;
+	}
+
 	return 0;
 }
 

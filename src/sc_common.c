@@ -1791,24 +1791,15 @@ JTAG_Op(int Select)
 }
 
 int
-XSDB_Op(const char *TCL_File, char *Output, int Length)
+XSDB_Op(const char *TCL_File, const char *TCL_Args, char *Output, int Length)
 {
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
-	char Buffer[SYSCMD_MAX];
-	char TclCmd[STRLEN_MAX]; /* TCL file and or argument with space delimter */
-	char *Directory, *Filename, *TclFile, *TestBitIndex;
+	char *Directory, *Filename;
 	int Ret = 0;
 
-	(void) strcpy(TclCmd, TCL_File);
-
-	/* Get TCL file name and test index seperated by space */
-	TclFile = strtok(TclCmd, " ");
-	TestBitIndex = strtok(NULL, " ");
-
-	(void) sprintf(Buffer, "%s%s", BIT_PATH, TclFile);
-	if (access(Buffer, F_OK) != 0) {
-		SC_ERR("failed to access file %s: %m", Buffer);
+	if (access(TCL_File, F_OK) != 0) {
+		SC_ERR("failed to access file %s: %m", TCL_File);
 		return -1;
 	}
 
@@ -1818,12 +1809,17 @@ XSDB_Op(const char *TCL_File, char *Output, int Length)
 	}
 
 	(void) JTAG_Op(1);
-	Directory = strdup(Buffer);
-	Filename = strdup(Buffer);
-	/* System_Cmd: cd BIT/Board_Name; XSDB_ENV; XSDB_CMD TCL_FILE TestBitIndex */
-	(void) sprintf(System_Cmd, "cd %s/%s; %s; %s %s %s 2>&1",
-		       dirname(Directory), Board_Name, XSDB_ENV, XSDB_CMD,
-		       Filename, (NULL == TestBitIndex) ? "" : TestBitIndex);
+	Directory = strdup(TCL_File);
+	Filename = strdup(TCL_File);
+	/* System_Cmd: cd TCL_FILE directory; XSDB_ENV; XSDB_CMD TCL_FILE TCL_Args */
+	if (TCL_Args == NULL) {
+		(void) sprintf(System_Cmd, "cd %s; %s; %s %s 2>&1",
+			       dirname(Directory), XSDB_ENV, XSDB_CMD, Filename);
+	} else {
+		(void) sprintf(System_Cmd, "cd %s; %s; %s %s %s 2>&1",
+			       dirname(Directory), XSDB_ENV, XSDB_CMD, Filename, TCL_Args);
+	}
+
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
@@ -1853,7 +1849,10 @@ Out:
 int
 Get_IDCODE(char *Output, int Length)
 {
-	return XSDB_Op(IDCODE_TCL, Output, Length);
+	char TCL_File[STRLEN_MAX];
+
+	(void) sprintf(TCL_File, "%s%s", BIT_PATH, IDCODE_TCL);
+	return XSDB_Op(TCL_File, NULL, Output, Length);
 }
 
 int

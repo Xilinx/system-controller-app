@@ -31,12 +31,14 @@
 #define CLOCKFILE	Appfile("clock")
 #define VOLTAGEFILE	Appfile("voltage")
 #define IDT8A34001FILE	Appfile("8A34001")
+#define PDIFILE		Appfile("PDI")
 
 #define BIT_PATH	INSTALLDIR"/BIT/"
 #define BOARD_PATH	INSTALLDIR"/board/"
 #define CFS_PATH	INSTALLDIR"/BIT/clock_files/"
 #define CUSTOM_CFS_PATH	INSTALLDIR"/.sc_app/clock_files/"
 #define SCRIPT_PATH	INSTALLDIR"/script/"
+#define CUSTOM_PDIS_PATH	INSTALLDIR"/.sc_app/PDIs/"
 
 #define PROGRAM_8A34001 "8A34001_eeprom.py"
 
@@ -471,6 +473,8 @@ typedef struct {
 
 #define IDCODE_TCL	"idcode_verify.tcl"
 #define BOOTMODE_TCL	"alt_boot_mode.tcl"
+#define PDI_LOAD_TCL	"versal_pdi_download.tcl"
+#define DEFAULT_PDI	"system_wrapper.pdi"
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))

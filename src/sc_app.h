@@ -239,6 +239,7 @@ typedef struct {
 	SFP_Type	Type;
 	char	*I2C_Bus;
 	int	I2C_Address;
+	int	Presence_Boundary_Scan;
 } SFP_t;
 
 typedef struct SFPs {
@@ -474,6 +475,7 @@ typedef struct {
 #define IDCODE_TCL	"idcode_verify.tcl"
 #define BOOTMODE_TCL	"alt_boot_mode.tcl"
 #define PDI_LOAD_TCL	"versal_pdi_download.tcl"
+#define SFP_PRES_TCL	"sfp_presence.tcl"
 #define DEFAULT_PDI	"system_wrapper.pdi"
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))

@@ -2583,13 +2583,23 @@ int SFP_List(void)
 	SFPs_t *SFPs;
 	SFP_t *SFP;
 	int FD;
+	char TCL_Path[SYSCMD_MAX];
+	char TCL_Args[STRLEN_MAX];
 	char Buffer[STRLEN_MAX];
 
 	SFPs = Plat_Devs->SFPs;
 	for (int i = 0; i < SFPs->Numbers; i++) {
 		SFP = &SFPs->SFP[i];
-		if (SFP->Type == qsfp) {
-			SC_PRINT("%s - Connection unknown", SFP->Name);
+		if (SFP->Presence_Boundary_Scan != 0) {
+			(void) sprintf(TCL_Path, "%s%s", SCRIPT_PATH, SFP_PRES_TCL);
+			(void) sprintf(TCL_Args, "%d", SFP->Presence_Boundary_Scan);
+			if (XSDB_Op(TCL_Path, TCL_Args, Buffer, sizeof(Buffer)) != 0) {
+				SC_ERR("failed to detect %s", SFP->Name);
+				return -1;
+			}
+
+			SC_PRINT("%s%s", SFP->Name, (atoi(Buffer) ?
+				 " - Not connected" : ""));
 			continue;
 		}
 

@@ -656,37 +656,41 @@
 				"Name" : "QSFP1",
 				"Type" : "qsfp",
 				"I2C_Bus" : "/dev/i2c-14",
-				"I2C_Address" : "0x50"
+				"I2C_Address" : "0x50",
+				"Presence_Boundary_Scan" : "2493"
 			},
 			"QSFP2" : {
 				"Name" : "QSFP2",
 				"Type" : "qsfp",
 				"I2C_Bus" : "/dev/i2c-15",
-				"I2C_Address" : "0x50"
+				"I2C_Address" : "0x50",
+				"Presence_Boundary_Scan" : "2502"
 			},
 			"QSFP3" : {
 				"Name" : "QSFP3",
 				"Type" : "qsfp",
 				"I2C_Bus" : "/dev/i2c-16",
-				"I2C_Address" : "0x50"
+				"I2C_Address" : "0x50",
+				"Presence_Boundary_Scan" : "2487"
 			},
 			"QSFP4" : {
 				"Name" : "QSFP4",
 				"Type" : "qsfp",
 				"I2C_Bus" : "/dev/i2c-17",
+				"I2C_Address" : "0x50",
+				"Presence_Boundary_Scan" : "2460"
+			},
+			"QSFPDD1" : {
+				"Name" : "QSFPDD1",
+				"Type" : "qsfpdd",
+				"I2C_Bus" : "/dev/i2c-18",
 				"I2C_Address" : "0x50"
 			},
-			"QSFPDD1": {
-				"Name": "QSFPDD1",
-				"Type": "qsfpdd",
-				"I2C_Bus": "/dev/i2c-18",
-				"I2C_Address": "0x50"
-			},
-			"QSFPDD2": {
-				"Name": "QSFPDD2",
-				"Type": "qsfpdd",
-				"I2C_Bus": "/dev/i2c-18",
-				"I2C_Address": "0x50"
+			"QSFPDD2" : {
+				"Name" : "QSFPDD2",
+				"Type" : "qsfpdd",
+				"I2C_Bus" : "/dev/i2c-18",
+				"I2C_Address" : "0x50"
 			}
 		},
 		"FMCs": {

@@ -1041,6 +1041,20 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 		SC_INFO("I2C Addr: %s", Value_Str);
 		(*SFPs)->SFP[Item].I2C_Address = (int)strtol(Value_Str, NULL, 0);
 
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		if (strcmp(Value_Str, "Presence_Boundary_Scan") == 0) {
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*SFPs)->SFP[Item].Presence_Boundary_Scan = atoi(Value_Str);
+			SC_INFO("Presence Boundary Scan: %i",
+				(*SFPs)->SFP[Item].Presence_Boundary_Scan);
+		} else {
+			(*Index)--;
+		}
+
 		Item++;
 	}
 

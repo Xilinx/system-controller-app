@@ -581,7 +581,8 @@
 				"Name" : "zQSFP1",
 				"Type" : "qsfp",
 				"I2C_Bus" : "/dev/i2c-21",
-				"I2C_Address" : "0x50"
+				"I2C_Address" : "0x50",
+				"Presence_Boundary_Scan" : "2680"
 			}
 		},
 		"FMCs" : {

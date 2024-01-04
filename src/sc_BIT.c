@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -83,7 +83,8 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	BIT_t *BIT_p = Arg1;
 	int Level = *(int *)Arg2;
 	char Output[STRLEN_MAX] = { 0 };
-	char TCL_File[STRLEN_MAX], TCL_Args[STRLEN_MAX];
+	char TCL_File[STRLEN_MAX];
+	char TCL_Args[STRLEN_MAX] = { 0 };
 	char TclCmd[STRLEN_MAX]; /* TCL file and or argument with space delimter */
 	char *TclFile, *TestBitIndex;
 	int Ret;
@@ -101,13 +102,19 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	TclFile = strtok(TclCmd, " ");
 	(void) sprintf(TCL_File, "%s%s", BIT_PATH, TclFile);
 	TestBitIndex = strtok(NULL, " ");
-	if (TestBitIndex == NULL) {
-		(void) sprintf(TCL_Args, "%s", Board_Name);
+	if (strcmp(TclFile, BIT_LOAD_TCL) == 0) {
+		if (TestBitIndex == NULL) {
+			(void) sprintf(TCL_Args, "%s", Board_Name);
+		} else {
+			(void) sprintf(TCL_Args, "%s %s", Board_Name, TestBitIndex);
+		}
 	} else {
-		(void) sprintf(TCL_Args, "%s %s", Board_Name, TestBitIndex);
+		if (TestBitIndex != NULL) {
+			(void) sprintf(TCL_Args, "%s", TestBitIndex);
+		}
 	}
 
-	Ret = XSDB_Op(TCL_File, TCL_Args, Output, STRLEN_MAX);
+	Ret = XSDB_Op(TCL_File, TCL_Args, Output, sizeof(Output));
 	if (Ret != 0) {
 		SC_ERR("failed the xsdb operation");
 		if (!BIT_p->Manual) {
@@ -118,7 +125,7 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	}
 
 	if (!BIT_p->Manual) {
-		SC_PRINT("%s: PASS", BIT_p->Name);
+		SC_PRINT("%s: %s", BIT_p->Name, strtok(Output, "\n"));
 	}
 
 	return 0;

@@ -1,6 +1,6 @@
 {
 	"License" : "Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
-	"License" : "Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VPK120": {
 		"FEATURE": {
@@ -552,7 +552,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "idcode_verify.tcl"
+						"TCL_File" : "idcode_verify.tcl 0x01"
 					}
 				}
 			},

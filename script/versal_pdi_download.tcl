@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -12,6 +12,7 @@ targets -set -nocase -filter {name =~ "*Versal*"}
 # Check whether Versal is idle
 if {[check_done] == 1} {
     puts "Versal is running a PDI, assert reset and retry"
+    disconnect
     exit -1
 }
 

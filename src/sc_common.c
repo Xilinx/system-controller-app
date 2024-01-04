@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,10 +30,10 @@ int Set_AltBootMode(int);
 int Get_GPIO(char *, int *);
 int Check_Config_File(char *, char *, int *);
 int Set_IDT_8A34001(Clock_t *, char *, int);
+int Get_IDCODE(char *, int);
 extern int Parse_JSON(const char *, Plat_Devs_t *);
 extern int VCK190_ES1_Vccaux_Workaround(void *);
 extern int VCK190_QSFP_ModuleSelect(SFP_t *, int);
-extern int Get_IDCODE(char *, int);
 
 char *
 Appfile(char *Filename)
@@ -1795,6 +1795,7 @@ XSDB_Op(const char *TCL_File, const char *TCL_Args, char *Output, int Length)
 {
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
+	char Buffer[LSTRLEN_MAX];
 	char *Directory, *Filename;
 	int Ret = 0;
 
@@ -1828,14 +1829,13 @@ XSDB_Op(const char *TCL_File, const char *TCL_Args, char *Output, int Length)
 		goto Out;
 	}
 
-	(void) fgets(Output, Length, FP);
-	(void) pclose(FP);
-	SC_INFO("XSDB Output: %s", Output);
-	if (strstr(Output, "no targets found") != NULL) {
-		SC_ERR("could not connect to Versal through jtag");
-		Ret = -1;
-	} else if (strstr(Output, "Fail") != NULL) {
-		SC_ERR("Test failed");
+	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
+		SC_INFO("XSDB Output: %s", Buffer);
+		(void) strncpy(Output, Buffer, Length);
+	}
+
+	if (pclose(FP) != 0) {
+		SC_INFO("Command: %s failed!", System_Cmd);
 		Ret = -1;
 	}
 
@@ -1850,9 +1850,11 @@ int
 Get_IDCODE(char *Output, int Length)
 {
 	char TCL_File[STRLEN_MAX];
+	char TCL_Args[STRLEN_MAX];
 
 	(void) sprintf(TCL_File, "%s%s", BIT_PATH, IDCODE_TCL);
-	return XSDB_Op(TCL_File, NULL, Output, Length);
+	(void) strcpy(TCL_Args, "0x0");
+	return XSDB_Op(TCL_File, TCL_Args, Output, Length);
 }
 
 int
@@ -1973,47 +1975,13 @@ Get_BootMode(int Method)
 int
 Set_AltBootMode(int Value)
 {
-	FILE *FP;
+	char TCL_File[STRLEN_MAX];
+	char TCL_Args[STRLEN_MAX];
 	char Output[STRLEN_MAX] = { 0 };
-	char System_Cmd[SYSCMD_MAX];
-	char Buffer[SYSCMD_MAX];
-	char *Directory, *Filename;
-	int Ret = 0;
 
-	(void) sprintf(Buffer, "%s%s", BIT_PATH, BOOTMODE_TCL);
-	if (access(Buffer, F_OK) != 0) {
-		SC_ERR("failed to access file %s: %m", Buffer);
-		return -1;
-	}
-
-	(void) JTAG_Op(1);
-	Directory = strdup(Buffer);
-	Filename = strdup(Buffer);
-
-	/* System_Cmd: cd BIT/Board_Name; XSDB_ENV; XSDB_CMD TCL_FILE Value */
-	(void) sprintf(System_Cmd, "cd %s; %s; %s %s %x 2>&1", dirname(Directory),
-		       XSDB_ENV, XSDB_CMD, Filename, Value);
-	SC_INFO("Command: %s", System_Cmd);
-	FP = popen(System_Cmd, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to invoke xsdb: %m");
-		Ret = -1;
-		goto Out;
-	}
-
-	(void) fgets(Output, sizeof(Output), FP);
-	(void) pclose(FP);
-	SC_INFO("XSDB Output: %s", Output);
-	if (strstr(Output, "no targets found") != NULL) {
-		SC_ERR("could not connect to Versal through jtag");
-		Ret = -1;
-	}
-
-Out:
-	(void) JTAG_Op(0);
-	free(Directory);
-	free(Filename);
-	return Ret;
+	(void) sprintf(TCL_File, "%s%s", BIT_PATH, BOOTMODE_TCL);
+	(void) sprintf(TCL_Args, "%x", Value);
+	return XSDB_Op(TCL_File, TCL_Args, Output, sizeof(Output));
 }
 
 int

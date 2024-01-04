@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -474,6 +474,8 @@ typedef struct {
 
 #define IDCODE_TCL	"idcode_verify.tcl"
 #define BOOTMODE_TCL	"alt_boot_mode.tcl"
+#define QSFP_MODSEL_TCL	"qsfp_download.tcl"
+#define BIT_LOAD_TCL	"versal_bit_download.tcl"
 #define PDI_LOAD_TCL	"versal_pdi_download.tcl"
 #define SFP_PRES_TCL	"sfp_presence.tcl"
 #define DEFAULT_PDI	"system_wrapper.pdi"

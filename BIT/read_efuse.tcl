@@ -1,6 +1,6 @@
 #
 # Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
-# Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -19,7 +19,10 @@ set LSBs [expr 0x3 & [scan $DNA0 %x]]
 set MSBs [expr [expr 0x3 << 30] & [scan $DNA3 %x]]
 
 if {[scan $LSBs %x] == 0 || [scan $MSBs %x] == 0} {
-    puts "ERROR: invalid value read from DNA registers"
+    puts "FAIL"
+    disconnect
+    exit 0
 }
 
+puts "PASS"
 disconnect

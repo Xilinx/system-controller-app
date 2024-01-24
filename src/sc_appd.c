@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -1071,15 +1071,19 @@ Clock_Ops(void)
 		}
 
 		(void) sprintf(System_Cmd, "cat %s", Clock->Sysfs_Path);
+		SC_INFO("Command: %s", System_Cmd);
 		FP = popen(System_Cmd, "r");
 		if (FP == NULL) {
-			SC_ERR("failed to access sysfs path %s: %m",
-			       Clock->Sysfs_Path);
+			SC_ERR("failed to start process %s: %m", System_Cmd);
 			return -1;
 		}
 
 		(void) fgets(Output, sizeof(Output), FP);
-		(void) pclose(FP);
+		if (pclose(FP) != 0) {
+			SC_ERR("failed to get clock frequency");
+			return -1;
+		}
+
 		SC_INFO("%s: %s", Clock->Sysfs_Path, Output);
 		Frequency = strtod(Output, NULL) / 1000000.0;	// In MHz
 		/* Print out 3-digit after decimal point without rounding */
@@ -1121,7 +1125,16 @@ Clock_Ops(void)
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
 		SC_INFO("Command: %s", System_Cmd);
-		system(System_Cmd);
+		FP = popen(System_Cmd, "r");
+		if (FP == NULL) {
+			SC_ERR("failed to start process %s: %m", System_Cmd);
+			return -1;
+		}
+
+		if (pclose(FP) != 0) {
+			SC_ERR("failed to set clock frequency");
+			return -1;
+		}
 
 		if (Command.CmdId == SETBOOTCLOCK) {
 			/* Remove the old value, if any */

@@ -43,9 +43,10 @@
  * 1.18 - Added 'setgpio' command.
  * 1.19 - Consolidate support for all SFP transceiver variants.
  * 1.20 - Added load PDI support.
+ * 1.21 - Added support for BIT description.
  */
 #define MAJOR	1
-#define MINOR	20
+#define MINOR	21
 
 #define GPIOLINE	"ZU4_TRIGGER"
 
@@ -132,6 +133,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	workaround - apply <target> workaround (may requires <value>)\n\
 \n\
 	listBIT - list the supported Board Interface Test targets\n\
+	describeBIT - describe BIT for <target>\n\
 	BIT - run BIT target\n\
 \n\
 	listddr - list the supported DDR DIMM targets\n\
@@ -197,6 +199,7 @@ typedef enum {
 	LISTWORKAROUND,
 	WORKAROUND,
 	LISTBIT,
+	DESCRIBEBIT,
 	BIT,
 	LISTDDR,
 	GETDDR,
@@ -258,6 +261,7 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTWORKAROUND, .CmdStr = "listworkaround", .CmdOps = Workaround_Ops, },
 	{ .CmdId = WORKAROUND, .CmdStr = "workaround", .CmdOps = Workaround_Ops, },
 	{ .CmdId = LISTBIT, .CmdStr = "listBIT", .CmdOps = BIT_Ops, },
+	{ .CmdId = DESCRIBEBIT, .CmdStr = "describeBIT", .CmdOps = BIT_Ops, },
 	{ .CmdId = BIT, .CmdStr = "BIT", .CmdOps = BIT_Ops, },
 	{ .CmdId = LISTDDR, .CmdStr = "listddr", .CmdOps = DDR_Ops, },
 	{ .CmdId = GETDDR, .CmdStr = "getddr", .CmdOps = DDR_Ops, },
@@ -1999,6 +2003,17 @@ int BIT_Ops(void)
 					 BITs->BIT[i].Levels);
 			} else {
 				SC_PRINT("%s", BITs->BIT[i].Name);
+			}
+		}
+
+		return 0;
+	}
+
+	if (Command.CmdId == DESCRIBEBIT) {
+		for (int i = 0; i < BITs->Numbers; i++) {
+			if (strcmp(Target_Arg, BITs->BIT[i].Name) == 0) {
+				SC_PRINT("%s", BITs->BIT[i].Description);
+				break;
 			}
 		}
 

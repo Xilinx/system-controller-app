@@ -606,6 +606,7 @@
 		"BITs": {
 			"BIT_IDCODE_VERIFY" : {
 				"Name" : "IDCODE Verify",
+				"Description" : "This test verifies Versal device ID code.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -616,6 +617,7 @@
 			},
 			"BIT_EFUSE_VERIFY" : {
 				"Name" : "EFUSE Verify",
+				"Description" : "This test verifies eFuse data.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -626,6 +628,7 @@
 			},
 			"BIT_VOLTAGES_CHECK" : {
 				"Name" : "Verify Voltages",
+				"Description" : "This test verifies board voltages.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -635,6 +638,7 @@
 			},
 			"BIT_CLOCKS_CHECK" : {
 				"Name" : "Verify Clock Settings",
+				"Description" : "This test verifies clock settings.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -644,6 +648,7 @@
 			},
 			"BIT_CLOCKS_OUTPUT_TEST" : {
 				"Name" : "Clocks Output Test",
+				"Description" : "This test verifies the clock output frequencies.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -654,6 +659,7 @@
 			},
 			"BIT_RTC_CLOCK_VERIFY" : {
 				"Name" : "RTC Clock Verify",
+				"Description" : "This test verifies real time clock (RTC).",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -664,6 +670,7 @@
 			},
 			"BIT_DDRMC_1_CAL_TEST" : {
 				"Name" : "DDRMC_1 Cal Test",
+				"Description" : "This test verifies DDR memory controller 1.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -673,6 +680,7 @@
 			},
 			"BIT_DDRMC_2_CAL_TEST" : {
 				"Name" : "DDRMC_2 Cal Test",
+				"Description" : "This test verifies DDR memory controller 2.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -682,6 +690,7 @@
 			},
 			"BIT_DDRMC_3_CAL_TEST" : {
 				"Name" : "DDRMC_3 Cal Test",
+				"Description" : "This test verifies DDR memory controller 3.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -691,6 +700,7 @@
 			},
 			"BIT_DRAM_MEM_TEST" : {
 				"Name" : "DRAM Mem Test",
+				"Description" : "This test verifies DRAM read/write.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -701,6 +711,7 @@
 			},
 			"BIT_QSPI_TEST" : {
 				"Name" : "QSPI Test",
+				"Description" : "This test verifies QSPI Flash read/write.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -711,6 +722,7 @@
 			},
 			"BIT_PL_UART_TEST" : {
 				"Name" : "PL UART Test",
+				"Description" : "This test verifies PL UART and requires manual verification.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -726,13 +738,18 @@
 			},
 			"BIT_LEDS_TEST" : {
 				"Name" : "LEDs Test",
+				"Description" : "This test verifies board LEDs (DS3-DS6).\nIt requires physical access to the Versal board and takes about 30 secs.\nAlso, it needs a manual verification.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Observe LED1 to LED4 blinking, then turn on/off in sequence.\n2- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for LEDs (DS3-DS6) on the board.\n2- Click 'OK' when you are ready.\n"
 					},
 					"Level 1" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Observe LED1 to LED4 blinking, then turn on/off in sequence.\n2- Click 'OK' when done.\n"
+					},
+					"Level 2" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x40",
 						"Instruction" : "\n1- Did you see the LEDs sequencing and blinking?\n2- Click 'Pass' if you observe it.\n"
@@ -741,13 +758,18 @@
 			},
 			"BIT_BUTTONS_TEST" : {
 				"Name" : "Buttons Test",
+				"Description" : "This test verifies push buttons (SW4, SW5).\nIt requires physical access to the Versal board and waits for about 60 secs to press buttons.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Press Push Buttons SW4 followed by SW5 and then any \n2- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for Push Buttons SW4 and SW5 on the board \n2- Click 'OK' when you are ready.\n"
 					},
 					"Level 1" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Press Push Buttons SW4 followed by SW5 and then any button\n2- Click 'OK' when done.\n"
+					},
+					"Level 2" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x80",
 						"Instruction" : "\n1- Click 'OK'.\n"
@@ -756,13 +778,18 @@
 			},
 			"BIT_DIP_SWITCHES_TEST" : {
 				"Name" : "DIP Switches Test",
+				"Description" : "This test verifies DIP switches (SW6).\nIt requires physical access to the Versal board and waits for about 60 secs to change DIP switches.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Turn On and Turn Off DIP Switches SW6 \n2- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for DIP switches SW6 on the board\n2- Click 'OK' when you are ready.\n"
 					},
 					"Level 1" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Turn On and Turn Off DIP Switches SW6 \n2- Click 'OK' done.\n"
+					},
+					"Level 2" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x100",
 						"Instruction" : "\n1- Click 'OK'.\n"

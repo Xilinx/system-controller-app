@@ -1231,8 +1231,17 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 		Validate_Str_Size(Value_Str, "BITs", "Name", STRLEN_MAX);
 		Temp->Name = Value_Str;
 		SC_INFO("Name: %s", Temp->Name);
-
 		(*Index)++;
+
+		Check_Attribute("Description", "BITs");
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+					Tokens[*Index].end - Tokens[*Index].start);
+		Temp = &(*BITs)->BIT[Item];
+		Validate_Str_Size(Value_Str, "BITs", "Description", SYSCMD_MAX);
+		Temp->Description = Value_Str;
+		SC_INFO("Description: %s", Temp->Description);
+		(*Index)++;
+
 		Check_Attribute("Manual", "BITs");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);

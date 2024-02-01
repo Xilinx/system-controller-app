@@ -50,22 +50,33 @@ after 1000
 # Set BIT test index
 mwr $PGG1 [lindex $argv 1]
 
-# Wait for test status
-set stat 0
-while {$stat == 0} {
-    set stat [lindex [mrd $PGG3] 1]
-    scan $stat "%8x" val
-    after 100
+# Wait for the test status cleared (= 0)
+variable stat 0xFFFFFFFF
+
+for {set i 0} {$i < 10} {incr i} {
+    scan [lindex [mrd $PGG3] 1] "%x" ::stat
+    if {$::stat == 0} {
+        break
+    }
+    after 200
 }
 
-# Check test status
-set stat [lindex [mrd $PGG3] 1]
-scan $stat "%8x" val
-set stat [expr {$val & 0x7FFFFFFF}]
-if {$stat != 0} {
-   puts "FAIL"
+# Check for the test completed status (0x80000XXX)
+if {$::stat == 0} {
+    for {set i 0} {$i < 100} {incr i} {
+        after 1000
+        scan [lindex [mrd $PGG3] 1] "%x" ::stat
+        if {($::stat & 0x80000000) != 0} {
+            break
+        }
+    }
+}
+
+# Check test passed or failed
+if {$::stat == 0x80000000} {
+    puts "PASS"
 } else {
-   puts "PASS"
+    puts "FAIL"
 }
 
 disconnect

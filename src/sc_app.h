@@ -292,6 +292,7 @@ typedef struct {
 
 typedef struct {
 	char	*Name;
+	char	*Description;
 	int	Manual;
 	int	Levels;
 	BIT_Level_t	Level[LEVELS_MAX];

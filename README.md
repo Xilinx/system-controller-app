@@ -48,6 +48,7 @@
 		workaround - apply <target> workaround (may requires <value>)
 
 		listBIT - list the supported Board Interface Test targets
+		describeBIT - describe BIT for <target>
 		BIT - run BIT target
 
 		listddr - list the supported DDR DIMM targets

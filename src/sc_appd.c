@@ -84,29 +84,7 @@ int Boot_Set_Voltages(void);
 int Boot_Load_PDI(void);
 int Apply_Workarounds(void);
 int IO_Exp_Initialized(void);
-void *Fancontrol(void*);
 static void String_2_Argv(char *, int *, char **);
-extern char *Appfile(char *);
-extern int Board_Identification(char *);
-extern int Silicon_Identification(char *, int);
-extern int Reset_Op(void);
-extern int Access_Regulator(Voltage_t *, float *, int);
-extern int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
-extern int Get_GPIO(char *, int *);
-extern int Set_GPIO(char *, int);
-extern int EEPROM_Common(char *);
-extern int EEPROM_Board(char *, int);
-extern int EEPROM_MultiRecord(char *, int);
-extern int Get_Temperature(Temperature_t *);
-extern int Get_BootMode(int);
-extern int Set_BootMode(BootMode_t *, int);
-extern int Get_IDT_8A34001(Clock_t *);
-extern int Set_IDT_8A34001(Clock_t *, char *, int);
-extern int Restore_IDT_8A34001(Clock_t *);
-extern int QSFP_ModuleSelect(SFP_t *, int);
-extern int FMCAutoVadj_Op(void);
-extern int Check_Config_File(char *, char *, int *);
-extern int XSDB_Op(const char *, const char *, char *, int);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -526,15 +504,15 @@ Parse_Options(int argc, char **argv)
 			break;
 		case 'c':
 			C_Flag = 1;
-			(void) strncpy(Command_Arg, optarg, sizeof(Command_Arg));
+			(void) strncpy(Command_Arg, optarg, (sizeof(Command_Arg) - 1));
 			break;
 		case 't':
 			T_Flag = 1;
-			(void) strncpy(Target_Arg, optarg, sizeof(Target_Arg));
+			(void) strncpy(Target_Arg, optarg, (sizeof(Target_Arg) - 1));
 			break;
 		case 'v':
 			V_Flag = 1;
-			(void) strncpy(Value_Arg, optarg, sizeof(Value_Arg));
+			(void) strncpy(Value_Arg, optarg, (sizeof(Value_Arg) - 1));
 			break;
 		case '?':
 			SC_ERR("invalid argument");
@@ -934,26 +912,26 @@ EEPROM_Ops(void)
 		SC_PRINT_N("Manufacturing Date: %s", ctime(&Time));
 		Offset = 0xE;
 		Length = (In_Buffer[Offset] & 0x3F);
-		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
 		SC_PRINT("Manufacturer: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
 		SC_PRINT("Product Name: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
 		SC_PRINT("Board Serial Number: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
 		SC_PRINT("Board Part Number: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		/* Skip FRU File ID */
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
 		SC_PRINT("Board Revision: %s", Buffer);
 		EEPROM_MultiRecord(In_Buffer, 1);
 		break;
@@ -1078,7 +1056,11 @@ Clock_Ops(void)
 			return -1;
 		}
 
-		(void) fgets(Output, sizeof(Output), FP);
+		if (fgets(Output, sizeof(Output), FP) == NULL) {
+			SC_ERR("failed to get clock frequency");
+			return -1;
+		}
+
 		if (pclose(FP) != 0) {
 			SC_ERR("failed to get clock frequency");
 			return -1;
@@ -1124,27 +1106,17 @@ Clock_Ops(void)
 
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
-		SC_INFO("Command: %s", System_Cmd);
-		FP = popen(System_Cmd, "r");
-		if (FP == NULL) {
-			SC_ERR("failed to start process %s: %m", System_Cmd);
-			return -1;
-		}
-
-		if (pclose(FP) != 0) {
-			SC_ERR("failed to set clock frequency");
+		if (Shell_Execute(System_Cmd) != 0) {
+			SC_ERR("failed to set clock frequency: %m");
 			return -1;
 		}
 
 		if (Command.CmdId == SETBOOTCLOCK) {
 			/* Remove the old value, if any */
 			(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
-			    Clock->Name, CLOCKFILE);
-			SC_INFO("Command: %s", System_Cmd);
-			system(System_Cmd);
-
-			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Clock->Name,
-			    Frequency);
+				       Clock->Name, CLOCKFILE);
+			(void) Shell_Execute(System_Cmd);
+			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Clock->Name, Frequency);
 			FP = fopen(CLOCKFILE, "a");
 			if (FP == NULL) {
 				SC_ERR("failed to append clock file %s: %m", CLOCKFILE);
@@ -1172,14 +1144,19 @@ Clock_Ops(void)
 		Frequency = Clock->Default_Freq;
 		(void) sprintf(System_Cmd, "echo %u > %s",
 		    (unsigned int)(Frequency * 1000000), Clock->Sysfs_Path);
-		SC_INFO("Command: %s", System_Cmd);
-		system(System_Cmd);
+		if (Shell_Execute(System_Cmd) != 0) {
+			SC_ERR("failed to restore clock frequency: %m");
+			return -1;
+		}
 
 		/* Remove any custom boot frequency */
 		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; "
 			       "sync", Clock->Name, CLOCKFILE);
-		SC_INFO("Command: %s", System_Cmd);
-		system(System_Cmd);
+		if (Shell_Execute(System_Cmd) != 0) {
+			SC_ERR("failed to update 'clock' config file: %m");
+			return -1;
+		}
+
 		break;
 	default:
 		SC_ERR("invalid clock command");
@@ -1280,12 +1257,9 @@ int Voltage_Ops(void)
 		if (Command.CmdId == SETBOOTVOLTAGE) {
 			/* Remove the old value, if any */
 			(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL",
-			    Regulator->Name, VOLTAGEFILE);
-			SC_INFO("Command: %s", System_Cmd);
-			system(System_Cmd);
-
-			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Regulator->Name,
-			    Voltage);
+				       Regulator->Name, VOLTAGEFILE);
+			(void) Shell_Execute(System_Cmd);
+			(void) sprintf(System_Cmd, "%s:\t%.3f\n", Regulator->Name, Voltage);
 			FP = fopen(VOLTAGEFILE, "a");
 			if (FP == NULL) {
 				SC_ERR("failed to append voltage file %s: %m",
@@ -1311,8 +1285,11 @@ int Voltage_Ops(void)
 		/* Remove any custom boot voltage */
 		(void) sprintf(System_Cmd, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; "
 			       "sync", Regulator->Name, VOLTAGEFILE);
-		SC_INFO("Command: %s", System_Cmd);
-		system(System_Cmd);
+		if (Shell_Execute(System_Cmd) != 0) {
+			SC_ERR("failed to update 'voltage' config file: %m");
+			return -1;
+		}
+
 		break;
 	default:
 		SC_ERR("invalid voltage command");
@@ -3105,12 +3082,12 @@ int FMC_List(void)
 		(void) close(FD);
 		Offset = 0xE;
 		Length = (In_Buffer[Offset] & 0x3F);
-		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
 		SC_INFO("%s - %s ", FMC->Name, Buffer);
 		SC_PRINT_N("%s - %s ", FMC->Name, Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
+		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
 		SC_PRINT("%s", Buffer);
 	}
 
@@ -3296,15 +3273,21 @@ PDI_Ops(void)
 		}
 
 		(void) sprintf(Output, "echo '%s' > %s; sync", Target_Arg, PDIFILE);
-		SC_INFO("Command: %s", Output);
-		system(Output);
+		if (Shell_Execute(Output) != 0) {
+			SC_ERR("failed to set boot PDI: %m");
+			return -1;
+		}
+
 		break;
 
 	case RESETBOOTPDI:
 		/* Leave an empty PDIFILE */
 		(void) sprintf(Output, "rm %s; touch %s; sync", PDIFILE, PDIFILE);
-		SC_INFO("Command: %s", Output);
-		system(Output);
+		if (Shell_Execute(Output) != 0) {
+			SC_ERR("failed to reset boot PDI: %m");
+			return -1;
+		}
+
 		break;
 
 	default:
@@ -3411,7 +3394,7 @@ Vccaux_Workaround(void)
 {
 	FILE *FP;
 	Voltages_t *Voltages;
-	Voltage_t *Regulator;
+	Voltage_t *Regulator = NULL;
 	float Voltage;
 	char Buffer[SYSCMD_MAX];
 	char Value[LSTRLEN_MAX];
@@ -3470,8 +3453,11 @@ Vccaux_Workaround(void)
 	if (access(CONFIGFILE, F_OK) != 0) {
 		(void) sprintf(Buffer, "echo \"Vccaux_Workaround: 0\" > %s; "
 			       "sync", CONFIGFILE);
-		SC_INFO("Command: %s", Buffer);
-		system(Buffer);
+		if (Shell_Execute(Buffer) != 0) {
+			SC_ERR("failed to update the config file: %m");
+			return -1;
+		}
+
 		return 0;
 	}
 
@@ -3484,8 +3470,11 @@ Vccaux_Workaround(void)
 	} else {
 		(void) sprintf(Buffer, "echo \"Vccaux_Workaround: 0\" >> %s; "
 			       "sync", CONFIGFILE);
-		SC_INFO("Command: %s", Buffer);
-		system(Buffer);
+		if (Shell_Execute(Buffer) != 0) {
+			SC_ERR("failed to update the config file: %m");
+			return -1;
+		}
+
 		return 0;
 	}
 
@@ -3526,7 +3515,7 @@ Boot_Set_Clocks(void)
 	FILE *FP;
 	int FD;
 	Clocks_t *Clocks;
-	Clock_t *Clock;
+	Clock_t *Clock = NULL;
 	char Buffer[SYSCMD_MAX];
 	char Value[SYSCMD_MAX];
 
@@ -3556,8 +3545,15 @@ Boot_Set_Clocks(void)
 			}
 		}
 
+		if (Clock == NULL) {
+			SC_ERR("invalid clock %s", Buffer);
+			(void) fclose(FP);
+			return -1;
+		}
+
 		if (Clock->Type == IDT_8A34001) {
 			if (Set_IDT_8A34001(Clock, Value, 0) != 0) {
+				(void) fclose(FP);
 				return -1;
 			}
 
@@ -3596,7 +3592,7 @@ Boot_Set_Voltages(void)
 {
 	FILE *FP;
 	Voltages_t *Voltages;
-	Voltage_t *Regulator;
+	Voltage_t *Regulator = NULL;
 	char Buffer[SYSCMD_MAX];
 	char Value[STRLEN_MAX];
 	float Voltage;

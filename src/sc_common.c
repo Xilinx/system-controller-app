@@ -26,15 +26,6 @@ extern char Silicon_Revision[];
 extern OnBoard_EEPROM_t Common_OnBoard_EEPROM;
 extern OnBoard_EEPROM_t Legacy_OnBoard_EEPROM;
 
-int Set_AltBootMode(int);
-int Get_GPIO(char *, int *);
-int Check_Config_File(char *, char *, int *);
-int Set_IDT_8A34001(Clock_t *, char *, int);
-int Get_IDCODE(char *, int);
-extern int Parse_JSON(const char *, Plat_Devs_t *);
-extern int VCK190_ES1_Vccaux_Workaround(void *);
-extern int VCK190_QSFP_ModuleSelect(SFP_t *, int);
-
 char *
 Appfile(char *Filename)
 {
@@ -106,7 +97,7 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 
 	Offset = 0x15;
 	Length = (In_Buffer[Offset] & 0x3F);
-	snprintf(Product_Name, Length + 1, "%s", &In_Buffer[Offset + 1]);
+	(void) strncpy(Product_Name, &In_Buffer[Offset + 1], (Length + 1));
 	SC_INFO("Product Name: %s", Product_Name);
 
 	return 0;
@@ -162,6 +153,21 @@ Silicon_Identification(char *Revision, int Length)
 }
 
 int
+Shell_Execute(char *Command)
+{
+	FILE *FP;
+
+	FP = popen(Command, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke '%s': %m", Command);
+		return -1;
+	}
+
+	SC_INFO("Shell Command: %s", Command);
+	return pclose(FP);
+}
+
+int
 Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 {
 	int FD;
@@ -174,6 +180,11 @@ Access_Regulator(Voltage_t *Regulator, float *Voltage, int Access)
 	float Current_Voltage, New_Voltage;
 	int Direction, Register;
 	unsigned int Value;
+
+	if (Regulator == NULL) {
+		SC_ERR("Regulator pointer is null!");
+		return -1;
+	}
 
 	/* Check if setting the requested voltage is within range */
 	if ((1 == Access) && (Regulator->Minimum_Volt != -1) &&
@@ -608,7 +619,8 @@ FMCAutoVadj_Op(void)
 	float Voltage = 0;
 	float Min_Volt[2] = { 0 };
 	float Max_Volt[2] = { 0 };
-	float Min_Combined, Max_Combined;
+	float Min_Combined = 0;
+	float Max_Combined = 0;
 	int Legacy_Approach = 0;
 	int State;
 	char *Regulator_Name;
@@ -772,12 +784,21 @@ Get_GPIO(char *Label, int *State)
 	SC_INFO("Command: %s", Buffer);
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
-		SC_ERR("failed to get the state of GPIO line %s", Label);
+		SC_ERR("failed to start process '%s': %m", Buffer);
 		return -1;
 	}
 
-	(void) fgets(Output, sizeof(Output), FP);
-	(void) pclose(FP);
+	if (fgets(Output, sizeof(Output), FP) == NULL) {
+		SC_ERR("failed to get the state of GPIO line '%s'", Label);
+		(void) pclose(FP);
+		return -1;
+	}
+
+	if (pclose(FP) != 0) {
+		SC_ERR("failed to get the state of GPIO line '%s'", Label);
+		return -1;
+	}
+
 	SC_INFO("Output: %s", Output);
 	if ((strcmp(Output, "0\n") != 0) && (strcmp(Output, "1\n") != 0)) {
 		SC_ERR("invalid output %s", Output);
@@ -791,10 +812,8 @@ Get_GPIO(char *Label, int *State)
 int
 Set_GPIO(char *Label, int State)
 {
-	FILE *FP;
 	char Chip_Name[STRLEN_MAX];
 	char Buffer[SYSCMD_MAX];
-	char Output[STRLEN_MAX] = {'\0'};
 	unsigned int Line_Offset;
 
 	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
@@ -805,18 +824,8 @@ Set_GPIO(char *Label, int State)
 
 	(void) sprintf(Buffer, "gpioset %s %d=%d 2>&1", Chip_Name, Line_Offset,
 		       State);
-	SC_INFO("Command: %s", Buffer);
-	FP = popen(Buffer, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to set GPIO line\n");
-		return -1;
-	}
-
-	(void) fgets(Output, sizeof(Output), FP);
-	(void) pclose(FP);
-	SC_INFO("Output: %s", Output);
-	if (Output[0] != '\0') {
-		SC_ERR("invalid output %s", Output);
+	if (Shell_Execute(Buffer) != 0) {
+		SC_ERR("failed to set GPIO line '%s': %m", Label);
 		return -1;
 	}
 
@@ -1399,11 +1408,16 @@ Get_IDT_8A34001(Clock_t *Clock)
 
 	FP = fopen(IDT8A34001FILE, "r");
 	if (FP == NULL) {
-		SC_ERR("failed to read file %s: %m", IDT8A34001FILE);
+		SC_ERR("failed to open file %s: %m", IDT8A34001FILE);
 		return -1;
 	}
 
-	(void) fgets(Buffer, SYSCMD_MAX, FP);
+	if (fgets(Buffer, SYSCMD_MAX, FP) == NULL) {
+		SC_ERR("failed to read file %s: %m", IDT8A34001FILE);
+		(void) fclose(FP);
+		return -1;
+	}
+
 	(void) fclose(FP);
 	if (Check_Clock_Files(Buffer, TCS_File, NULL) != 0) {
 		return -1;
@@ -1461,7 +1475,9 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	char TXT_File[SYSCMD_MAX];
 	char *Bus;
 	char *Walk;
-	char Offset, Nibble_1, Nibble_2;
+	char Offset;
+	char Nibble_1 = 0;
+	char Nibble_2 = 0;
 	int j;
 	int Ret = 0;
 
@@ -1569,8 +1585,10 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	 */
 	(void) sprintf(Buffer, "echo '%s' > %s; sync", Clock_Files,
 		       IDT8A34001FILE);
-	SC_INFO("Command: %s", Buffer);
-	system(Buffer);
+	if (Shell_Execute(Buffer) != 0) {
+		SC_ERR("failed to update '8A34001' config file: %m");
+		return -1;
+	}
 
 	/* Update the 'clock' file for the case of setboot mode */
 	if (Mode == 1) {
@@ -1639,8 +1657,10 @@ Restore_IDT_8A34001(Clock_t *Clock)
 	/* Remove the previous entry from 'clock' file, if any */
 	(void) sprintf(Buffer, "sed -i -e \'/^%s:/d\' %s 2> /dev/NULL; sync",
 		       Clock->Name, CLOCKFILE);
-	SC_INFO("Command: %s", Buffer);
-	system(Buffer);
+	if (Shell_Execute(Buffer) != 0) {
+		SC_ERR("failed to update 'clock' config file: %m");
+		return -1;
+	}
 
 	return 0;
 }
@@ -1687,11 +1707,16 @@ Reset_Op(void)
 	if (access(SILICONFILE, F_OK) == 0) {
 		FP = fopen(SILICONFILE, "r");
 		if (FP == NULL) {
-			SC_ERR("failed to read silicon file %s: %m", SILICONFILE);
+			SC_ERR("failed to open silicon file %s: %m", SILICONFILE);
 			return -1;
 		}
 
-		(void) fgets(Buffer, SYSCMD_MAX, FP);
+		if (fgets(Buffer, SYSCMD_MAX, FP) == NULL) {
+			SC_ERR("failed to read silicon file %s: %m", SILICONFILE);
+			(void) fclose(FP);
+			return -1;
+		}
+
 		(void) fclose(FP);
 		SC_INFO("%s: %s", SILICONFILE, Buffer);
 		if (strcmp(Buffer, "ES1\n") == 0) {
@@ -1722,11 +1747,16 @@ Reset_Op(void)
 	if (access(BOOTMODEFILE, F_OK) == 0) {
 		FP = fopen(BOOTMODEFILE, "r");
 		if (FP == NULL) {
-			SC_ERR("failed to read boot_mode file %s: %m", BOOTMODEFILE);
+			SC_ERR("failed to open boot_mode file %s: %m", BOOTMODEFILE);
 			return -1;
 		}
 
-		(void) fscanf(FP, "%s", Buffer);
+		if (fgets(Buffer, sizeof(Buffer), FP) == NULL) {
+			SC_ERR("failed to read boot_mode file %s: %m", BOOTMODEFILE);
+			(void) fclose(FP);
+			return -1;
+		}
+
 		(void) fclose(FP);
 		SC_INFO("%s: %s", BOOTMODEFILE, Buffer);
 		BootModes = Plat_Devs->BootModes;
@@ -1867,7 +1897,7 @@ Get_Temperature(Temperature_t *Temperature)
 	(void) sprintf(Buffer, "/usr/bin/sensors %s 2>&1", Temperature->Sensor);
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
-		SC_ERR("failed to invoke %s: %m", Buffer);
+		SC_ERR("failed to invoke '%s': %m", Buffer);
 		return -1;
 	}
 
@@ -1961,9 +1991,13 @@ Get_BootMode(int Method)
 			return -1;
 		}
 
-		(void) fgets(Buffer, SYSCMD_MAX, FP);
-		SC_PRINT_N("%s", Buffer);
+		if (fgets(Buffer, SYSCMD_MAX, FP) == NULL) {
+			SC_ERR("failed to read 'boot_mode' config file");
+			(void) fclose(FP);
+			return -1;
+		}
 
+		SC_PRINT_N("%s", Buffer);
 		(void) fclose(FP);
 		return 0;
 	}
@@ -2221,8 +2255,10 @@ Boot_Config_PDI(char *Entry)
 	}
 
 	(void) sprintf(Buffer, "echo '%s' > %s; sync", PDI_File, PDIFILE);
-	SC_INFO("Command: %s", Buffer);
-	system(Buffer);
+	if (Shell_Execute(Buffer) != 0) {
+		SC_ERR("failed to update 'PDI' config file: %m");
+		return -1;
+	}
 
 	return 0;
 }

@@ -483,5 +483,50 @@ typedef struct {
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))
 
+/*
+ * Function Declarations
+ */
+char *Appfile(char *);
+int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
+int Access_Regulator(Voltage_t *, float *, int);
+int Assert_Reset(void *, void *);
+int Board_Identification(char *);
+int Boot_Config_PDI(char *);
+int Check_Config_File(char *, char *, int *);
+int Clocks_Check(void *, void *);
+int DDRMC_1_Test(void *, void *);
+int DDRMC_2_Test(void *, void *);
+int DDRMC_3_Test(void *, void *);
+int DDRMC_4_Test(void *, void *);
+int DIMM_EEPROM_Check(void *, void *);
+int Display_Instruction(void *, void *);
+int EBM_EEPROM_Check(void *, void *);
+int EEPROM_Common(char *);
+int EEPROM_Board(char *, int);
+int EEPROM_MultiRecord(char *, int);
+int FMCAutoVadj_Op(void);
+int Get_BootMode(int);
+int Get_GPIO(char *, int *);
+int Get_IDCODE(char *, int);
+int Get_IDT_8A34001(Clock_t *);
+int Get_Temperature(Temperature_t *);
+int JTAG_Op(int);
+int Parse_JSON(const char *, Plat_Devs_t *);
+int QSFP_ModuleSelect(SFP_t *, int);
+int Reset_IDT_8A34001(void);
+int Reset_Op(void);
+int Restore_IDT_8A34001(Clock_t *);
+int Set_AltBootMode(int);
+int Set_BootMode(BootMode_t *, int);
+int Set_GPIO(char *, int);
+int Set_IDT_8A34001(Clock_t *, char *, int);
+int Shell_Execute(char *);
+int Silicon_Identification(char *, int);
+int VCK190_ES1_Vccaux_Workaround(void *);
+int VCK190_QSFP_ModuleSelect(SFP_t *, int);
+int Voltages_Check(void *, void *);
+int XSDB_BIT(void *, void *);
+int XSDB_Op(const char *, const char *, char *, int);
+
 #endif	/* SC_APP_H_ */
 

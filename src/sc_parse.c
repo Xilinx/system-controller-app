@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,22 +12,6 @@
 #include "sc_app.h"
 
 #define JSMN_TOKENS_SIZE 4096
-
-extern int VCK190_ES1_Vccaux_Workaround(void *);
-extern int Clocks_Check(void *, void *);
-extern int XSDB_BIT(void *, void *);
-extern int EBM_EEPROM_Check(void *, void *);
-extern int DIMM_EEPROM_Check(void *, void *);
-extern int Voltages_Check(void *, void *);
-extern int DDRMC_1_Test(void *, void *);
-extern int DDRMC_2_Test(void *, void *);
-extern int DDRMC_3_Test(void *, void *);
-extern int DDRMC_4_Test(void *, void *);
-extern int Display_Instruction(void *, void *);
-extern int Assert_Reset(void *, void *);
-extern int Reset_IDT_8A34001(void);
-extern int Check_Config_File(char *, char *, int *);
-extern int Boot_Config_PDI(char *);
 
 int jsoneq(const char *, jsmntok_t *, const char *);
 int Parse_Feature(const char *, jsmntok_t *, int *, FeatureList_t **);
@@ -56,9 +40,11 @@ const char * GPIO_Type_Str[] = { IO_TYPES };
 			    Tokens[*Index].end - Tokens[*Index].start); \
 	if (strcmp(Value_Str, (Attribute)) != 0) { \
 		SC_ERR("missing '%s' attribute for '%s'", (Attribute), (Feature)); \
+		free(Value_Str); \
 		return -1; \
 	} \
 \
+	free(Value_Str); \
 	(*Index)++; \
 }
 
@@ -66,6 +52,7 @@ const char * GPIO_Type_Str[] = { IO_TYPES };
 	if ((strlen(Parsed_String) + 1) > Size) { \
 		SC_ERR("%s: %s: value string '%s' is greater than %d characters", \
 			Feature, Attribute, Parsed_String, Size); \
+		free(Parsed_String); \
 		return -1; \
 	} \
 }
@@ -237,6 +224,7 @@ Parse_JSON(const char *Board_Name, Plat_Devs_t *Dev_Parse) {
 		}
 	}
 
+	free(Json_File);
 	return 0;
 }
 
@@ -270,9 +258,8 @@ Parse_Feature(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		Feature_List[Item] = (char *)malloc(strlen(Value_Str) + 1);
 		Validate_Str_Size(Value_Str, "FEATURE", "List", STRLEN_MAX);
-		strncpy(Feature_List[Item], Value_Str, strlen(Value_Str) + 1);
+		Feature_List[Item] = Value_Str;
 		SC_INFO("  %s  ", Feature_List[Item]);
 
 		Item++;
@@ -302,8 +289,7 @@ Parse_BootMode(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index + i].start,
 				    Tokens[*Index + i].end - Tokens[*Index + i].start);
 		Validate_Str_Size(Value_Str, "BOOTMODES", "Mode_Lines", SYSCMD_MAX);
-		Boot_Mode_Lines[i] = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy(Boot_Mode_Lines[i], Value_Str, strlen(Value_Str) + 1);
+		Boot_Mode_Lines[i] = Value_Str;
 		SC_INFO("%s", Boot_Mode_Lines[i]);
 	}
 	(*Boots)->Mode_Lines = Boot_Mode_Lines;
@@ -319,12 +305,12 @@ Parse_BootMode(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "BOOTMODES", "Modes", STRLEN_MAX);
-		(*Boots)->BootMode[Boot_Items].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*Boots)->BootMode[Boot_Items].Name, Value_Str, strlen(Value_Str) + 1);
+		(*Boots)->BootMode[Boot_Items].Name = Value_Str;
 		SC_INFO("Name: %s", (*Boots)->BootMode[Boot_Items].Name);
 		Value_Str = strndup(Json_File + Tokens[*Index + 1].start,
 				    Tokens[*Index + 1].end - Tokens[*Index + 1].start);
 		(*Boots)->BootMode[Boot_Items].Value = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 		SC_INFO("Value: %i\n", (*Boots)->BootMode[Boot_Items].Value);
 
 		Boot_Items++;
@@ -353,8 +339,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "CLOCK", "Name", STRLEN_MAX);
-		(*CLKs)->Clock[Clk_Items].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*CLKs)->Clock[Clk_Items].Name, Value_Str, strlen(Value_Str) + 1);
+		(*CLKs)->Clock[Clk_Items].Name = Value_Str;
 		SC_INFO("Name: %s", (*CLKs)->Clock[Clk_Items].Name);
 
 		(*Index)++;
@@ -368,14 +353,14 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		}
 
 		SC_INFO("Type: %s", Value_Str);
+		free(Value_Str);
 		if ((*CLKs)->Clock[Clk_Items].Type != IDT_8A34001) {
 			(*Index)++;
 			Check_Attribute("Sysfs_Path", "CLOCK");
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 			                    Tokens[*Index].end - Tokens[*Index].start);
 			Validate_Str_Size(Value_Str, "CLOCK", "Sysfs_Path", SYSCMD_MAX);
-			(*CLKs)->Clock[Clk_Items].Sysfs_Path = (char *)malloc(strlen(Value_Str) + 1);
-			strncpy((*CLKs)->Clock[Clk_Items].Sysfs_Path, Value_Str, strlen(Value_Str) + 1);
+			(*CLKs)->Clock[Clk_Items].Sysfs_Path = Value_Str;
 			SC_INFO("Sysfs Path: %s", (*CLKs)->Clock[Clk_Items].Sysfs_Path);
 
 			(*Index)++;
@@ -383,6 +368,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			(*CLKs)->Clock[Clk_Items].Default_Freq = atof(Value_Str);
+			free(Value_Str);
 			SC_INFO("Default Freq: %f", (*CLKs)->Clock[Clk_Items].Default_Freq);
 
 			(*Index)++;
@@ -390,6 +376,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			(*CLKs)->Clock[Clk_Items].Upper_Freq = atof(Value_Str);
+			free(Value_Str);
 			SC_INFO("Upper Freq: %f", (*CLKs)->Clock[Clk_Items].Upper_Freq);
 
 			(*Index)++;
@@ -397,12 +384,13 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			(*CLKs)->Clock[Clk_Items].Lower_Freq = atof(Value_Str);
+			free(Value_Str);
 			SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
 		} else {	// (Type == IDT_8A34001)
 			(*Index)++;
 			Check_Attribute("Display_Label", "CLOCK");
 			IDT_8A34001_Data =
-				(IDT_8A34001_Data_t *)malloc(sizeof(IDT_8A34001_Data_t));
+				(IDT_8A34001_Data_t *)calloc(1, sizeof(IDT_8A34001_Data_t));
 			int Count = Tokens[*Index].size;
 			(*Index)++;
 			char **Display_Labels = (char **)malloc(Count * sizeof(char *));
@@ -410,9 +398,8 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 				Value_Str = strndup(Json_File + Tokens[*Index + i].start,
 						    Tokens[*Index + i].end -
 						    Tokens[*Index + i].start);
-				Display_Labels[i] = (char *)malloc(strlen(Value_Str) + 1);
 				Validate_Str_Size(Value_Str, "CLOCK", "Display_Label", SYSCMD_MAX);
-				strncpy(Display_Labels[i], Value_Str, strlen(Value_Str) + 1);
+				Display_Labels[i] = Value_Str;
 				SC_INFO("%s", Display_Labels[i]);
 			}
 			IDT_8A34001_Data->Display_Label = Display_Labels;
@@ -425,9 +412,8 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 				Value_Str = strndup(Json_File + Tokens[*Index + i].start,
 						    Tokens[*Index + i].end -
 						    Tokens[*Index + i].start);
-				Internal_Labels[i] = (char *)malloc(strlen(Value_Str) + 1);
 				Validate_Str_Size(Value_Str, "CLOCK", "Internal_Label", SYSCMD_MAX);
-				strncpy(Internal_Labels[i], Value_Str, strlen(Value_Str) + 1);
+				Internal_Labels[i] = Value_Str;
 				SC_INFO("%s", Internal_Labels[i]);
 			}
 			IDT_8A34001_Data->Internal_Label = Internal_Labels;
@@ -443,8 +429,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "CLOCK", "I2C_Bus", STRLEN_MAX);
-		(*CLKs)->Clock[Clk_Items].I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*CLKs)->Clock[Clk_Items].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+		(*CLKs)->Clock[Clk_Items].I2C_Bus = Value_Str;
 		SC_INFO("I2C Bus: %s", (*CLKs)->Clock[Clk_Items].I2C_Bus);
 
 		(*Index)++;
@@ -453,6 +438,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr - Hex: %s", Value_Str);
 		(*CLKs)->Clock[Clk_Items].I2C_Address = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 
 		Clk_Items++;
 	}
@@ -479,8 +465,7 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "INA226", "Name", STRLEN_MAX);
-		(*INAs)->INA226[INA226_Items].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*INAs)->INA226[INA226_Items].Name, Value_Str, strlen(Value_Str) + 1);
+		(*INAs)->INA226[INA226_Items].Name = Value_Str;
 		SC_INFO("Name: %s", (*INAs)->INA226[INA226_Items].Name);
 
 		(*Index)++;
@@ -488,8 +473,7 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "INA226", "I2C_Bus", STRLEN_MAX);
-		(*INAs)->INA226[INA226_Items].I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*INAs)->INA226[INA226_Items].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+		(*INAs)->INA226[INA226_Items].I2C_Bus = Value_Str;
 		SC_INFO("I2C Bus: %s", (*INAs)->INA226[INA226_Items].I2C_Bus);
 
 		(*Index)++;
@@ -498,12 +482,14 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr - Hex: %s", Value_Str);
 		(*INAs)->INA226[INA226_Items].I2C_Address = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 
 		(*Index)++;
 		Check_Attribute("Shunt_Resistor", "INA226");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*INAs)->INA226[INA226_Items].Shunt_Resistor = atoi(Value_Str);
+		free(Value_Str);
 		SC_INFO("Shunt Resistor: %i", (*INAs)->INA226[INA226_Items].Shunt_Resistor);
 
 		(*Index)++;
@@ -511,6 +497,7 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*INAs)->INA226[INA226_Items].Maximum_Current = atoi(Value_Str);
+		free(Value_Str);
 		SC_INFO("Max Current: %i", (*INAs)->INA226[INA226_Items].Maximum_Current);
 
 		(*Index)++;
@@ -518,6 +505,7 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*INAs)->INA226[INA226_Items].Phase_Multiplier = atoi(Value_Str);
+		free(Value_Str);
 		SC_INFO("Phase_Multiplier: %i\n",
 		        (*INAs)->INA226[INA226_Items].Phase_Multiplier);
 
@@ -547,8 +535,7 @@ Parse_PowerDomain(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "POWER DOMAIN", "Name", STRLEN_MAX);
-		(*PowerDoms)->Power_Domain[PwrDom_Items].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*PowerDoms)->Power_Domain[PwrDom_Items].Name, Value_Str, strlen(Value_Str) + 1);
+		(*PowerDoms)->Power_Domain[PwrDom_Items].Name = Value_Str;
 		SC_INFO("\nName: %s", (*PowerDoms)->Power_Domain[PwrDom_Items].Name);
 
 		(*Index)++;
@@ -598,8 +585,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "VOLTAGE", "Name", STRLEN_MAX);
-		(*VCCs)->Voltage[Voltage_Items].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*VCCs)->Voltage[Voltage_Items].Name, Value_Str, strlen(Value_Str) + 1);
+		(*VCCs)->Voltage[Voltage_Items].Name = Value_Str;
 		SC_INFO("Name: %s", (*VCCs)->Voltage[Voltage_Items].Name);
 
 		(*Index)++;
@@ -607,8 +593,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "VOLTAGE", "Part_Name", STRLEN_MAX);
-		(*VCCs)->Voltage[Voltage_Items].Part_Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*VCCs)->Voltage[Voltage_Items].Part_Name, Value_Str, strlen(Value_Str) + 1);
+		(*VCCs)->Voltage[Voltage_Items].Part_Name = Value_Str;
 		SC_INFO("Part Name: %s", (*VCCs)->Voltage[Voltage_Items].Part_Name);
 
 		(*Index)++;
@@ -616,6 +601,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*VCCs)->Voltage[Voltage_Items].Maximum_Volt = atof(Value_Str);
+		free(Value_Str);
 		SC_INFO("\nMax Volt: %f", (*VCCs)->Voltage[Voltage_Items].Maximum_Volt);
 
 		(*Index)++;
@@ -623,6 +609,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*VCCs)->Voltage[Voltage_Items].Typical_Volt = atof(Value_Str);
+		free(Value_Str);
 		SC_INFO("Typ Volt: %f", (*VCCs)->Voltage[Voltage_Items].Typical_Volt);
 
 		(*Index)++;
@@ -630,6 +617,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*VCCs)->Voltage[Voltage_Items].Minimum_Volt = atof(Value_Str);
+		free(Value_Str);
 		SC_INFO("Min Volt: %f", (*VCCs)->Voltage[Voltage_Items].Minimum_Volt);
 
 		(*Index)++;
@@ -637,8 +625,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "VOLTAGE", "I2C_Bus", STRLEN_MAX);
-		(*VCCs)->Voltage[Voltage_Items].I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*VCCs)->Voltage[Voltage_Items].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+		(*VCCs)->Voltage[Voltage_Items].I2C_Bus = Value_Str;
 		SC_INFO("I2C Bus: %s", (*VCCs)->Voltage[Voltage_Items].I2C_Bus);
 
 		(*Index)++;
@@ -647,12 +634,14 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr - Hex: %s", Value_Str);
 		(*VCCs)->Voltage[Voltage_Items].I2C_Address = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 
 		(*Index)++;
 		Check_Attribute("PMBus_VOUT_MODE", "VOLTAGE");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*VCCs)->Voltage[Voltage_Items].PMBus_VOUT_MODE = atoi(Value_Str);
+		free(Value_Str);
 		SC_INFO("PMBus_VOUT_MODE: %i\n", (*VCCs)->Voltage[Voltage_Items].PMBus_VOUT_MODE);
 
 		(*Index)++;
@@ -660,19 +649,23 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*VCCs)->Voltage[Voltage_Items].Page_Select = atoi(Value_Str);
+		free(Value_Str);
 		SC_INFO("Page Select: %i\n", (*VCCs)->Voltage[Voltage_Items].Page_Select);
 
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		if (strcmp(Value_Str, "Voltage_Multiplier") == 0) {
+			free(Value_Str);
 			(*Index)++;
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			(*VCCs)->Voltage[Voltage_Items].Voltage_Multiplier = atoi(Value_Str);
+			free(Value_Str);
 			SC_INFO("Voltage Multiplier: %i\n",
 				(*VCCs)->Voltage[Voltage_Items].Voltage_Multiplier);
 		} else {
+			free(Value_Str);
 			(*Index)--;
 		}
 
@@ -696,8 +689,7 @@ Parse_Temperature(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	Validate_Str_Size(Value_Str, "Temperature", "Name", STRLEN_MAX);
-	(*Temperature)->Name = (char *)malloc(strlen(Value_Str) + 1);
-	strncpy((*Temperature)->Name, Value_Str, strlen(Value_Str) + 1);
+	(*Temperature)->Name = Value_Str;
 	SC_INFO("Name: %s", (*Temperature)->Name);
 
 	(*Index)++;
@@ -705,8 +697,7 @@ Parse_Temperature(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	Validate_Str_Size(Value_Str, "Temperature", "Sensor", STRLEN_MAX);
-	(*Temperature)->Sensor = (char *)malloc(strlen(Value_Str) + 1);
-	strncpy((*Temperature)->Sensor, Value_Str, strlen(Value_Str) + 1);
+	(*Temperature)->Sensor = Value_Str;
 	SC_INFO("Sensor: %s", (*Temperature)->Sensor);
 
 	return 0;
@@ -731,8 +722,7 @@ Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "DIMM", "Name", STRLEN_MAX);
-		(*DIMMs)->DIMM[DIMM_Items].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*DIMMs)->DIMM[DIMM_Items].Name, Value_Str, strlen(Value_Str) + 1);
+		(*DIMMs)->DIMM[DIMM_Items].Name = Value_Str;
 		SC_INFO("Name: %s", (*DIMMs)->DIMM[DIMM_Items].Name);
 
 		(*Index)++;
@@ -740,8 +730,7 @@ Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "DIMM", "I2C_Bus", STRLEN_MAX);
-		(*DIMMs)->DIMM[DIMM_Items].I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*DIMMs)->DIMM[DIMM_Items].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+		(*DIMMs)->DIMM[DIMM_Items].I2C_Bus = Value_Str;
 		SC_INFO("I2C_Bus: %s", (*DIMMs)->DIMM[DIMM_Items].I2C_Bus);
 
 		(*Index)++;
@@ -749,6 +738,7 @@ Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*DIMMs)->DIMM[DIMM_Items].I2C_Address_SPD = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 		SC_INFO("I2C_Address_SPD: %u", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_SPD);
 
 		(*Index)++;
@@ -756,6 +746,7 @@ Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*DIMMs)->DIMM[DIMM_Items].I2C_Address_Thermal = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 		SC_INFO("I2C_Address_Thermal: %u", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_Thermal);
 
 		DIMM_Items++;
@@ -853,6 +844,8 @@ Parse_GPIO_Group(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		} else if (!strncmp(Value_Str, "OD", 3)) {
 			(*GPIO_Groups)->GPIO_Group[Group_Items].Type = OD;
 		}
+
+		free(Value_Str);
 		SC_INFO("GPIO Type: %s", GPIO_Type_Str[(*GPIO_Groups)->GPIO_Group[Group_Items].Type]);
 
 		(*Index)++;
@@ -894,8 +887,7 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	Validate_Str_Size(Value_Str, "IO Exp", "Name", STRLEN_MAX);
-	(*IEs)->Name = (char *)malloc(strlen(Value_Str) + 1);
-	strncpy((*IEs)->Name, Value_Str, strlen(Value_Str) + 1);
+	(*IEs)->Name = Value_Str;
 	SC_INFO("Name: %s\n", (*IEs)->Name);
 
 	(*Index)++;
@@ -909,9 +901,8 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		IE_Labels[Label] = (char *)malloc(strlen(Value_Str) + 1);
 		Validate_Str_Size(Value_Str, "IO Exp", "Labels", STRLEN_MAX);
-		strncpy(IE_Labels[Label], Value_Str, strlen(Value_Str) + 1);
+		IE_Labels[Label] = Value_Str;
 		SC_INFO("\t%s", IE_Labels[Label]);
 
 		Label++;
@@ -926,6 +917,7 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*IEs)->Directions[Direcs] = atoi(Value_Str);
+		free(Value_Str);
 		SC_INFO(" %i ", (*IEs)->Directions[Direcs]);
 
 		Direcs++;
@@ -936,8 +928,7 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	Validate_Str_Size(Value_Str, "IO Exp", "I2C_Bus", STRLEN_MAX);
-	(*IEs)->I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-	strncpy((*IEs)->I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+	(*IEs)->I2C_Bus = Value_Str;
 	SC_INFO("I2C Bus: %s", (*IEs)->I2C_Bus);
 
 	(*Index)++;
@@ -946,6 +937,7 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 			    Tokens[*Index].end - Tokens[*Index].start);
 	SC_INFO("I2C Addr: %s", Value_Str);
 	(*IEs)->I2C_Address = (int)strtol(Value_Str, NULL, 0);
+	free(Value_Str);
 
 	return 0;
 }
@@ -964,8 +956,7 @@ Parse_DaughterCard(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	Validate_Str_Size(Value_Str, "Daughter Card", "Name", STRLEN_MAX);
-	(*DCs)->Name = (char *)malloc(strlen(Value_Str) + 1);
-	strncpy((*DCs)->Name, Value_Str, strlen(Value_Str) + 1);
+	(*DCs)->Name = Value_Str;
 	SC_INFO("Name: %s", (*DCs)->Name);
 
 	(*Index)++;
@@ -973,8 +964,7 @@ Parse_DaughterCard(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	Validate_Str_Size(Value_Str, "Daughter Card", "I2C_Bus", STRLEN_MAX);
-	(*DCs)->I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-	strncpy((*DCs)->I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+	(*DCs)->I2C_Bus = Value_Str;
 	SC_INFO("I2C Bus: %s", (*DCs)->I2C_Bus);
 
 	(*Index)++;
@@ -983,6 +973,7 @@ Parse_DaughterCard(const char *Json_File, jsmntok_t *Tokens, int *Index,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	SC_INFO("I2C Addr - Hex: %s", Value_Str);
 	(*DCs)->I2C_Address = (int)strtol(Value_Str, NULL, 0);
+	free(Value_Str);
 
 	return 0;
 }
@@ -1026,6 +1017,7 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 			(*SFPs)->SFP[Item].Type = osfp;
 		}
 
+		free(Value_Str);
 		(*Index)++;
 		Check_Attribute("I2C_Bus", "SFPs");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
@@ -1040,18 +1032,22 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr: %s", Value_Str);
 		(*SFPs)->SFP[Item].I2C_Address = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		if (strcmp(Value_Str, "Presence_Boundary_Scan") == 0) {
+			free(Value_Str);
 			(*Index)++;
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			(*SFPs)->SFP[Item].Presence_Boundary_Scan = atoi(Value_Str);
+			free(Value_Str);
 			SC_INFO("Presence Boundary Scan: %i",
 				(*SFPs)->SFP[Item].Presence_Boundary_Scan);
 		} else {
+			free(Value_Str);
 			(*Index)--;
 		}
 
@@ -1081,8 +1077,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "FMC", "Name", STRLEN_MAX);
-		(*FMCs)->FMC[Item].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*FMCs)->FMC[Item].Name, Value_Str, strlen(Value_Str) + 1);
+		(*FMCs)->FMC[Item].Name = Value_Str;
 		SC_INFO("Name: %s", (*FMCs)->FMC[Item].Name);
 
 		(*Index)++;
@@ -1090,8 +1085,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "FMC", "I2C_Bus", STRLEN_MAX);
-		(*FMCs)->FMC[Item].I2C_Bus = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*FMCs)->FMC[Item].I2C_Bus, Value_Str, strlen(Value_Str) + 1);
+		(*FMCs)->FMC[Item].I2C_Bus = Value_Str;
 		SC_INFO("I2C Bus: %s", (*FMCs)->FMC[Item].I2C_Bus);
 
 		(*Index)++;
@@ -1100,6 +1094,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 				    Tokens[*Index].end - Tokens[*Index].start);
 		SC_INFO("I2C Addr: %s", Value_Str);
 		(*FMCs)->FMC[Item].I2C_Address = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
 
 		(*Index)++;
 		Check_Attribute("Presence_Labels", "FMC");
@@ -1113,9 +1108,8 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 			(*Index)++;
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
-			Presence_Labels[Sub_Item] = (char *)malloc(strlen(Value_Str) + 1);
 			Validate_Str_Size(Value_Str, "FMC", "Presence_Labels", STRLEN_MAX);
-			strncpy(Presence_Labels[Sub_Item], Value_Str, strlen(Value_Str) + 1);
+			Presence_Labels[Sub_Item] = Value_Str;
 			SC_INFO("  %s  ", Presence_Labels[Sub_Item]);
 			Sub_Item++;
 		}
@@ -1135,6 +1129,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			Supported_Volts[Sub_Item] = atof(Value_Str);
+			free(Value_Str);
 			SC_INFO("  %f  ", Supported_Volts[Sub_Item]);
 			Sub_Item++;
 		}
@@ -1146,8 +1141,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "FMC", "Voltage_Regulator", STRLEN_MAX);
-		(*FMCs)->FMC[Item].Voltage_Regulator = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*FMCs)->FMC[Item].Voltage_Regulator, Value_Str, strlen(Value_Str) + 1);
+		(*FMCs)->FMC[Item].Voltage_Regulator = Value_Str;
 		SC_INFO("Voltage_Regulator: %s", (*FMCs)->FMC[Item].Voltage_Regulator);
 
 		(*Index)++;
@@ -1155,6 +1149,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*FMCs)->FMC[Item].Default_Volt = atof(Value_Str);
+		free(Value_Str);
 		SC_INFO("Default Voltage: %f", (*FMCs)->FMC[Item].Default_Volt);
 
 		Item++;
@@ -1183,8 +1178,7 @@ Parse_Workaround(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "WORKAROUND", "Name", STRLEN_MAX);
-		(*WAs)->Workaround[Item].Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy((*WAs)->Workaround[Item].Name, Value_Str, strlen(Value_Str) + 1);
+		(*WAs)->Workaround[Item].Name = Value_Str;
 		SC_INFO("Name: %s", (*WAs)->Workaround[Item].Name);
 
 		(*Index)++;
@@ -1235,8 +1229,7 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Temp = &(*BITs)->BIT[Item];
 		Validate_Str_Size(Value_Str, "BITs", "Name", STRLEN_MAX);
-		Temp->Name = (char *)malloc(strlen(Value_Str) + 1);
-		strncpy(Temp->Name, Value_Str, strlen(Value_Str) + 1);
+		Temp->Name = Value_Str;
 		SC_INFO("Name: %s", Temp->Name);
 
 		(*Index)++;
@@ -1244,6 +1237,7 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
 		Temp->Manual = atoi(Value_Str);
+		free(Value_Str);
 		SC_INFO("Manual: %i", Temp->Manual);
 
 		(*Index)++;
@@ -1260,14 +1254,14 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 					    Tokens[*Index].end - Tokens[*Index].start);
 			SC_INFO("Plat BIT Op: %s", Value_Str);
 			if (strcmp(Value_Str, "XSDB_BIT") == 0) {
+				free(Value_Str);
 				Temp->Level[Level].Plat_BIT_Op = XSDB_BIT;
 				(*Index)++;
 				Check_Attribute("TCL_File", "BITs");
 				Value_Str = strndup(Json_File + Tokens[*Index].start,
 						    Tokens[*Index].end - Tokens[*Index].start);
 				Validate_Str_Size(Value_Str, "BITs", "TCL_File", SYSCMD_MAX);
-				Temp->Level[Level].TCL_File = (char *)malloc(strlen(Value_Str) + 1);
-				strncpy(Temp->Level[Level].TCL_File, Value_Str, strlen(Value_Str) + 1);
+				Temp->Level[Level].TCL_File = Value_Str;
 				SC_INFO("TCL File: %s", Temp->Level[Level].TCL_File);
 			} else {
 				if (strcmp(Value_Str, "Clocks_Check") == 0) {
@@ -1292,8 +1286,11 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 					Temp->Level[Level].Plat_BIT_Op = Assert_Reset;
 				} else {
 					SC_ERR("Unknown Platform BIT Operation: %s", Value_Str);
+					free(Value_Str);
 					return -1;
 				}
+
+				free(Value_Str);
 			}
 
 			if (Temp->Manual == 1) {
@@ -1316,7 +1313,7 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 
 				i = 1;
 				j = i + 1;
-				while (Value_Str[i] != '\0') {
+				while (Value_Str[i - 1] != '\0') {
 					if (Value_Str[j] == '|') {
 						j++;
 					}
@@ -1326,8 +1323,7 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 				}
 
 				Validate_Str_Size(Value_Str, "BITs", "Instruction", SYSCMD_MAX);
-				Temp->Level[Level].Instruction = (char *)malloc(strlen(Value_Str) + 1);
-				strncpy(Temp->Level[Level].Instruction, Value_Str, strlen(Value_Str) + 1);
+				Temp->Level[Level].Instruction = Value_Str;
 				SC_INFO("Instruction: %s", Temp->Level[Level].Instruction);
 			}
 
@@ -1477,8 +1473,11 @@ Parse_BootConfig(const char *Json_File, jsmntok_t *Tokens, int *Index)
 		SC_INFO("PDI: %s", Value_Str);
 		if (Boot_Config_PDI(Value_Str) != 0) {
 			SC_ERR("failed to set boot config for PDI %s", Value_Str);
+			free(Value_Str);
 			return -1;
 		}
+
+		free(Value_Str);
 	}
 
 	return 0;

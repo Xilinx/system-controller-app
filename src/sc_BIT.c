@@ -14,12 +14,7 @@
 #include "sc_app.h"
 
 extern Plat_Devs_t *Plat_Devs;
-
 extern char Board_Name[];
-extern int Access_Regulator(Voltage_t *, float *, int);
-extern int Reset_Op(void);
-extern int XSDB_Op(const char *, const char *, char *, int);
-extern int JTAG_Op(int);
 
 /*
  * This test validates whether the current clock frequency is

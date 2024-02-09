@@ -1893,6 +1893,7 @@ Get_Temperature(Temperature_t *Temperature)
 	FILE *FP;
 	char Buffer[SYSCMD_MAX];
 	char *Temp;
+	float Float_Temp;
 
 	(void) sprintf(Buffer, "/usr/bin/sensors %s 2>&1", Temperature->Sensor);
 	FP = popen(Buffer, "r");
@@ -1914,7 +1915,8 @@ Get_Temperature(Temperature_t *Temperature)
 
 		(void) strtok(Buffer, " ");
 		Temp = strtok(NULL, " ");
-		SC_PRINT("Temperature(C):\t%s", Temp);
+		Float_Temp = strtof(Temp, NULL);
+		SC_PRINT("Temperature(C):\t%3.1f", Float_Temp);
 	}
 
 	(void) pclose(FP);

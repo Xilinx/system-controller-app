@@ -916,26 +916,26 @@ EEPROM_Ops(void)
 		SC_PRINT_N("Manufacturing Date: %s", ctime(&Time));
 		Offset = 0xE;
 		Length = (In_Buffer[Offset] & 0x3F);
-		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("Manufacturer: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("Product Name: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("Board Serial Number: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("Board Part Number: %s", Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
 		/* Skip FRU File ID */
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("Board Revision: %s", Buffer);
 		EEPROM_MultiRecord(In_Buffer, 1);
 		break;
@@ -3097,12 +3097,12 @@ int FMC_List(void)
 		(void) close(FD);
 		Offset = 0xE;
 		Length = (In_Buffer[Offset] & 0x3F);
-		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_INFO("%s - %s ", FMC->Name, Buffer);
 		SC_PRINT_N("%s - %s ", FMC->Name, Buffer);
 		Offset = Offset + Length + 1;
 		Length = (In_Buffer[Offset] & 0x3F);
-		(void) strncpy(Buffer, &In_Buffer[Offset + 1], (Length + 1));
+		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("%s", Buffer);
 	}
 

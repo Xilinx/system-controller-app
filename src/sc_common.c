@@ -97,7 +97,7 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 
 	Offset = 0x15;
 	Length = (In_Buffer[Offset] & 0x3F);
-	(void) strncpy(Product_Name, &In_Buffer[Offset + 1], (Length + 1));
+	snprintf(Product_Name, Length + 1, "%s", &In_Buffer[Offset + 1]);
 	SC_INFO("Product Name: %s", Product_Name);
 
 	return 0;

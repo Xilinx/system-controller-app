@@ -985,7 +985,7 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 	int Item = 0;
 
 	SC_INFO("******************** SFPs ********************");
-	*SFPs = (SFPs_t *)malloc(sizeof(SFPs_t));
+	*SFPs = (SFPs_t *)calloc(1, sizeof(SFPs_t));
 
 	(*Index)++;
 	(*SFPs)->Numbers = Tokens[*Index].size;

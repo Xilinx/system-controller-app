@@ -441,7 +441,7 @@
 		},
 		"Temperature": {
 			"Name": "Versal",
-			"Sensor": "xsysmoni2c-i2c-3-18"
+			"Sensor": "versal-isa-0000"
 		},
 		"GPIO_Group": {
 			"SW1": {

@@ -2661,6 +2661,7 @@ int SFP_Ops(void)
 	char Out_Buffer[STRLEN_MAX];
 	int I2C_Address;
 	int Ret = 0;
+	SFP_Type Type_Detected;
 
 	SFPs = Plat_Devs->SFPs;
 	if (SFPs == NULL) {
@@ -2704,14 +2705,76 @@ int SFP_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETSFP:
+		/*
+		 * Reading offset 0x0 returns a value that identifies which type of
+		 * transceiver is plugged into the SFP cage (refer to SFF-8024 spec,
+		 * table 4-1).
+		 */
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (SFP->Type == sfp) {
+		I2C_READ(FD, SFP->I2C_Address, 1, Out_Buffer, In_Buffer, Ret);
+		if (Ret != 0) {
+			goto Out;
+		}
+
+		SC_INFO("SFP type identifier: 0x%x", In_Buffer[0]);
+		switch (In_Buffer[0]) {
+		case 0x3:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "SFP/SFP+/SFP28");
+			Type_Detected = sfp;
+			break;
+		case 0x20:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "SFP+");
+			Type_Detected = sfp;
+			break;
+		case 0x1a:
+		case 0x1f:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "SFP-DD");
+			Type_Detected = sfpdd;
+			break;
+		case 0xc:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "QSFP");
+			Type_Detected = qsfp;
+			break;
+		case 0xd:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "QSFP+");
+			Type_Detected = qsfp;
+			break;
+		case 0x11:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "QSFP28");
+			Type_Detected = qsfp;
+			break;
+		case 0x18:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "QSFP-DD");
+			Type_Detected = qsfpdd;
+			break;
+		case 0x19:
+		case 0x21:
+			SC_PRINT("Module Type (0x%x):\t%s", Out_Buffer[0],
+				 "OSFP");
+			Type_Detected = osfp;
+			break;
+		default:
+			SC_ERR("Unsupported SFP");
+			Ret = -1;
+			goto Out;
+		}
+
+		(void) memset(Out_Buffer, 0, STRLEN_MAX);
+		(void) memset(In_Buffer, 0, STRLEN_MAX);
+		if (Type_Detected == sfp) {
 			Out_Buffer[0] = 0x14;	// 0x14-0x23: Vendor Name
-		} else if (SFP->Type == qsfp) {
+		} else if (Type_Detected == qsfp) {
 			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Vendor Name
-		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
-			   SFP->Type == osfp) {
+		} else if (Type_Detected == sfpdd || Type_Detected == qsfpdd ||
+			   Type_Detected == osfp) {
 			Out_Buffer[0] = 0x81;	// 0x81-0x90: Vendor Name
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2729,12 +2792,12 @@ int SFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (SFP->Type == sfp) {
+		if (Type_Detected == sfp) {
 			Out_Buffer[0] = 0x28;	// 0x28-0x37: Part Number
-		} else if (SFP->Type == qsfp) {
+		} else if (Type_Detected == qsfp) {
 			Out_Buffer[0] = 0xA8;	// 0xA8-0xB7: Part Number
-		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
-			   SFP->Type == osfp) {
+		} else if (Type_Detected == sfpdd || Type_Detected == qsfpdd ||
+			   Type_Detected == osfp) {
 			Out_Buffer[0] = 0x94;	// 0x94-0xA3: Part Number
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2752,12 +2815,12 @@ int SFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (SFP->Type == sfp) {
+		if (Type_Detected == sfp) {
 			Out_Buffer[0] = 0x44;	// 0x44-0x53: Serial Number
-		} else if (SFP->Type == qsfp) {
+		} else if (Type_Detected == qsfp) {
 			Out_Buffer[0] = 0xC4;	// 0xC4-0xD3: Serial Number
-		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
-			   SFP->Type == osfp) {
+		} else if (Type_Detected == sfpdd || Type_Detected == qsfpdd ||
+			   Type_Detected == osfp) {
 			Out_Buffer[0] = 0xA6;	// 0xA6-0xB5: Serial Number
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2776,13 +2839,13 @@ int SFP_Ops(void)
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
 		I2C_Address = SFP->I2C_Address;
-		if (SFP->Type == sfp) {
+		if (Type_Detected == sfp) {
 			Out_Buffer[0] = 0x60;	// 0x60-0x61: Temperature
 			I2C_Address = SFP->I2C_Address + 1;
-		} else if (SFP->Type == qsfp) {
+		} else if (Type_Detected == qsfp) {
 			Out_Buffer[0] = 0x16;	// 0x16-0x17: Temperature
-		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
-			   SFP->Type == osfp) {
+		} else if (Type_Detected == sfpdd || Type_Detected == qsfpdd ||
+			   Type_Detected == osfp) {
 			Out_Buffer[0] = 0xE;	// 0xE-0xF: Temperature
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2805,12 +2868,12 @@ int SFP_Ops(void)
 
 		(void) memset(Out_Buffer, 0, STRLEN_MAX);
 		(void) memset(In_Buffer, 0, STRLEN_MAX);
-		if (SFP->Type == sfp) {
+		if (Type_Detected == sfp) {
 			Out_Buffer[0] = 0x62;	// 0x62-0x63: Supply Voltage
-		} else if (SFP->Type == qsfp) {
+		} else if (Type_Detected == qsfp) {
 			Out_Buffer[0] = 0x1A;	// 0x1A-0x1B: Supply Voltage
-		} else if (SFP->Type == sfpdd || SFP->Type == qsfpdd ||
-			   SFP->Type == osfp) {
+		} else if (Type_Detected == sfpdd || Type_Detected == qsfpdd ||
+			   Type_Detected == osfp) {
 			Out_Buffer[0] = 0x10;	// 0x10-0x11: Supply Voltage
 		} else {
 			SC_ERR("Unsupported SFP");
@@ -2830,7 +2893,7 @@ int SFP_Ops(void)
 		SC_PRINT("Supply Voltage(V) (%#x-%#x):\t%.2f", Out_Buffer[0],
 			 (Out_Buffer[0] + 1), ((float)Value * 0.0001));
 
-		if (SFP->Type == sfp) {
+		if (Type_Detected == sfp) {
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x70;	// 0x70-0x71: Alarm
@@ -2842,7 +2905,7 @@ int SFP_Ops(void)
 			SC_PRINT("Alarm (0x70-0x71):\t%#x", (In_Buffer[0] << 8) |
 				 In_Buffer[1]);
 
-		} else if (SFP->Type == sfpdd) {
+		} else if (Type_Detected == sfpdd) {
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x5;	// 0x5-0xD: Alarms
@@ -2857,7 +2920,7 @@ int SFP_Ops(void)
 				 ((In_Buffer[4] << 8) | In_Buffer[5]),
 				 ((In_Buffer[6] << 8) | In_Buffer[7]), In_Buffer[8]);
 
-		} else if (SFP->Type == qsfp) {
+		} else if (Type_Detected == qsfp) {
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x3;	// 0x3-0x4: Alarms
@@ -2892,7 +2955,7 @@ int SFP_Ops(void)
 				 In_Buffer[1]), ((In_Buffer[2] << 8) |
 				 In_Buffer[3]));
 
-		} else if (SFP->Type == qsfpdd || SFP->Type == osfp) {
+		} else if (Type_Detected == qsfpdd || Type_Detected == osfp) {
 			(void) memset(Out_Buffer, 0, STRLEN_MAX);
 			(void) memset(In_Buffer, 0, STRLEN_MAX);
 			Out_Buffer[0] = 0x8;	// 0x8-0xB: Alarms

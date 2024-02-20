@@ -607,12 +607,12 @@ Constraint_Pre_Ops()
 			if ((Pre_Phases->Phase[i].Args != NULL) &&
 			    (strcmp(Pre_Phases->Phase[i].Args, "$PASSON") == 0)) {
 				(void) sprintf(System_Cmd, "%s%s/%s %s %s",
-					       BIT_PATH, Board_Name,
+					       SCRIPT_PATH, Board_Name,
 					       Pre_Phases->Phase[i].Command,
 					       Target_Arg, Value_Arg);
 			} else {
 				(void) sprintf(System_Cmd, "%s%s/%s %s",
-					       BIT_PATH, Board_Name,
+					       SCRIPT_PATH, Board_Name,
 					       Pre_Phases->Phase[i].Command,
 					       ((Pre_Phases->Phase[i].Args != NULL) ?
 					       Pre_Phases->Phase[i].Args : ""));

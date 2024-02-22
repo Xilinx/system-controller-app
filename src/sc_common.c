@@ -107,32 +107,53 @@ int
 Board_Identification(char *Board_Name)
 {
 	OnBoard_EEPROM_t *OnBoard_EEPROM;
+	char Board_File[SYSCMD_MAX];
+	char Board_Path[LSTRLEN_MAX];
+	char Value[LSTRLEN_MAX];
+	int Found = 0;
 
 	Plat_Devs = (Plat_Devs_t *)calloc(1, sizeof(Plat_Devs_t));
 
 	OnBoard_EEPROM = &Common_OnBoard_EEPROM;
 	SC_INFO("Accessing 'Common_OnBoard_EEPROM'");
 	if (Get_Product_Name(OnBoard_EEPROM, Board_Name) != 0) {
-		goto Legacy;
-	}
-
-	if (Parse_JSON(Board_Name, Plat_Devs) != 0) {
-Legacy:
 		OnBoard_EEPROM = &Legacy_OnBoard_EEPROM;
 		SC_INFO("Accessing 'Legacy_OnBoard_EEPROM'");
 		if (Get_Product_Name(OnBoard_EEPROM, Board_Name) != 0) {
 			SC_ERR("failed to identify the board");
 			return -1;
 		}
+	}
 
-		if (Parse_JSON(Board_Name, Plat_Devs) != 0) {
+	/*
+	 * The default location of JSON file can be overridden by defining
+	 * 'Board_Path' parameter in CONFIGFILE.
+	 */
+	if (Check_Config_File("Board_Path", Value, &Found) != 0) {
+		return -1;
+	}
+
+	(void) strcpy(Board_Path, ((Found) ? Value : BOARD_PATH));
+	SC_INFO("Board Path: %s", Board_Path);
+
+	snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, Board_Name);
+	if (strstr(Board_File, "VMK180") != NULL) {
+		snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, "VCK190");
+	}
+
+	SC_INFO("Board File: %s", Board_File);
+	if (access(Board_File, F_OK) == 0) {
+		if (Parse_JSON(Board_File, Plat_Devs) != 0) {
 			SC_ERR("failed to parse JSON file for board '%s'",
 			       Board_Name);
 			return -1;
 		}
+
+		Plat_Devs->OnBoard_EEPROM = OnBoard_EEPROM;
+	} else {
+		(void) strcpy(Board_Name, "Unknown");
 	}
 
-	Plat_Devs->OnBoard_EEPROM = OnBoard_EEPROM;
 	return 0;
 }
 

@@ -76,9 +76,8 @@ VCK190_ES1_Vccaux_Workaround(void *Arg)
  * programmed to drive QSFP1_MODSKLL_LS low, the QSFP will not respond.
  */
 int
-VCK190_QSFP_ModuleSelect(SFP_t *Arg, int State)
+VCK190_QSFP_ModuleSelect(__attribute__((unused)) SFP_t *Arg, int State)
 {
-	__attribute__((unused)) void *Ignore = Arg;
 	char TCL_File[STRLEN_MAX];
 	char TCL_Args[STRLEN_MAX];
 	char Output[STRLEN_MAX] = { 0 };

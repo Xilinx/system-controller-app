@@ -130,10 +130,9 @@ XSDB_BIT(void *Arg1, void *Arg2)
  * This routine checks whether EEPROM of EBM daughter card is accessible.
  */
 int
-EBM_EEPROM_Check(void *Arg1, void *Arg2)
+EBM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
-	__attribute__((unused)) void *Ignore = Arg2;
 	Daughter_Card_t *Daughter_Card;
 	int FD;
 	char Buffer[1];
@@ -177,10 +176,9 @@ EBM_EEPROM_Check(void *Arg1, void *Arg2)
  * it is accessible.
  */
 int
-DIMM_EEPROM_Check(void *Arg1, void *Arg2)
+DIMM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
-	__attribute__((unused)) void *Ignore = Arg2;
 	int FD;
 	DIMMs_t *DIMMs;
 	DIMM_t *DIMM;
@@ -233,10 +231,9 @@ DIMM_EEPROM_Check(void *Arg1, void *Arg2)
  * expected minimum and maximum values.
  */
 int
-Voltages_Check(void *Arg1, void *Arg2)
+Voltages_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
-	__attribute__((unused)) void *Ignore = Arg2;
 	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;
@@ -389,36 +386,32 @@ Out:
 }
 
 int
-DDRMC_1_Test(void *Arg1, void *Arg2)
+DDRMC_1_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 {
-	__attribute__((unused)) void *Ignore = Arg2;
 	int DDRMC = 1;
 
 	return (DDRMC_Test(Arg1, (void *)&DDRMC));
 }
 
 int
-DDRMC_2_Test(void *Arg1, void *Arg2)
+DDRMC_2_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 {
-	__attribute__((unused)) void *Ignore = Arg2;
 	int DDRMC = 2;
 
 	return (DDRMC_Test(Arg1, (void *)&DDRMC));
 }
 
 int
-DDRMC_3_Test(void *Arg1, void *Arg2)
+DDRMC_3_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 {
-	__attribute__((unused)) void *Ignore = Arg2;
 	int DDRMC = 3;
 
 	return (DDRMC_Test(Arg1, (void *)&DDRMC));
 }
 
 int
-DDRMC_4_Test(void *Arg1, void *Arg2)
+DDRMC_4_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 {
-	__attribute__((unused)) void *Ignore = Arg2;
 	int DDRMC = 4;
 
 	return (DDRMC_Test(Arg1, (void *)&DDRMC));

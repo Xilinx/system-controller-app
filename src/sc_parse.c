@@ -717,7 +717,7 @@ Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*DIMMs)->DIMM[DIMM_Items].I2C_Address_SPD = (int)strtol(Value_Str, NULL, 0);
 		free(Value_Str);
-		SC_INFO("I2C_Address_SPD: %u", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_SPD);
+		SC_INFO("I2C_Address_SPD: %d", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_SPD);
 
 		(*Index)++;
 		Check_Attribute("I2C_Address_Thermal", "DIMM");
@@ -725,7 +725,7 @@ Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*DIMMs)->DIMM[DIMM_Items].I2C_Address_Thermal = (int)strtol(Value_Str, NULL, 0);
 		free(Value_Str);
-		SC_INFO("I2C_Address_Thermal: %u", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_Thermal);
+		SC_INFO("I2C_Address_Thermal: %d", (*DIMMs)->DIMM[DIMM_Items].I2C_Address_Thermal);
 
 		DIMM_Items++;
 	}
@@ -896,7 +896,7 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 				    Tokens[*Index].end - Tokens[*Index].start);
 		(*IEs)->Directions[Direcs] = atoi(Value_Str);
 		free(Value_Str);
-		SC_INFO(" %i ", (*IEs)->Directions[Direcs]);
+		SC_INFO(" %u ", (*IEs)->Directions[Direcs]);
 
 		Direcs++;
 	}

@@ -3731,6 +3731,7 @@ Boot_Load_PDI(void)
 
 	/* If PDIFILE is empty, there is nothing to do */
 	if (fgets(Buffer, sizeof(Buffer), FP) == NULL) {
+		fclose(FP);
 		return 0;
 	}
 
@@ -3738,6 +3739,7 @@ Boot_Load_PDI(void)
 	(void) strtok(Buffer, "\n");
 	SC_INFO("Load PDI file: %s", Buffer);
 	if (Validate_PDI(Buffer, PDI_Path) != 0) {
+		fclose(FP);
 		return -1;
 	}
 
@@ -3745,9 +3747,11 @@ Boot_Load_PDI(void)
 	(void) sprintf(TCL_Path, "%s%s", SCRIPT_PATH, PDI_LOAD_TCL);
 	if (XSDB_Op(TCL_Path, PDI_Path, Buffer, sizeof(Buffer)) != 0) {
 		SC_ERR("failed to download PDI");
+		fclose(FP);
 		return -1;
 	}
 
+	fclose(FP);
 	return 0;
 }
 

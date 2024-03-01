@@ -736,8 +736,8 @@ FMCAutoVadj_Op(void)
 		Min_Combined = Min_Volt[1];
 		Max_Combined = Max_Volt[1];
 	} else if (Present[0] == 1 && Present[1] == 1) {
-		Min_Combined = MAX(Min_Volt[0], Min_Volt[0]);
-		Max_Combined = MIN(Max_Volt[1], Max_Volt[1]);
+		Min_Combined = MAX(Min_Volt[0], Min_Volt[1]);
+		Max_Combined = MIN(Max_Volt[0], Max_Volt[1]);
 	}
 
 	SC_INFO("Combined Min: %.2f, Combined Max: %.2f",
@@ -801,7 +801,7 @@ Get_GPIO(char *Label, int *State)
 		return -1;
 	}
 
-	(void) sprintf(Buffer, "gpioget %s %d 2>&1", Chip_Name, Line_Offset);
+	(void) sprintf(Buffer, "gpioget %s %u 2>&1", Chip_Name, Line_Offset);
 	SC_INFO("Command: %s", Buffer);
 	FP = popen(Buffer, "r");
 	if (FP == NULL) {
@@ -843,7 +843,7 @@ Set_GPIO(char *Label, int State)
 		return -1;
 	}
 
-	(void) sprintf(Buffer, "gpioset %s %d=%d 2>&1", Chip_Name, Line_Offset,
+	(void) sprintf(Buffer, "gpioset %s %u=%d 2>&1", Chip_Name, Line_Offset,
 		       State);
 	if (Shell_Execute(Buffer) != 0) {
 		SC_ERR("failed to set GPIO line '%s': %m", Label);
@@ -1487,7 +1487,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	FILE *FP;
 	int FD;
 	char Buffer[SYSCMD_MAX];
-	int Size;
+	unsigned int Size;
 	char BIN_File[SYSCMD_MAX];
 	char Data_String[SYSCMD_MAX];
 	char Data[SYSCMD_MAX];
@@ -1496,7 +1496,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	char TXT_File[SYSCMD_MAX];
 	char *Bus;
 	char *Walk;
-	char Offset;
+	unsigned char Offset;
 	char Nibble_1 = 0;
 	char Nibble_2 = 0;
 	int j;
@@ -2179,7 +2179,11 @@ QSFP_ModuleSelect(SFP_t *SFP, int State)
 		}
 	}
 
-	Upper_Mask &= ~(1 << (j - 1));
+	if (j > 0) {
+		Upper_Mask &= ~(1 << (j - 1));
+	} else {
+		Upper_Mask = 0xff;
+	}
 
 	if (!Found) {
 		for (i = 8, j = 8; i < 16; i++, j--) {
@@ -2188,7 +2192,11 @@ QSFP_ModuleSelect(SFP_t *SFP, int State)
 			}
 		}
 
-		Lower_Mask &= ~(1 << (j - 1));
+		if (j > 0) {
+			Lower_Mask &= ~(1 << (j - 1));
+		} else {
+			Lower_Mask = 0xff;
+		}
 	}
 
 	/*

@@ -2,7 +2,7 @@
 
 #
 # Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
-# Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #
 
 #
@@ -16,7 +16,7 @@ if [ "`/usr/bin/pgrep dfx-mgrd`" != "" ]; then
         COUNT=`expr $COUNT - 1`
     done
 
-    EEPROM=`/bin/ls /sys/bus/i2c/devices/1-0054/eeprom 2> /dev/null`
+    EEPROM=`/bin/ls /sys/bus/i2c/devices/1-0054/eeprom 2> /dev/null || /bin/ls /sys/bus/i2c/devices/11-0054/eeprom 2> /dev/null`
     BOARD=`/usr/sbin/ipmi-fru --fru-file=$EEPROM --interpret-oem-data | /usr/bin/awk -F": " '/FRU Board Product/ { print tolower ($2) }'`
     REVISION=`/usr/sbin/ipmi-fru --fru-file=$EEPROM --interpret-oem-data | /usr/bin/awk -F": " '/FRU Board Custom/ { print tolower ($2); exit }'`
     PACKAGE=`/usr/bin/dfx-mgr-client -listPackage | /bin/grep "$BOARD-$REVISION"`

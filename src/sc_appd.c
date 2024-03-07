@@ -313,12 +313,6 @@ main()
 #ifdef GIT_COMMIT
 	SC_INFO("Commit:    %s", GIT_COMMIT);
 #endif
-	/* Identify the silicon */
-	if (Silicon_Identification(Silicon_Revision,
-				   sizeof(Silicon_Revision)) != 0) {
-		goto Out;
-	}
-
 	/* Identify the board */
 	if (Board_Identification(Board_Name) != 0) {
 		goto Out;

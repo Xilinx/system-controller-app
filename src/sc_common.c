@@ -143,6 +143,11 @@ Board_Identification(char *Board_Name)
 
 	SC_INFO("Board File: %s", Board_File);
 	if (access(Board_File, F_OK) == 0) {
+		/* Identify the silicon */
+		if (Silicon_Identification(Silicon_Revision,
+					   STRLEN_MAX) != 0) {
+			return -1;
+		}
 		if (Parse_JSON(Board_File, Plat_Devs) != 0) {
 			SC_ERR("failed to parse JSON file for board '%s'",
 			       Board_Name);

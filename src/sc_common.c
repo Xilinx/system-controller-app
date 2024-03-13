@@ -137,10 +137,6 @@ Board_Identification(char *Board_Name)
 	SC_INFO("Board Path: %s", Board_Path);
 
 	snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, Board_Name);
-	if (strstr(Board_File, "VMK180") != NULL) {
-		snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, "VCK190");
-	}
-
 	SC_INFO("Board File: %s", Board_File);
 	if (access(Board_File, F_OK) == 0) {
 		/* Identify the silicon */

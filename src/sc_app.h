@@ -20,6 +20,8 @@
 #define LITEMS_MAX	128
 #define STRLEN_MAX	64
 #define LSTRLEN_MAX	128
+#define XLSTRLEN_MAX	256
+#define XXLSTRLEN_MAX	512
 #define SYSCMD_MAX	1024
 #define SOCKBUF_MAX	(4 * SYSCMD_MAX)
 
@@ -39,8 +41,6 @@
 #define CUSTOM_CFS_PATH	INSTALLDIR"/.sc_app/clock_files/"
 #define SCRIPT_PATH	INSTALLDIR"/script/"
 #define CUSTOM_PDIS_PATH	INSTALLDIR"/.sc_app/PDIs/"
-
-#define PROGRAM_8A34001 "8A34001_eeprom.py"
 
 #define SC_INFO(msg, ...) fprintf(stdout, msg "\n", ##__VA_ARGS__);
 #define SC_ERR(msg, ...) do { \
@@ -480,6 +480,7 @@ typedef struct {
 #define PDI_LOAD_TCL	"versal_pdi_download.tcl"
 #define SFP_PRES_TCL	"sfp_presence.tcl"
 #define DEFAULT_PDI	"system_wrapper.pdi"
+#define PROGRAM_8A34001	"8A34001_eeprom.py"
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))

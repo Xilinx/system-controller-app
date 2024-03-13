@@ -19,7 +19,7 @@ def i2c_write(bus, dev, reg, val):
         bus.i2c_rdwr(msg)
     except:
         print("Error accessing I2C device %02x" % dev)
-        exit(1)
+        exit(-1)
 
 def i2c_read(bus, dev, reg, size):
     data = [reg & 0xff]
@@ -29,7 +29,7 @@ def i2c_read(bus, dev, reg, size):
         bus.i2c_rdwr(write, read)
     except:
         print("Error accessing I2C device %02x" % dev)
-        exit(1)
+        exit(-1)
     return list(read)
 
 def i2c_write_a16(bus, dev, reg, val):
@@ -40,7 +40,7 @@ def i2c_write_a16(bus, dev, reg, val):
         bus.i2c_rdwr(msg)
     except:
         print("Error accessing I2C device %02x" % dev)
-        exit(1)
+        exit(-1)
 
 def i2c_read_a16(bus, dev, reg, size):
     data = [reg >> 8, reg & 0xff]
@@ -50,7 +50,7 @@ def i2c_read_a16(bus, dev, reg, size):
         bus.i2c_rdwr(write, read)
     except:
         print("Error accessing I2C device %02x" % dev)
-        exit(1)
+        exit(-1)
     return list(read)
 
 EEPROM_PAGE=0xCF
@@ -103,7 +103,7 @@ def erase_clock(busnum, dev):
 
     if wait_ready(bus, dev) != 0:
         print("1 Error accessing EEPROM")
-        exit(1)
+        exit(-1)
 
     eep_addr = 0xF000
 
@@ -118,7 +118,7 @@ def erase_clock(busnum, dev):
 
     if wait_ready(bus, dev) != 0:
         print("2 Error accessing EEPROM")
-        exit(1)
+        exit(-1)
 
     return 0
 
@@ -128,7 +128,7 @@ def verify_clock(filename, busnum, dev):
             eep_dat = file.read()
     except:
         print("Failed to open file", filename)
-        exit(1)
+        exit(-1)
 
     bus=SMBus(busnum)
 
@@ -158,7 +158,7 @@ def verify_clock(filename, busnum, dev):
 
         if wait_ready(bus, dev) != 0:
             print("Error accessing EEPROM")
-            exit(1)
+            exit(-1)
 
         print("Addr %04x:%04x" % (eep_addr, len(eep_dat))) 
 
@@ -178,7 +178,7 @@ def program_clock(filename, busnum, dev):
             eep_dat = file.read()
     except:
         print("Failed to open file", filename)
-        exit(1)
+        exit(-1)
 
     bus=SMBus(busnum)
 
@@ -210,13 +210,14 @@ def program_clock(filename, busnum, dev):
 
         if wait_ready(bus, dev) != 0:
             print("Error accessing EEPROM")
-            exit(1)
+            exit(-1)
         print("Addr %04x:%04x" % (eep_addr, len(eep_dat)))
         eep_addr += size
 
     # Reset chip
     i2c_write(bus, dev, 0xFC, [0x00, 0xC0, 0x10, 0x20])
     i2c_write(bus, dev, 0x12, [0x5a])
+    print("Programming Complete")
     return 0
 
 

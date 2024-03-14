@@ -174,7 +174,7 @@ typedef struct {
 
 typedef struct Voltages {
 	int	Numbers;
-	Voltage_t	Voltage[ITEMS_MAX];
+	Voltage_t	Voltage[LITEMS_MAX];
 } Voltages_t;
 
 /*

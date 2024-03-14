@@ -580,6 +580,7 @@
 		"BITs": {
 			"BIT_CLOCKS_CHECK" : {
 				"Name" : "Check Clocks",
+				"Description" : "This test verifies clock settings.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -589,6 +590,7 @@
 			},
 			"BIT_VOLTAGES_CHECK" : {
 				"Name" : "Check Voltages",
+				"Description" : "This test verifies board voltages.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {

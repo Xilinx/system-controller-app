@@ -555,7 +555,7 @@ Parse_Voltage(const char *Json_File, jsmntok_t *Tokens, int *Index,
 
 	(*Index)++;
 	(*VCCs)->Numbers = Tokens[*Index].size;
-	Validate_Item_Size((*VCCs)->Numbers, "VOLTAGE", "VOLTAGE", ITEMS_MAX);
+	Validate_Item_Size((*VCCs)->Numbers, "VOLTAGE", "VOLTAGE", LITEMS_MAX);
 	SC_INFO("Number of Voltage Rails: %i", (*VCCs)->Numbers);
 	while (Voltage_Items < (*VCCs)->Numbers) {
 		*Index += 3;

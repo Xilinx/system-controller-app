@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python3
 
 #
-# Copyright (c) 2023 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #

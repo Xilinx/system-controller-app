@@ -1,6 +1,8 @@
-#!/bin/sh
+#! /bin/sh
 #
 # Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
 #
 
 PDI=$1

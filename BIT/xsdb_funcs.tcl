@@ -1,8 +1,13 @@
-#!/usr/local/xilinx_vitis/xsdb
+#! /usr/local/xilinx_vitis/xsdb
 #
 # Copyright (c) 2023 Advanced Micro Devices, Inc.  All rights reserved.
 #
+# SPDX-License-Identifier: MIT
+#
+
+#
 # XSDB helper functions for reading versal registers and various JTAG operations
+#
 
 # endian swap for a 32bit integer
 proc swap32 {n} {

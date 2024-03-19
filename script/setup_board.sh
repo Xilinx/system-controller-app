@@ -3,6 +3,8 @@
 #
 # Copyright (c) 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #
+# SPDX-License-Identifier: MIT
+#
 
 EEPROM=$(/bin/ls /sys/bus/i2c/devices/1-0054/eeprom 2> /dev/null || /bin/ls /sys/bus/i2c/devices/11-0054/eeprom 2> /dev/null)
 BOARD=$(/usr/sbin/ipmi-fru --fru-file="$EEPROM" --interpret-oem-data | /usr/bin/awk -F": " '/FRU Board Product/ { print tolower ($2) }')

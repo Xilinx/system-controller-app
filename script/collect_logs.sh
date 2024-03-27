@@ -6,7 +6,10 @@
 # SPDX-License-Identifier: MIT
 #
 
-SCAPP_LOGDIR="/usr/share/system-controller-app/.sc_app/log"
+SCAPP_DIR="/usr/share/system-controller-app"
+SCAPP_SCRIPTDIR="${SCAPP_DIR}/script"
+SCAPP_LOGDIR="${SCAPP_DIR}/.sc_app/log"
+
 rm -rf "${SCAPP_LOGDIR}" 2> /dev/null
 mkdir "${SCAPP_LOGDIR}"
 BOARD=$(sc_app -c board)
@@ -24,6 +27,8 @@ journalctl -u system_controller > "${LOGDIR}"/sc_appd.log
 dmesg > "${LOGDIR}"/dmesg.log
 ps aux > "${LOGDIR}"/pslist.log
 rpm -qa > "${LOGDIR}"/installed_packages.log
+"${SCAPP_SCRIPTDIR}"/version_info.sh > "${LOGDIR}"/version_info.log
+
 for I in summary all common board multirecord; do
     sc_app -c geteeprom -t onboard -v "$I" >> "${LOGDIR}"/eeprom.log
 done

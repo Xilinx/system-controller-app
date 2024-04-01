@@ -110,6 +110,7 @@ Board_Identification(char *Board_Name)
 	char Board_File[SYSCMD_MAX];
 	char Board_Path[LSTRLEN_MAX];
 	char Value[LSTRLEN_MAX];
+	char Config_Var[STRLEN_MAX];
 	int Found = 0;
 
 	Plat_Devs = (Plat_Devs_t *)calloc(1, sizeof(Plat_Devs_t));
@@ -139,11 +140,22 @@ Board_Identification(char *Board_Name)
 	snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, Board_Name);
 	SC_INFO("Board File: %s", Board_File);
 	if (access(Board_File, F_OK) == 0) {
-		/* Identify the silicon */
-		if (Silicon_Identification(Silicon_Revision,
-					   STRLEN_MAX) != 0) {
+		/*
+		 * The task to check silicon revision is enabled by default. It can be
+		 * disabled by adding 'Silicon_Revision: 0' entry in CONFIGFILE.
+		 */
+		if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
 			return -1;
 		}
+
+		/* Identify the silicon */
+		if (!Found || (Found && (1 <= atoi(Config_Var)))) {
+			if (Silicon_Identification(Silicon_Revision,
+						   STRLEN_MAX) != 0) {
+				return -1;
+			}
+		}
+
 		if (Parse_JSON(Board_File, Plat_Devs) != 0) {
 			SC_ERR("failed to parse JSON file for board '%s'",
 			       Board_Name);
@@ -781,7 +793,6 @@ FMCAutoVadj_Op(void)
 	SC_INFO("Set %s voltage regulator to %.2f volts", Regulator_Name, Voltage);
 	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
 		SC_ERR("failed to set voltage of %s regulator", Regulator_Name);
-		return -1;
 	}
 
 	return 0;

@@ -1336,7 +1336,7 @@ Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constrain
 
 	(*Index)++;
 	(*Constraints)->Numbers = Tokens[*Index].size;
-	Validate_Item_Size((*Constraints)->Numbers, "Constraints", "Constraints", ITEMS_MAX);
+	Validate_Item_Size((*Constraints)->Numbers, "Constraints", "Constraints", LITEMS_MAX);
 	SC_INFO("Number of Constraints: %i", (*Constraints)->Numbers);
 	while (Item < (*Constraints)->Numbers) {
 		*Index += 3;

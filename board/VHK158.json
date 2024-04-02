@@ -5,7 +5,7 @@
 	"VHK158": {
 		"FEATURE": {
 			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
-				"BIT", "ddr", "gpio", "ioexp", "SFP", "FMC"]
+				"powerdomain", "BIT", "ddr", "gpio", "ioexp", "SFP", "FMC"]
 		},
 		"BOOTMODES": {
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -298,6 +298,65 @@
 				"Shunt_Resistor": 5000,
 				"Maximum_Current": 500,
 				"Phase_Multiplier": 1
+			}
+		},
+		"POWER DOMAIN" : {
+			"PD_FPD" : {
+				"Name" : "FPD",
+				"Rails" : ["INA226_VCC_PSFP"]
+			},
+			"PD_LPD" : {
+				"Name" : "LPD",
+				"Rails" : ["INA226_VCCO_502", "INA226_VCC_PSLP_CPM5"]
+			},
+			"PD_PLD" : {
+				"Name" : "PLD",
+				"Rails" : ["INA226_VCCINT", 
+					"INA226_VCC_RAM_VCCINT_GT",
+					"INA226_VCC1V5",
+					"INA226_VCC1V2_RDIMM"]
+			},
+			"PD_PMC" : {
+				"Name" : "PMC",
+				"Rails" : ["INA226_VCC_PMC", "INA226_VCCO_MIO", "INA226_VCCAUX_PMC"]
+			},
+			"PD_GTM" : {
+				"Name" : "GTM",
+				"Rails" : ["INA226_MGTAVCC", "INA226_MGTAVTT", "INA226_MGTVCCAUX"]
+			},
+			"PD_GTY" : {
+				"Name" : "GTY",
+				"Rails" : ["INA226_LPDMGTYAVCC",
+					"INA226_LPDMGTYAVTT",
+					"INA226_LPDMGTYVCCAUX"]
+			},
+			"PD_FMC" : {
+				"Name" : "FMC",
+				"Rails" : ["INA226_VADJ_FMC"]
+			},
+			"PD_HBM" : {
+				"Name" : "HBM",
+				"Rails" : ["INA226_VCC_HBM", "INA226_VCCO_HBM", "INA226_VCCAUX_HBM"]
+			},
+			"PD_SYSTEM" : {
+				"Name" : "system",
+				"Rails" : ["INA226_VCC_SOC", "INA226_VCCAUX"]
+			},
+			"PD_CHIP" : {
+				"Name" : "chip",
+				"Rails" : ["INA226_VCCINT", "INA226_VCC_SOC", "INA226_VCC_PMC",
+					"INA226_VCC_RAM_VCCINT_GT",
+					"INA226_VCC1V5",
+					"INA226_VCC1V2_RDIMM",
+					"INA226_VCC_PSFP",
+					"INA226_VCCAUX", "INA226_VCCAUX_PMC", "INA226_VCCO_MIO",
+					"INA226_VCCO_502", "INA226_VCC_PSLP_CPM5",
+					"INA226_VADJ_FMC", 
+					"INA226_MGTAVCC", "INA226_MGTAVTT", "INA226_MGTVCCAUX",
+					"INA226_LPDMGTYAVCC",
+					"INA226_LPDMGTYAVTT",
+					"INA226_LPDMGTYVCCAUX",
+					"INA226_VCCAUX_HBM", "INA226_VCCO_HBM", "INA226_VCC_HBM"]
 			}
 		},
 		"VOLTAGE": {

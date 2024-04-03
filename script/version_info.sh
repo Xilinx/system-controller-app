@@ -44,7 +44,7 @@ cat /etc/os-release
 
 # Information about individual packages
 RPMS="system-controller-app scweb acap labtool-jtag-support pmtool raft power-advantage-tool"
-RPM_INFO=$(dnf info $RPMS)
+RPM_INFO=$(dnf info -C $RPMS 2>/dev/null)
 
 for I in ${RPMS}; do
     MSG="Package Information for '$I'"

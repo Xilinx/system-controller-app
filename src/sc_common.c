@@ -1412,7 +1412,7 @@ Get_IDT_8A34001(Clock_t *Clock)
 	}
 
 	(void) fclose(FP);
-	SC_INFO("File '%s' contains '%s'", IDT8A34001FILE, Buffer);
+	SC_INFO("File '%s' contains '%s'", IDT8A34001FILE, Clock_File);
 
 	if (Check_Clock_Files(Clock_File, TCS_File, TXT_File, BIN_File) != 0) {
 		return -1;
@@ -1615,6 +1615,10 @@ Restore_IDT_8A34001(Clock_t *Clock)
 {
 	char Buffer[SYSCMD_MAX];
 	IDT_8A34001_Data_t *Clock_Data;
+	DIR *DP;
+	int Found = 0;
+	struct dirent *File;
+	char Clock_File[LSTRLEN_MAX];
 
 	if (Clock->Type_Data == NULL) {
 		SC_ERR("no data is available for 8A34001 clock");
@@ -1638,6 +1642,36 @@ Restore_IDT_8A34001(Clock_t *Clock)
 		       Clock->Name, CLOCKFILE);
 	if (Shell_Execute(Buffer) != 0) {
 		SC_ERR("failed to update 'clock' config file: %m");
+		return -1;
+	}
+
+	/* Restore the clock and set its EEPROM to the default image */
+	DP = opendir(CFS_PATH);
+	if (DP == NULL) {
+		SC_ERR("failed to open '%s' directory: %m", CFS_PATH);
+		return -1;
+	}
+
+	File = readdir(DP);
+	while (File != NULL) {
+		if (strstr(File->d_name, ".bin") != NULL) {
+			(void) snprintf(Clock_File, sizeof(Clock_File), "%s", strtok(File->d_name, ".bin"));
+			if (Set_IDT_8A34001(Clock, Clock_File, 1) != 0) {
+				SC_ERR("failed to restore 8A34001");
+				(void) closedir(DP);
+				return -1;
+			} else {
+				Found = 1;
+				break;
+			}
+		}
+
+		File = readdir(DP);
+	}
+
+	(void) closedir(DP);
+	if (!Found) {
+		SC_ERR("failed to find the default '.bin' image");
 		return -1;
 	}
 

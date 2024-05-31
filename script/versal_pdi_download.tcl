@@ -1,3 +1,5 @@
+#! /usr/local/xilinx_vitis/xsdb
+
 #
 # Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #

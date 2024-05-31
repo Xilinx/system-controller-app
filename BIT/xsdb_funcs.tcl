@@ -1,6 +1,7 @@
 #! /usr/local/xilinx_vitis/xsdb
+
 #
-# Copyright (c) 2023 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -149,4 +150,41 @@ proc silicon_revision {} {
    }
 
    return $revision_str
+}
+
+# Load the default PDI
+proc load_default_pdi {board} {
+    set revision_str [silicon_revision]
+    if {$revision_str == "invalid"} {
+        puts "ERROR: unsupported silicon revision"
+        disconnect
+        exit -1
+    }
+
+    # Download the PDI file
+    set pdi "/usr/share/system-controller-app/BIT/"
+    append pdi $board "/" $revision_str "system_wrapper.pdi"
+
+    set image_info [exec /usr/share/system-controller-app/BIT/get_image_info.sh $pdi]
+    set image_id [lindex $image_info 0]
+    set image_uid [lindex $image_info 1]
+
+    set uid_reg [unique_id $image_id]
+    if {$image_uid != $uid_reg} {
+        switch_to_jtag
+        puts "Loading $pdi"
+        device program $pdi
+    } else {
+        puts "PDI already loaded"
+    }
+}
+
+# Read clock counter and return it as a frequency value
+proc read_clock {reg} {
+    set ref_clk 100.0
+    set sample_count 0x100000
+    set clock_scale [expr $ref_clk / $sample_count]
+    set int_val [read_reg $reg]
+    set float_clock [expr $int_val * $clock_scale]
+    return $float_clock
 }

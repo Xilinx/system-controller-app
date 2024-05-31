@@ -25,7 +25,8 @@
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
 				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
+				"I2C_Address": "0x9",
+				"FPGA_Counter_Reg": "0x800A0000"
 			},
 			"GTCLK1_OUT2": {
 				"Name": "GTCLK1_OUT2/3",
@@ -35,7 +36,8 @@
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
 				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
+				"I2C_Address": "0x9",
+				"FPGA_Counter_Reg": "0x800F0000"
 			},
 			"GTCLK1_OUT6": {
 				"Name": "GTCLK1_OUT6/7",
@@ -45,7 +47,8 @@
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
 				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
+				"I2C_Address": "0x9",
+				"FPGA_Counter_Reg": "0x80100000"
 			},
 			"GTCLK1_OUT8": {
 				"Name": "GTCLK1_OUT8/10",
@@ -55,7 +58,8 @@
 				"Upper_Freq": 650.0,
 				"Lower_Freq": 50.0,
 				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
+				"I2C_Address": "0x9",
+				"FPGA_Counter_Reg": "0x80120000"
 			},
 			"GTCLK2_OUT2": {
 				"Name": "GTCLK2_OUT2/3",
@@ -65,7 +69,8 @@
 				"Upper_Freq": 625.0,
 				"Lower_Freq": 50.0,
 				"I2C_Bus": "/dev/i2c-10",
-				"I2C_Address": "0x9"
+				"I2C_Address": "0x9",
+				"FPGA_Counter_Reg": "0x800C0000"
 			},
 			"GTCLK2_OUT6_DDR1": {
 				"Name": "GTCLK2_OUT_DDR1/2",
@@ -119,7 +124,8 @@
 					"OUT8DesiredFrequency", "OUT9DesiredFrequency",
 					"OUT10DesiredFrequency", "OUT11DesiredFrequency"],
 				"I2C_Bus": "/dev/i2c-11",
-				"I2C_Address": "0x5b"
+				"I2C_Address": "0x5b",
+				"FPGA_Counter_Reg": ["0x0", "0x0", "0x80000000", "0x0", "0x0", "0x0", "0x80010000", "0x80020000", "0x80030000", "0x80040000", "0x0", "0x0"]
 			}
 		},
 		"INA226": {

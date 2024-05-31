@@ -35,7 +35,8 @@
 				"Upper_Freq": 600.0,
 				"Lower_Freq": 50.0,
 				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
+				"I2C_Address": "0x9",
+				"FPGA_Counter_Reg": "0xA4090000"
 			},
 			"GTCLK1_OUT8": {
 				"Name": "GTCLK1_OUT8",
@@ -45,7 +46,8 @@
 				"Upper_Freq": 600.0,
 				"Lower_Freq": 50.0,
 				"I2C_Bus": "/dev/i2c-9",
-				"I2C_Address": "0x9"
+				"I2C_Address": "0x9",
+				"FPGA_Counter_Reg": "0xA40B0000"
 			},
 			"PS_REF_CLK": {
 				"Name": "PS_REF_CLK",

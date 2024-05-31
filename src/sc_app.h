@@ -15,7 +15,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
-#define LEVELS_MAX	10
+#define LEVELS_MAX	12
 #define ITEMS_MAX	24
 #define LITEMS_MAX	128
 #define STRLEN_MAX	64
@@ -112,6 +112,7 @@ typedef struct {
 	char	*Sysfs_Path;
 	char	*I2C_Bus;
 	int	I2C_Address;
+	char	FPGA_Counter_Reg[LEVELS_MAX];
 } Clock_t;
 
 typedef struct Clocks {
@@ -124,6 +125,7 @@ typedef struct {
 	char	**Display_Label;
 	char	**Internal_Label;
 	int	(*Chip_Reset)(void);
+	char	FPGA_Counter_Reg[12][LEVELS_MAX];
 } IDT_8A34001_Data_t;
 
 /*
@@ -479,9 +481,11 @@ typedef struct {
 #define QSFP_MODSEL_TCL	"qsfp_download.tcl"
 #define BIT_LOAD_TCL	"versal_bit_download.tcl"
 #define PDI_LOAD_TCL	"versal_pdi_download.tcl"
+#define TCL_CMD_TCL	"versal_tcl_cmd.tcl"
 #define SFP_PRES_TCL	"sfp_presence.tcl"
 #define DEFAULT_PDI	"system_wrapper.pdi"
 #define PROGRAM_8A34001	"8A34001_eeprom.py"
+#define READ_CLOCK_CMD	"read_clock"
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))
@@ -512,6 +516,8 @@ int Get_BootMode(int);
 int Get_GPIO(char *, int *);
 int Get_IDCODE(char *, int);
 int Get_IDT_8A34001(Clock_t *);
+int Get_Measured_Clock(char *, char *);
+int Get_Measured_IDT_8A34001(Clock_t *);
 int Get_Temperature(Temperature_t *);
 int JTAG_Op(int);
 int Parse_JSON(const char *, Plat_Devs_t *);

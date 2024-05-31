@@ -44,9 +44,10 @@
  * 1.19 - Consolidate support for all SFP transceiver variants.
  * 1.20 - Added load PDI support.
  * 1.21 - Added support for BIT description.
+ * 1.22 - Added 'get measuredclock' command to get frequency measured by a counter.
  */
 #define MAJOR	1
-#define MINOR	21
+#define MINOR	22
 
 #define GPIOLINE	"ZU4_TRIGGER"
 
@@ -109,6 +110,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 \n\
 	listclock - list the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
+	getmeasuredclock - get the measured frequency of <target>\n\
 	setclock - set <target> to <value> frequency\n\
 	setbootclock - set <target> to <value> frequency at boot time\n\
 	restoreclock - restore <target> to default value\n\
@@ -181,6 +183,7 @@ typedef enum {
 	SETBOOTMODE,
 	LISTCLOCK,
 	GETCLOCK,
+	GETMEASUREDCLOCK,
 	SETCLOCK,
 	SETBOOTCLOCK,
 	RESTORECLOCK,
@@ -243,6 +246,7 @@ static Command_t Commands[] = {
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
+	{ .CmdId = GETMEASUREDCLOCK, .CmdStr = "getmeasuredclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETCLOCK, .CmdStr = "setclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = SETBOOTCLOCK, .CmdStr = "setbootclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = RESTORECLOCK, .CmdStr = "restoreclock", .CmdOps = Clock_Ops, },
@@ -1064,6 +1068,18 @@ Clock_Ops(void)
 		/* Print out 3-digit after decimal point without rounding */
 		SC_PRINT("Frequency(MHz):\t%.3f",
 		   ((signed long)(Frequency * 1000) * 0.001f));
+		break;
+	case GETMEASUREDCLOCK:
+		if (Clock->Type == IDT_8A34001) {
+			return Get_Measured_IDT_8A34001(Clock);
+		}
+
+		if (Clock->FPGA_Counter_Reg[0] != '\0') {
+			return Get_Measured_Clock(Clock->FPGA_Counter_Reg, "Frequency(MHz):\t");
+		} else {
+			SC_PRINT("Not Available");
+		}
+
 		break;
 	case SETCLOCK:
 	case SETBOOTCLOCK:

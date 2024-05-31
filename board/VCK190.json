@@ -26,7 +26,8 @@
 				"Upper_Freq" : 810.0,
 				"Lower_Freq" : 10.0,
 				"I2C_Bus" : "/dev/i2c-8",
-				"I2C_Address" : "0x5d"
+				"I2C_Address" : "0x5d",
+				"FPGA_Counter_Reg" : "0x80130000"
 			},
 			"SI570_USER1_FMC" : {
 				"Name" : "User1 FMC2 Si570",
@@ -56,7 +57,8 @@
 					"OUT8DesiredFrequency", "OUT9DesiredFrequency",
 					"OUT10DesiredFrequency", "OUT11DesiredFrequency"],
 				"I2C_Bus" : "/dev/i2c-18",
-				"I2C_Address" : "0x5b"
+				"I2C_Address" : "0x5b",
+				"FPGA_Counter_Reg" : ["0x0", "0x80000000", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0"]
 			},
 			"SI570_REF" : {
 				"Name" : "Versal Sys Clk Si570",
@@ -106,7 +108,8 @@
 				"Upper_Freq" : 810.0,
 				"Lower_Freq" : 10.0,
 				"I2C_Bus" : "/dev/i2c-17",
-				"I2C_Address" : "0x60"
+				"I2C_Address" : "0x60",
+				"FPGA_Counter_Reg" : "0x800D0000"
 			}
 		},
 		"INA226" : {

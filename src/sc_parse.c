@@ -305,7 +305,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 	IDT_8A34001_Data_t *IDT_8A34001_Data;
 
 	SC_INFO("********************* CLOCK *********************");
-	*CLKs = (Clocks_t *)malloc(sizeof(Clocks_t));
+	*CLKs = (Clocks_t *)calloc(1, sizeof(Clocks_t));
 
 	(*Index)++;
 	(*CLKs)->Numbers = Tokens[*Index].size;
@@ -417,6 +417,50 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		SC_INFO("I2C Addr - Hex: %s", Value_Str);
 		(*CLKs)->Clock[Clk_Items].I2C_Address = (int)strtol(Value_Str, NULL, 0);
 		free(Value_Str);
+
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		if (strcmp(Value_Str, "FPGA_Counter_Reg") == 0) {
+			free(Value_Str);
+			(*Index)++;
+
+			if ((*CLKs)->Clock[Clk_Items].Type != IDT_8A34001) {
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "CLOCK", "FPGA_Counter_Reg", LEVELS_MAX);
+				strncpy((*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg, Value_Str, LEVELS_MAX);
+				free(Value_Str);
+				SC_INFO("FPGA Counter Reg: %s\n",
+					(*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg);
+			} else {
+				if (Tokens[*Index].size < 12) {
+					SC_ERR("Found only %d FPGA counter reg address", Tokens[*Index].size);
+					return -1;
+				}
+
+				for (int i = 0; i < 12; i++) {
+					(*Index)++;
+					Value_Str = strndup(Json_File + Tokens[*Index].start,
+							    Tokens[*Index].end - Tokens[*Index].start);
+					Validate_Str_Size(Value_Str, "CLOCK", "FPGA_Counter_Reg", LEVELS_MAX);
+					IDT_8A34001_Data_t *Data = (*CLKs)->Clock[Clk_Items].Type_Data;
+					if (strcmp(Value_Str, "0x0") != 0) {
+						(void) strncpy(Data->FPGA_Counter_Reg[i], Value_Str,
+							       LEVELS_MAX);
+					}
+
+					free(Value_Str);
+					SC_INFO("FPGA Counter Reg[%d]: %s", i, Data->FPGA_Counter_Reg[i]);
+				}
+
+				SC_INFO("");	// Add a blank line
+			}
+		} else {
+			free(Value_Str);
+			(*Index)--;
+			SC_INFO("");	// Add a blank line
+		}
 
 		Clk_Items++;
 	}

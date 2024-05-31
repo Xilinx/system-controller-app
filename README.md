@@ -24,6 +24,7 @@
 
 		listclock - list the supported clock targets
 		getclock - get the frequency of <target>
+		getmeasuredclock - get the measured frequency of <target>
 		setclock - set <target> to <value> frequency
 		setbootclock - set <target> to <value> frequency at boot time
 		restoreclock - restore <target> to default value

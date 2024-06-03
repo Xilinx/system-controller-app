@@ -24,5 +24,6 @@ set pdi [lindex $argv 0]
 switch_to_jtag
 puts "Loading $pdi"
 device program $pdi
+print_banner
 
 disconnect

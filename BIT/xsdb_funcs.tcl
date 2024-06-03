@@ -174,6 +174,7 @@ proc load_default_pdi {board} {
         switch_to_jtag
         puts "Loading $pdi"
         device program $pdi
+        print_banner
     } else {
         puts "PDI already loaded"
     }
@@ -187,4 +188,19 @@ proc read_clock {reg} {
     set int_val [read_reg $reg]
     set float_clock [expr $int_val * $clock_scale]
     return $float_clock
+}
+
+# Print a message on the console
+proc print_console {message} {
+    set uart0 0xFF000000
+    foreach char [split $message ""] {
+        mw -force $uart0 [scan $char "%c"]
+    }
+}
+
+proc print_banner {} {
+    print_console "\r\n"
+    print_console "***********************************************\r\n"
+    print_console "* Versal image is loaded by System Controller *\r\n"
+    print_console "***********************************************\r\n"
 }

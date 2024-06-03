@@ -34,6 +34,7 @@
 #define VOLTAGEFILE	Appfile("voltage")
 #define IDT8A34001FILE	Appfile("8A34001")
 #define PDIFILE		Appfile("PDI")
+#define BITLOGFILE	Appfile("BIT.log")
 
 #define BIT_PATH	INSTALLDIR"/BIT/"
 #define BOARD_PATH	INSTALLDIR"/board/"

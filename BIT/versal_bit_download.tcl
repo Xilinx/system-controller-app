@@ -44,6 +44,8 @@ rst -clear-registers -skip-activate-subsystem -processor
 set elf $board
 append elf "/" versal_bit.elf
 dow $elf
+set sock [jtagterminal -start -socket]
+exec nc localhost $sock &
 con
 after 1000
 

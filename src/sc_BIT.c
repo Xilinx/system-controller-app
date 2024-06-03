@@ -17,6 +17,18 @@ extern Plat_Devs_t *Plat_Devs;
 extern char Board_Name[];
 
 /*
+ * Remove BIT log from the last run.
+ */
+void
+Remove_BIT_Log(void)
+{
+	char Command[SYSCMD_MAX];
+
+	(void) sprintf(Command, "rm %s", BITLOGFILE);
+	(void) Shell_Execute(Command);
+}
+
+/*
  * This test validates whether the current clock frequency is
  * the same as default value.
  */
@@ -29,6 +41,8 @@ Clocks_Check(void *Arg1, void *Arg2)
 	Clocks_t *Clocks;
 	char ReadBuffer[STRLEN_MAX];
 	double Freq, Lower, Upper, Delta;
+
+	Remove_BIT_Log();
 
 	Clocks = Plat_Devs->Clocks;
 	if (Clocks == NULL) {
@@ -84,6 +98,8 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	char *TclFile, *TestBitIndex;
 	int Ret;
 
+	Remove_BIT_Log();
+
 	if (Level > BIT_p->Levels) {
 		SC_ERR("Invalid level invocation");
 		return -1;
@@ -137,6 +153,8 @@ EBM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	int FD;
 	char Buffer[1];
 
+	Remove_BIT_Log();
+
 	Daughter_Card = Plat_Devs->Daughter_Card;
 	if (Daughter_Card == NULL) {
 		SC_ERR("EBM operation is not supported");
@@ -185,6 +203,8 @@ DIMM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
+
+	Remove_BIT_Log();
 
 	DIMMs = Plat_Devs->DIMMs;
 	if (DIMMs == NULL) {
@@ -237,6 +257,8 @@ Voltages_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;
+
+	Remove_BIT_Log();
 
 	Voltages = Plat_Devs->Voltages;
 	if (Voltages == NULL) {
@@ -339,6 +361,8 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	char Buffer[STRLEN_MAX];
 	int Ret = 0;
 
+	Remove_BIT_Log();
+
 	(void) sprintf(Buffer, "%s", BIT_PATH);
 	(void) sprintf(System_Cmd, "%sddrmc_check.py", Buffer);
 	if (access(System_Cmd, F_OK) != 0) {
@@ -347,8 +371,8 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	}
 
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s",
-				Buffer, *DDRMC, Board_Name);
+	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s 2>&1 | tee %s",
+				Buffer, *DDRMC, Board_Name, BITLOGFILE);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

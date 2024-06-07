@@ -796,7 +796,12 @@ Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "GPIO", "Internal_Name", STRLEN_MAX);
+		/*
+		 *  GPIO label names are limited to 32 characters including '\0' terminator
+		 *  by a kernel defined limitation. Internal_Name max length set to 35
+		 *  characters for compensation of the 3-character GPIO type postfix.
+		 */
+		Validate_Str_Size(Value_Str, "GPIO", "Internal_Name", 35);
 		Len = strlen(Value_Str);
 		Typestr = Value_Str + (Len - 3);
 

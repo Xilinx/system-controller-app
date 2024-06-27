@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 #
 # Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.

@@ -165,7 +165,7 @@
 				"Name" : "VCCAUX",
 				"I2C_Bus" : "/dev/i2c-6",
 				"I2C_Address" : "0x40",
-				"Shunt_Resistor" : 500,
+				"Shunt_Resistor" : 5000,
 				"Maximum_Current" : 3000,
 				"Phase_Multiplier" : 1
 			},

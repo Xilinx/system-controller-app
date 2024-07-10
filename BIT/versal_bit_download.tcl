@@ -12,8 +12,7 @@ set PGG3 0xf111005C
 
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
-connect -xvc-url TCP:127.0.0.1:2542
-targets -set -nocase -filter {name =~ "*Versal*"}
+versal_connect
 
 set board [lindex $argv 0]
 

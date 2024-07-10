@@ -204,3 +204,20 @@ proc print_banner {} {
     print_console "* Versal image is loaded by System Controller *\r\n"
     print_console "***********************************************\r\n"
 }
+
+# Connect to Versal target
+proc versal_connect {} {
+    connect -xvc-url TCP:127.0.0.1:2542
+
+    set retry 0
+    while {$retry < 25} {
+        if {[string first "closed" "[jtag targets]"] != -1} {
+            after 100
+            incr retry
+        } else {
+            break
+        }
+    }
+
+    targets -set -nocase -filter {name =~ "*Versal*"}
+}

@@ -8,8 +8,7 @@
 
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
-connect -xvc-url TCP:127.0.0.1:2542
-targets -set -nocase -filter {name =~ "*Versal*"}
+versal_connect
 
 # Check whether Versal is idle
 if {[check_done] == 1} {

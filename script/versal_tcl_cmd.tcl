@@ -8,8 +8,7 @@
 
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
-connect -xvc-url TCP:127.0.0.1:2542
-targets -set -nocase -filter {name =~ "*Versal*"}
+versal_connect
 
 # Download the default PDI
 load_default_pdi [lindex $argv 0]

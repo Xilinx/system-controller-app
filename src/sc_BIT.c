@@ -301,6 +301,8 @@ Display_Instruction(void *Arg1, void *Arg2)
 	BIT_t *BIT_p = Arg1;
 	int Level = *(int *)Arg2;
 
+	Remove_BIT_Log();
+
 	if (!BIT_p->Manual) {
 		SC_ERR("BIT is not a manual test");
 		return -1;

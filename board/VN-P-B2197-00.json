@@ -224,6 +224,36 @@
 				"Phase_Multiplier" : 1
 			}
 		},
+		"POWER DOMAIN" : {
+			"PD_LPD" : {
+				"Name" : "LPD",
+				"Rails" : ["INA226_VCC_LPD", "INA226_VCCO_500",
+					"INA226_VCCO_501", "INA226_VCCO_502", "INA226_VCCO_503",
+					"INA226_VCCAUX_LPD"]
+			},
+			"PD_PLD" : {
+				"Name" : "PLD",
+				"Rails" : ["INA226_VCC_RAM"]
+			},
+			"PD_GTM" : {
+				"Name" : "GTM",
+				"Rails" : ["INA226_GTM_AVCC", "INA226_GTM_AVTT",
+					"INA226_GTM_AVCCAUX"]
+			},
+			"PD_GTY" : {
+				"Name" : "GTY",
+				"Rails" : ["INA226_GTYP_AVCC", "INA226_GTYP_AVTT",
+					"INA226_GTYP_AVCCAUX"]
+			},
+			"PD_FMC" : {
+				"Name" : "FMC",
+				"Rails" : ["INA226_VCCO_706"]
+			},
+			"PD_SYSTEM" : {
+				"Name" : "system",
+				"Rails" : ["INA226_VCCAUX", "INA226_VCCO_700"]
+			}
+		},
 		"VOLTAGE" : {
 			"VCCINT" : {
 				"Name" : "VCCINT",

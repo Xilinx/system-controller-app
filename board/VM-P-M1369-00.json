@@ -142,8 +142,8 @@
 				"Maximum_Current" : 5000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCO_VCC_DDR5_RDIMM_1V1" : {
-				"Name" : "VCCO_VCC_DDR5_RDIMM_1V1",
+			"VCC_DDR5_RDIMM_1V1" : {
+				"Name" : "VCC_DDR5_RDIMM_1V1",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x49",
 				"Shunt_Resistor" : 1000,
@@ -197,6 +197,35 @@
 				"Shunt_Resistor" : 1000,
 				"Maximum_Current" : 5000,
 				"Phase_Multiplier" : 1
+			}
+		},
+		"POWER DOMAIN" : {
+			"PD_LPD" : {
+				"Name" : "LPD",
+				"Rails" : ["INA226_VCC_PSLP", "INA226_VCCO_500",
+					"INA226_VCCO_501", "INA226_VCCO_502", "INA226_VCCO_503"]
+			},
+			"PD_PLD" : {
+				"Name" : "PLD",
+				"Rails" : ["INA226_VCC_RAM", "INA226_VCC_MIPI"]
+			},
+			"PD_GTM" : {
+				"Name" : "GTM",
+				"Rails" : ["INA226_GTM_AVCC", "INA226_GTM_AVTT",
+					"INA226_GTM_AVCCAUX"]
+			},
+			"PD_PMC" : {
+				"Name" : "PMC",
+				"Rails" : ["INA226_VCCAUX_PMC"]
+			},
+			"PD_FMC" : {
+				"Name" : "FMC",
+				"Rails" : ["INA226_VCC_FMC"]
+			},
+			"PD_SYSTEM" : {
+				"Name" : "system",
+				"Rails" : ["INA226_VCC_SOC", "INA226_VCCAUX",
+					"INA226_VCC_DDR5_RDIMM_1V1", "INA226_LP5_1V0_VCCO"]
 			}
 		},
 		"VOLTAGE" : {

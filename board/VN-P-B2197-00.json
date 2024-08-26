@@ -95,7 +95,7 @@
 			}
 		},
 		"INA226" : {
-			"VCC_RAM" : {
+			"INA226_VCC_RAM" : {
 				"Name" : "VCC_RAM",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x40",
@@ -103,7 +103,7 @@
 				"Maximum_Current" : 10000,
 				"Phase_Multiplier" : 1
 			},
-			"VCC_LPD" : {
+			"INA226_VCC_LPD" : {
 				"Name" : "VCC_LPD",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x41",
@@ -111,7 +111,7 @@
 				"Maximum_Current" : 5000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCAUX" : {
+			"INA226_VCCAUX" : {
 				"Name" : "VCCAUX",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x42",
@@ -119,7 +119,7 @@
 				"Maximum_Current" : 10000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCAUX_LPD" : {
+			"INA226_VCCAUX_LPD" : {
 				"Name" : "VCCAUX_LPD",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x43",
@@ -127,7 +127,7 @@
 				"Maximum_Current" : 5000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCO_500" : {
+			"INA226_VCCO_500" : {
 				"Name" : "VCCO_500",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x44",
@@ -135,7 +135,7 @@
 				"Maximum_Current" : 4000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCO_501" : {
+			"INA226_VCCO_501" : {
 				"Name" : "VCCO_501",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x45",
@@ -143,7 +143,7 @@
 				"Maximum_Current" : 4000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCO_502" : {
+			"INA226_VCCO_502" : {
 				"Name" : "VCCO_502",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x46",
@@ -151,7 +151,7 @@
 				"Maximum_Current" : 5000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCO_503" : {
+			"INA226_VCCO_503" : {
 				"Name" : "VCCO_503",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x47",
@@ -159,7 +159,7 @@
 				"Maximum_Current" : 2000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCO_700" : {
+			"INA226_VCCO_700" : {
 				"Name" : "VCCO_700",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x48",
@@ -167,7 +167,7 @@
 				"Maximum_Current" : 15000,
 				"Phase_Multiplier" : 1
 			},
-			"VCCO_706" : {
+			"INA226_VCCO_706" : {
 				"Name" : "VCCO_706",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x49",
@@ -175,7 +175,7 @@
 				"Maximum_Current" : 15000,
 				"Phase_Multiplier" : 1
 			},
-			"GTYP_AVCC" : {
+			"INA226_GTYP_AVCC" : {
 				"Name" : "GTYP_AVCC",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x4A",
@@ -183,7 +183,7 @@
 				"Maximum_Current" : 10000,
 				"Phase_Multiplier" : 1
 			},
-			"GTYP_AVTT" : {
+			"INA226_GTYP_AVTT" : {
 				"Name" : "GTYP_AVTT",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x4B",
@@ -191,7 +191,7 @@
 				"Maximum_Current" : 15000,
 				"Phase_Multiplier" : 1
 			},
-			"GTYP_AVCCAUX" : {
+			"INA226_GTYP_AVCCAUX" : {
 				"Name" : "GTYP_AVCCAUX",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x4C",
@@ -199,7 +199,7 @@
 				"Maximum_Current" : 5000,
 				"Phase_Multiplier" : 1
 			},
-			"GTM_AVCC" : {
+			"INA226_GTM_AVCC" : {
 				"Name" : "GTM_AVCC",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x4D",
@@ -207,7 +207,7 @@
 				"Maximum_Current" : 10000,
 				"Phase_Multiplier" : 1
 			},
-			"GTM_AVTT" : {
+			"INA226_GTM_AVTT" : {
 				"Name" : "GTM_AVTT",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x4E",
@@ -215,7 +215,7 @@
 				"Maximum_Current" : 15000,
 				"Phase_Multiplier" : 1
 			},
-			"GTM_AVCCAUX" : {
+			"INA226_GTM_AVCCAUX" : {
 				"Name" : "GTM_AVCCAUX",
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x4F",

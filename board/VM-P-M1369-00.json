@@ -593,13 +593,25 @@
 			}
 		},
 		"BITs": {
-			"BIT_CLOCKS_CHECK" : {
-				"Name" : "Check Clocks",
-				"Description" : "This test verifies clock settings.",
+			"BIT_IDCODE_VERIFY" : {
+				"Name" : "IDCODE Verify",
+				"Description" : "This test verifies Versal device ID code.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
-						"Plat_BIT_Op" : "Clocks_Check"
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "idcode_verify.tcl 0x01"
+					}
+				}
+			},
+			"BIT_EFUSE_VERIFY" : {
+				"Name" : "EFUSE Verify",
+				"Description" : "This test verifies eFuse data.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "read_efuse.tcl"
 					}
 				}
 			},

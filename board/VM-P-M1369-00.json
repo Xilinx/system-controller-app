@@ -4,7 +4,7 @@
 	"VM-P-M1369-00" : {
 		"FEATURE" : {
 			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
-				  "gpio", "FMC", "BIT"]
+				  "gpio", "FMC"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -590,18 +590,6 @@
 				"Supported_Volts": [1.2],
 				"Voltage_Regulator": "VCC_FMC",
 				"Default_Volt": 1.0
-			}
-		},
-		"BITs": {
-			"BIT_VOLTAGES_CHECK" : {
-				"Name" : "Check Voltages",
-				"Description" : "This test verifies board voltages.",
-				"Manual" : 0,
-				"BIT Levels" : {
-					"Level 0" : {
-						"Plat_BIT_Op" : "Voltages_Check"
-					}
-				}
 			}
 		},
 		"Constraints" : {

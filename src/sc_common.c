@@ -150,7 +150,8 @@ Board_Identification(char *Board_Name)
 		}
 
 		/* Identify the silicon */
-		if (!Found || (Found && (1 <= atoi(Config_Var)))) {
+		if ((!Found && (strcmp(Board_Name, "VM-P-M1369-00") != 0)) ||
+		    (Found && (1 <= atoi(Config_Var)))) {
 			if (Silicon_Identification(Silicon_Revision,
 						   STRLEN_MAX) != 0) {
 				return -1;

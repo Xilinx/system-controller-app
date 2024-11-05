@@ -488,7 +488,7 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 
 	(*Index)++;
 	(*INAs)->Numbers = Tokens[*Index].size;
-	Validate_Item_Size((*INAs)->Numbers, "INA226", "INA226", ITEMS_MAX);
+	Validate_Item_Size((*INAs)->Numbers, "INA226", "INA226", LITEMS_MAX);
 	SC_INFO("Number of INA226s: %i", (*INAs)->Numbers);
 	while (INA226_Items < (*INAs)->Numbers) {
 		*Index += 3;

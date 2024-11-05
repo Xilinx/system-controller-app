@@ -143,7 +143,7 @@ typedef struct {
 
 typedef struct INA226s {
 	int	Numbers;
-	INA226_t	INA226[ITEMS_MAX];
+	INA226_t	INA226[LITEMS_MAX];
 } INA226s_t;
 
 /*

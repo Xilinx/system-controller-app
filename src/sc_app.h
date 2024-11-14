@@ -39,9 +39,9 @@
 #define BIT_PATH	INSTALLDIR"/BIT/"
 #define BOARD_PATH	INSTALLDIR"/board/"
 #define CFS_PATH	INSTALLDIR"/BIT/clock_files/"
-#define CUSTOM_CFS_PATH	INSTALLDIR"/.sc_app/clock_files/"
 #define SCRIPT_PATH	INSTALLDIR"/script/"
-#define CUSTOM_PDIS_PATH	INSTALLDIR"/.sc_app/PDIs/"
+#define CUSTOM_CFS_PATH		"/data/clock_files/"
+#define CUSTOM_PDIS_PATH	"/data/PDIs/"
 
 #define SC_INFO(msg, ...) fprintf(stdout, msg "\n", ##__VA_ARGS__);
 #define SC_ERR(msg, ...) do { \

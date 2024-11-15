@@ -127,12 +127,12 @@ proc switch_to_jtag {} {
 
 # Return silicon revision string based on the IDCODE
 proc silicon_revision {} {
-   # Get the IDCODE
-   set idcode [read_reg 0xF11A0000]
-
    # Determine silicon revision
    #
-   # IDCODE[11:0] = 0x93   // Xilinx Manufacturer
+   # IDCODE[11:0] = 0x093   // Xilinx Manufacturer
+   set idcode_str [lindex [jtag ta -filter {idcode =~ "*093"}] 3]
+   set prefix "0x"
+   set idcode $prefix$idcode_str
    set mask [expr 0xFFF]
    if {($idcode & $mask) != 0x93} {
       revision_str "invalid"
@@ -205,8 +205,8 @@ proc print_banner {} {
     print_console "***********************************************\r\n"
 }
 
-# Connect to Versal target
-proc versal_connect {} {
+# Wait for jtag targets to become accessible
+proc jtag_ready {} {
     connect -xvc-url TCP:127.0.0.1:2542
 
     set retry 0
@@ -218,6 +218,10 @@ proc versal_connect {} {
             break
         }
     }
+}
 
+# Connect to Versal target
+proc versal_connect {} {
+    jtag_ready
     targets -set -nocase -filter {name =~ "*Versal*"}
 }

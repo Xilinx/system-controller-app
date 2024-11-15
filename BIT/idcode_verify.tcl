@@ -9,7 +9,7 @@
 
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
-versal_connect
+jtag_ready
 
 set retcode 0
 set revision_str [silicon_revision]

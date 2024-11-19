@@ -45,9 +45,10 @@
  * 1.20 - Added load PDI support.
  * 1.21 - Added support for BIT description.
  * 1.22 - Added 'get measuredclock' command to get frequency measured by a counter.
+ * 1.23 - Added 'listFMCvoltage' command to list rail info providing power to FMCs.
  */
 #define MAJOR	1
-#define MINOR	22
+#define MINOR	23
 
 #define GPIOLINE	"ZU4_TRIGGER"
 
@@ -161,6 +162,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 		 'all', 'common', 'board', or 'multirecord'\n\
 \n\
 	listFMC - list the plugged FMCs\n\
+	listFMCvoltage - list power rail and voltage levels supported for FMCs\n\
 	getFMC - get the content of EEPROM on <target> FMC for either <value>:\n\
 		 'all', 'common', 'board', or 'multirecord'\n\
 \n\
@@ -219,6 +221,7 @@ typedef enum {
 	LISTEBM,
 	GETEBM,
 	LISTFMC,
+	LISTFMCVOLTAGE,
 	GETFMC,
 	LOADPDI,
 	SETBOOTPDI,
@@ -282,6 +285,7 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTEBM, .CmdStr = "listEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = GETEBM, .CmdStr = "getEBM", .CmdOps = EBM_Ops, },
 	{ .CmdId = LISTFMC, .CmdStr = "listFMC", .CmdOps = FMC_Ops, },
+	{ .CmdId = LISTFMCVOLTAGE, .CmdStr = "listFMCvoltage", .CmdOps = FMC_Ops, },
 	{ .CmdId = GETFMC, .CmdStr = "getFMC", .CmdOps = FMC_Ops, },
 	{ .CmdId = LOADPDI, .CmdStr = "loadPDI", .CmdOps = PDI_Ops, },
 	{ .CmdId = SETBOOTPDI, .CmdStr = "setbootPDI", .CmdOps = PDI_Ops, },
@@ -3199,6 +3203,23 @@ int FMC_Ops(void)
 
 	if (Command.CmdId == LISTFMC) {
 		return FMC_List();
+	}
+
+	if (Command.CmdId == LISTFMCVOLTAGE) {
+		for (int i = 0; i < FMCs->Numbers; i++) {
+			FMC = &FMCs->FMC[i];
+			SC_PRINT_N("%s: %s - (", FMC->Name, FMC->Voltage_Regulator);
+			for (int j = 0; j < FMC->Volt_Numbers; j++) {
+				SC_PRINT_N("%.2f V", FMC->Supported_Volts[j]);
+				if ((j + 1) < FMC->Volt_Numbers) {
+					SC_PRINT_N(", ");
+				} else if ((j + 1) == FMC->Volt_Numbers) {
+					SC_PRINT(")");
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	if (T_Flag == 0) {

@@ -75,6 +75,7 @@
 			 'all', 'common', 'board', or 'multirecord'
 
 		listFMC - list the plugged FMCs
+		listFMCvoltage - list power rail and voltage levels supported for FMCs
 		getFMC - get the content of EEPROM on <target> FMC for either <value>:
 			 'all', 'common', 'board', or 'multirecord'
 

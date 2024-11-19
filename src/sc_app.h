@@ -121,6 +121,7 @@ typedef struct Clocks {
 } Clocks_t;
 
 typedef struct {
+	char	*Default_Design;
 	int	Number_Label;
 	char	**Display_Label;
 	char	**Internal_Label;

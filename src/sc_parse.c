@@ -365,10 +365,19 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 			free(Value_Str);
 			SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
 		} else {	// (Type == IDT_8A34001)
-			(*Index)++;
-			Check_Attribute("Display_Label", "CLOCK");
 			IDT_8A34001_Data =
 				(IDT_8A34001_Data_t *)calloc(1, sizeof(IDT_8A34001_Data_t));
+
+			(*Index)++;
+			Check_Attribute("Default_Design", "CLOCK");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "CLOCK", "Default_Design", LSTRLEN_MAX);
+			IDT_8A34001_Data->Default_Design = Value_Str;
+			SC_INFO("Default_Design: %s", IDT_8A34001_Data->Default_Design);
+
+			(*Index)++;
+			Check_Attribute("Display_Label", "CLOCK");
 			int Count = Tokens[*Index].size;
 			(*Index)++;
 			char **Display_Labels = (char **)malloc(Count * sizeof(char *));

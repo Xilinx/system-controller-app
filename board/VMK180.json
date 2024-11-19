@@ -42,6 +42,7 @@
 			"IDT_8A34001_FMC2" : {
 				"Name" : "8A34001 FMC2",
 				"Type" : "IDT_8A34001",
+				"Default_Design" : "8A34001_2020-0318_156MHz",
 				"Display_Label" : ["CIN 1 From Bank 200 GTY_REF",
 					"CIN 2 From Bank 706", "Q0 to CIN 0",
 					"Q1 to Bank 200 GTY_REF",

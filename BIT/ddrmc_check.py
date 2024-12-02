@@ -1,6 +1,8 @@
+#! /usr/bin/env python3
+
 #
 # Copyright (c) 2022 Xilinx, Inc.  All rights reserved.
-# Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +23,7 @@ import subprocess
 from chipscopy import create_session
 
 if len(sys.argv) != 3:
-    print("ERROR: missing DDRMC number")
+    print("ERROR: missing DDRMC number and board name")
     quit(-1)
 
 DDRMC = int(sys.argv[1])
@@ -53,7 +55,7 @@ def get_unique_id (versal_device, image_id):
 
     return 0xdeadbeef
 
-with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL) as session:
+with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL, pre_device_scan_delay=3000) as session:
     check_for_device = True
     start_time = time.time()
     while check_for_device:

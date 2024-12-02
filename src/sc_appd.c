@@ -2067,7 +2067,42 @@ int BIT_Ops(void)
 	return BIT->Level[Level].Plat_BIT_Op(BIT, &Level);
 }
 
-int SDRAM_Size[] = { 0, 512, 1, 2, 4, 8, 16 };
+/*
+ * DDR Manufacturer ID Codes.
+ */
+
+const char *Manufacturer_ID[] = {"UKNOWN", "AMD", "AMI", "Fairchild", "Fujitsu",  // IDs 0x0-0x4
+	"GTE", "Harris", "Hitachi", "Inmos", "Intel",
+	"I.T.T.", "Intersil", "Monolithic Memories", "Mostek", "Motorola",
+	"National", "NEC", "RCA", "Raytheon", "Conexant (Rockwell)",
+	"Seeq", "Philips Semi. (Signetics)", "Synertek", "Texas Instruments", "Toshiba", // IDs 0x14-0x18
+	"Xicor", "Zilog", "Eurotechnique", "Mitsubishi", "Lucent (AT&T)",
+	"Exel", "Atmel", "SGS/Thomson", "Lattice Semi.", "NCR",
+	"Wafer Scale Integration", "IBM", "Tristar", "Visic", "Intl. CMOS Technology",
+	"SSSI", "MicrochipTechnology", "Ricoh Ltd.", "VLSI", "Micron Technology", // IDs 0x28-0x2C
+	"Hyundai Electronics", "OKI Semiconductor", "ACTEL", "Sharp", "Catalyst",
+	"Panasonic", "IDT", "Cypress", "DEC", "LSI Logic",
+	"Zarlink (formerly Plessey)", "UTMC", "Thinking Machine", "Thomson CSF", "Integrated CMOS (Vertex)",
+	"Honeywell", "Tektronix", "Sun Microsystems", "SST", "MOSEL", // IDs 0x3C-0c40
+	"Infineon (formerly Siemens)", "Macronix", "Xerox", "Plus Logic", "SunDisk",
+	"Elan Circuit Tech.", "European Silicon Str.", "Apple Computer", "Xilinx", "Compaq",
+	"Protocol Engines", "SCI", "Seiko Instruments", "Samsung", "I3 Design System",
+	"Klic", "Crosspoint Solutions", "Alliance Semiconductor", "Tandem", "Hewlett-Packard", // IDs 0x50-0x54
+	"Intg.d Silicon Solutions", "Brooktree", "New Media", "MHS Electronic", "Performance Semi.",
+	"Winbond Electronic", "Kawasaki Steel", "Bright Micro", "TECMAR", "Exar",
+	"PCMCIA", "LG Semiconductor", "Northern Telecom", "Sanyo", "Array Microsystems",
+	"Crystal Semiconductor", "Analog Devices", "PMC-Sierra", "Asparix", "Convex Computer", // IDs 0x64-0x68
+	"Quality Semiconductor", "Nimbus Technology", "Transwitch", "Micronas (ITT Intermetall)", "Cannon",
+	"Altera", "NEXCOM", "QUALCOMM", "Sony", "Cray Research",
+	"AMS(Austria Micro)", "Vitesse", "Aster Electronics", "Bay Networks (Synoptic)", "Zentrum or ZMD",
+	"TRW", "Thesys", "Solbourne Computer", "Allied-Signal", "Dialog", // IDs 0x78-0x7C
+	"Media Vision", "Level One Communication"};
+
+int DDR4_SDRAM_Size[] = { 0, 512, 1, 2, 4, 8, 16 };
+int DDR5_SDRAM_Size[] = { 0, 4, 8, 12, 16, 24, 32, 48, 64};
+
+#define DDR4	0xC
+#define DDR5	0x12
 
 /*
  * DDR Operations
@@ -2078,11 +2113,22 @@ int DDR_Ops(void)
 	DIMMs_t	*DIMMs;
 	DIMM_t	*DIMM;
 	int FD;
-	char In_Buffer[STRLEN_MAX] = { 0 };
+	char In_Buffer[SYSCMD_MAX] = { 0 };
 	char Out_Buffer[STRLEN_MAX] = { 0 };
 	short Temp;
 	int DRAM_Size_Index;
 	int Ret = 0;
+	float Week;
+	float Freq;
+	float Freq_Offset;
+	int DDR_Type;
+	int Module_Org_Byte;
+	int ECC_Support_Byte;
+	int Manufactuerer_ID_Byte;
+	int Manufactuering_Date_Code_Byte;
+	int Serial_Number_Byte;
+	int Part_Number_Byte;
+	int Part_Number_Byte_Size;
 
 	DIMMs = Plat_Devs->DIMMs;
 	if (DIMMs == NULL) {
@@ -2155,32 +2201,253 @@ int DDR_Ops(void)
 		SC_PRINT("Temperature(C):\t%.2f", ((float)Temp) * 0.125);
 
 	} else if (strcmp(Value_Arg, "spd") == 0) {
+		/*
+		 * Reading first 3 bytes to determine DDR type before reading SPD. Layout
+		 * of information differs between types.
+		 */
 		Out_Buffer[0] = 0x0;
-		I2C_READ(FD, DIMM->I2C_Address_SPD, 0xF, Out_Buffer, In_Buffer, Ret);
+		I2C_READ(FD, DIMM->I2C_Address_SPD, 0x3, Out_Buffer, In_Buffer, Ret);
 		if (Ret < 0) {
 			(void) close(FD);
 			return Ret;
 		}
 
 		/*
-		 * DDR Serial Presence Detect (SPD) specification for DDR4:
+		 * DDR Serial Presence Detect (SPD) specification for DDR4/DDR5:
 		 *
-		 * Byte 0x2 - DRAM Type = (0xC: DDR4 SDRAM)
-		 * Byte 0x4 - DRAM Size (lower nibble) =
-		 *			(0: 0MB, 1: 512MB, 2: 1GB, 3: 2GB, 4: 4GB,
-		 *			 5: 8GB, 6: 16GB)
-		 * Byte 0xE - Thermal Sensor = (0x0: No, 0x80: Yes)
+		 * Byte 0x2 - DRAM Type = (0xC: DDR4 SDRAM, 0x12: DDR5 SDRAM)
 		 */
-		SC_INFO("DRAM Type: %#x", In_Buffer[2]);
-		SC_PRINT("DDR4 SDRAM?\t%s", ((In_Buffer[2] == 0xC) ? "Yes" : "No"));
+		DDR_Type = In_Buffer[2];
+		SC_INFO("DRAM Type: %#x", DDR_Type);
+		if (DDR4 == DDR_Type) {
+			SC_PRINT("DRAM Type: DDR4 SDRAM");
+		} else if (DDR5 == DDR_Type) {
+			SC_PRINT("DRAM Type: DDR5 SDRAM");
+		} else {
+			SC_ERR("Unexpected DRAM type");
+			return -1;
+		}
+
+		/*
+		 * DDR4 Note: Set i2c to read LOW address bytes of SPD. Write 0x0 to
+		 * device address 0x36, and set addresses to respective locations of
+		 * information before reading SPD.
+		 */
+		if (DDR4 == DDR_Type) {
+			Out_Buffer[0] = 0x0;
+			I2C_WRITE(FD, 0x36, 1, Out_Buffer, Ret);
+			if (Ret < 0) {
+				(void) close(FD);
+				return Ret;
+			}
+
+			Module_Org_Byte = 12;
+			ECC_Support_Byte = 13;
+			Manufactuerer_ID_Byte = 0x40;
+			Manufactuering_Date_Code_Byte = 0x43;
+			Serial_Number_Byte = 0x45;
+			Part_Number_Byte = 0x49;
+			Part_Number_Byte_Size = 20;
+
+			/* Last address offset with information in page 0 is byte 125 (0x7D). */
+			I2C_READ(FD, DIMM->I2C_Address_SPD, 0x7D, Out_Buffer, In_Buffer, Ret);
+			if (Ret < 0) {
+				(void) close(FD);
+				return Ret;
+			}
+
+		/*
+		 * DDR5 Note: Set SPD to be 2-byte addressable, set addresses to respective
+		 * and read from SPD.
+		 */
+		} else if (DDR5 == DDR_Type) {
+			/*
+			 * Set bit 3 (0x08) of MR11 register (address 0x0B) to 1 for 2 byte
+			 * addressing of SPD. Bit 7 of first byte of packet must be 0 to
+			 * interact with SPD registers. See JESD300-5B.01 for more information.
+			 */
+			Out_Buffer[0] = 0x0B;
+			Out_Buffer[1] = 0x08;
+			I2C_WRITE(FD, DIMM->I2C_Address_SPD, 2, Out_Buffer, Ret);
+			if (Ret < 0) {
+				(void) close(FD);
+				return Ret;
+			}
+
+			Module_Org_Byte = 234;
+			ECC_Support_Byte = 235;
+			Manufactuerer_ID_Byte = 0x200;
+			Manufactuering_Date_Code_Byte = 0x203;
+			Serial_Number_Byte = 0x205;
+			Part_Number_Byte = 0x209;
+			Part_Number_Byte_Size = 30;
+
+			/* Bit 7 of first byte of packet must be 1 to read from SPD. */
+			Out_Buffer[0] = 0x80;
+			Out_Buffer[1] = 0x00;
+			/* Last address offset with information is byte 550 (0x226). */
+			I2C_READ_BYTES(FD, DIMM->I2C_Address_SPD, 2, 0x226, Out_Buffer, In_Buffer, Ret);
+			if (Ret < 0) {
+				(void) close(FD);
+				return Ret;
+			}
+		}
+
+		SC_INFO("Module Type: %#x", In_Buffer[3]);
+		if (0x1 == (0xf & In_Buffer[3])) {
+			SC_PRINT("Type:\tRDIMM");
+		} else if (0x2 == (0xf & In_Buffer[3])) {
+			SC_PRINT("Type:\tUDIMM");
+		} else {
+			SC_ERR("Unexpected module type");
+		}
 
 		SC_INFO("DRAM Size: %#x", In_Buffer[4]);
 		DRAM_Size_Index = In_Buffer[4] & 0xF;
-		SC_PRINT("Size(%cB):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'),
-			 SDRAM_Size[DRAM_Size_Index]);
+		if (DDR4 == DDR_Type) {
+			/*
+			 * Byte 0x4 - DRAM Size (lower nibble) =
+			 *			(0: 0MB, 1: 512MB, 2: 1GB, 3: 2GB, 4: 4GB,
+			 *			 5: 8GB, 6: 16GB)
+			 */
+			SC_PRINT("Size(%cb):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'),
+				 DDR4_SDRAM_Size[DRAM_Size_Index]);
+		} else if (DDR5 == DDR_Type) {
+			/*
+			 * Byte 0x4/0x8  - DRAM Size (lower nibble) =
+			 *			(0: 0GB, 1: 4GB, 2: 8GB, 3: 12GB, 4: 16GB,
+			 *			 5: 24GB, 6: 32GB, 7: 48GB, 8: 64 GB)
+			 */
+			SC_INFO("DRAM Size: %#x", In_Buffer[8]);
+			SC_PRINT("First SDRAM Size(Gb):\t%d", DDR5_SDRAM_Size[DRAM_Size_Index]);
+			DRAM_Size_Index = In_Buffer[8] & 0xF;
+			SC_PRINT("Second SDRAM Size(Gb):\t%d", DDR5_SDRAM_Size[DRAM_Size_Index]);
+		}
 
 		SC_INFO("Thermal Sensor: %#x", In_Buffer[0xE]);
-		SC_PRINT("Temp. Sensor?\t%s", ((In_Buffer[0xE] & 0x80) ? "Yes" : "No"));
+		if (DDR4 == DDR_Type) {
+			/* Byte 0xE - Thermal Sensor = (0x0: No, 0x80: Yes) */
+			SC_PRINT("Temp. Sensor?\t%s", ((In_Buffer[0xE] & 0x80) ? "Supported" : "Not supported"));
+		} else if (DDR5 == DDR_Type) {
+			/* Byte 0xE - Thermal Sensor = (0x0: No, 0x8: Yes) */
+			SC_PRINT("Temp. Sensor?\t%s", ((In_Buffer[0xE] & 0x08) ? "Supported" : "Not supported"));
+		}
+
+		if (DDR4 == DDR_Type) {
+			/* MTB Units and Fine Offset */
+			SC_INFO("Speed: %#x", In_Buffer[18]);
+			SC_INFO("Speed Offset: %#x", In_Buffer[125]);
+			/* MTB Units * MTB (ns) */
+			Freq = In_Buffer[18] * 0.125;
+			/* Freq Offset (ns) = Fine Offset (ps) / 1000 */
+			Freq_Offset = In_Buffer[125] / 1000;
+			Freq = 1000 / (Freq + Freq_Offset);
+			SC_PRINT("Speed: \t%.1f MHz", Freq);
+		} else {
+			/* Speed value is in ps */
+			SC_INFO("Speed (ps): 0x%x%x", In_Buffer[21], In_Buffer[20]);
+			Freq = (In_Buffer[21] << 8) | In_Buffer[20];
+			Freq = 1000000 / Freq;
+			SC_PRINT("Speed: \t%.1f MHz", Freq);
+		}
+
+		/*
+		 * Byte 0xC/0xEA - Module Organization
+		 * 		SDRAM device width (bits 0-2) = 0: 4 bits, 1: 8 bits, 2: 16 bits
+		 * 		Package Ranks (bits 3-5) = 0-7: 1-8 package ranks
+		 * 		Symmetry (bit 6) = 0: symmetric, 1: asymmetric
+		 */
+		SC_INFO("Module Organization: %#x", (0x7F & In_Buffer[Module_Org_Byte]));
+		SC_PRINT("Symmetry? \t%s", (In_Buffer[Module_Org_Byte] & 0x40) ? "Asymmetrical" : "Symmetrical");
+		SC_PRINT("Package Ranks per DIMM?\t%i", ((In_Buffer[Module_Org_Byte] & 0x38) >> 3) + 1);
+		if (DDR4 == DDR_Type) {
+			SC_PRINT("SDRAM Device Width? \t%i bits", (int)pow(2, ((In_Buffer[Module_Org_Byte] & 0x7) + 2)));
+		}
+
+		/*
+		 * Byte 0xD/0xEB - Memory Bus Width
+		 *		Primary bus width (bits 0-2) = 0: 8 bits, 1: 16 bits, 2: 32 bits,
+		 *									   3: 64 bits
+		 */
+		SC_INFO("ECC Supported Bus Width: %#x", In_Buffer[ECC_Support_Byte]);
+		SC_PRINT("Primary Bus Width: \t%i bits", (int)pow(2, ((In_Buffer[ECC_Support_Byte] & 0x7) + 3)));
+		if (DDR4 == DDR_Type) {
+			/* Bus width extension (bits 3-4) = 0: 0 bits, 1: 8 bits */
+			SC_PRINT("Bus Width Extension: \t%s bits", (In_Buffer[ECC_Support_Byte] & 0x8) ? "8" : "0");
+		} else if (DDR5 == DDR_Type) {
+			/* Bus width extension (bits 3-4) = 0: 0 bits, 1: 4 bits, 2: 8 bits */
+			if (0x0 == ((In_Buffer[ECC_Support_Byte] & 0x18) >> 3)) {
+				SC_PRINT("Bus Width Extension: 0 bits");
+			} else if (0x1 == ((In_Buffer[ECC_Support_Byte] & 0x18) >> 3)) {
+				SC_PRINT("Bus Width Extension: 4 bits");
+			} else if (0x2 == ((In_Buffer[ECC_Support_Byte] & 0x18) >> 3)) {
+				SC_PRINT("Bus Width Extension: 8 bits");
+			} else {
+				SC_ERR("Unexpected bus width");
+			}
+
+			/* Channels per DIMM (bits 5-6) = 0: 1 channel, 1: 2 channels */
+			SC_PRINT("Channels per DIMM: \t%s", (In_Buffer[ECC_Support_Byte] & 0x60) ? "2" : "1");
+		}
+
+		/*
+		 * DDR4 note: Set i2c to read HIGH address bytes of SPD. Write 0x0 to device
+		 * address 0x37.
+		 */
+		if (DDR4 == DDR_Type) {
+			Out_Buffer[0] = 0x0;
+			I2C_WRITE(FD, 0x37, 1, Out_Buffer, Ret);
+			if (Ret < 0) {
+				(void) close(FD);
+				return Ret;
+			}
+
+			/* Last address offset with information in page 1 is byte 92 (0x5C). */
+			I2C_READ(FD, DIMM->I2C_Address_SPD, 0x5C, Out_Buffer, In_Buffer, Ret);
+			if (Ret < 0) {
+				(void) close(FD);
+				return Ret;
+			}
+
+		}
+
+		SC_INFO("DIMM Manufacturer ID Code: 0x%x%x", In_Buffer[Manufactuerer_ID_Byte + 1],
+				In_Buffer[Manufactuerer_ID_Byte]);
+		SC_PRINT("DIMM Manufacturer: %s", Manufacturer_ID[0x7F & In_Buffer[Manufactuerer_ID_Byte + 1]]);
+
+		/* Date code bytes 1 and 2 are year and week, respectively. Values are
+		 * provided in hex, but are decimal representation.
+		 * Example: Byte 2 = 0x14. Device was manufactured on 14th week.
+		 */
+		SC_INFO("Manufacturing Date Code: 0x%x%x", In_Buffer[Manufactuering_Date_Code_Byte + 1],
+				In_Buffer[Manufactuering_Date_Code_Byte]);
+		Week = (float)(((0xF0 & In_Buffer[Manufactuering_Date_Code_Byte + 1])) >> 4) * 10;
+		Week = Week + (float)(0x0F & In_Buffer[Manufactuering_Date_Code_Byte + 1]);
+		Week = (Week / 52) * 12;
+		/* Only add 1 to the calculated month ('Week' variable) if less than 12. */
+		if (12 > (int)Week) {
+			Week += 1;
+		}
+
+		SC_PRINT("Manufacturing Date: %i/20%x", (int)Week, In_Buffer[Manufactuering_Date_Code_Byte]);
+
+		SC_PRINT("DIMM Serial Number: 0x%x%x%x%x", In_Buffer[Serial_Number_Byte + 3],
+				 In_Buffer[Serial_Number_Byte + 2], In_Buffer[Serial_Number_Byte + 1],
+				 In_Buffer[Serial_Number_Byte]);
+
+		SC_PRINT("DIMM Part Number: %s", strndup(&In_Buffer[Part_Number_Byte],
+				 Part_Number_Byte_Size));
+
+		/* DDR4 Note: Set i2c to read LOW address bytes of SPD. Write 0x0 to device address 0x36. */
+		if (DDR4 == DDR_Type) {
+			Out_Buffer[0] = 0x0;
+			I2C_WRITE(FD, 0x36, 1, Out_Buffer, Ret);
+			if (Ret < 0) {
+				(void) close(FD);
+				return Ret;
+			}
+		}
+
 
 	} else {
 		SC_ERR("%s is not a valid value", Value_Arg);

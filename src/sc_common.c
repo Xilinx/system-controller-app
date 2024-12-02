@@ -621,7 +621,7 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 	(void) memset(Out_Buffer, 0, SYSCMD_MAX);
 	(void) memset(In_Buffer, 0, SYSCMD_MAX);
 	Out_Buffer[0] = 0x0;    // EEPROM offset 0
-	I2C_TRY_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
+	I2C_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
 		(void) close(FD);
 		return Ret;

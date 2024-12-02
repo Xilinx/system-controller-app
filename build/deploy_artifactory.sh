@@ -6,21 +6,23 @@
 # SPDX-License-Identifier: MIT
 #
 
-BASE_URL="system-controller/sc_app_bsp/2023.2"
+RELEASE="2024.2"
+BASE_URL="system-controller/sc_app_bsp/$RELEASE"
 #OPTS="--dry-run"
 
 INTERNAL=( \
 	"VN-P-B2197-00" \
-	"VM-P-M1369-00" \
 	"VPK180-112" \
+	"VR-R-A2488-00" \
+	"VE-P-A2112-00" \
 )
 
 get_latest() {
-	jf rt search --recursive=false --sort-by=name --sort-order=desc --include-dirs --limit=1 "$BASE_URL"/ 2>/dev/null| python -c 'import sys, json; print(json.load(sys.stdin)[0]["path"])'
+	jf rt search --recursive=false --sort-by=name --sort-order=desc --include-dirs --limit=1 "$BASE_URL"/ 2>/dev/null | python3 -c 'import sys, json; print(json.load(sys.stdin)[0]["path"])'
 }
 
 mirror_release () {
-	DATE_DIR="2023.2_$(date +%m%d%y%H%M)"
+	DATE_DIR="${RELEASE}_$(date +%m%d%y%H%M)"
 
 	#Find the most recent artifacts
 	COPY_DIR=$1

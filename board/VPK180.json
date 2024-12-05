@@ -770,12 +770,12 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'OK' when this is done.\n"
+						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200\n2- Click 'OK' when this is done.\n3- Image location=349,621, size=28,29.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x20",
-						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' message.\n"
+						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' message.\n3- Image location=349,621, size=28,29.\n"
 					}
 				}
 			},
@@ -786,16 +786,16 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Look for LEDs (DS3-DS6) on the board.\n2- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for LEDs (DS3-DS6) on the board.\n2- Click 'OK' when you are ready.\n3- Image location=612,172, size=17,21.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Observe LED1 to LED4 blinking, then turn on/off in sequence.\n2- Click 'OK' when done.\n"
+						"Instruction" : "\n1- Observe LED1 to LED4 blinking, then turn on/off in sequence.\n2- Click 'OK' when done.\n3- Image location=612,172, size=17,21.\n"
 					},
 					"Level 2" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x40",
-						"Instruction" : "\n1- Did you see the LEDs sequencing and blinking?\n2- Click 'Pass' if you observe it.\n"
+						"Instruction" : "\n1- Did you see the LEDs sequencing and blinking?\n2- Click 'Pass' if you observe it.\n3- Image location=612,172, size=17,21.\n"
 					}
 				}
 			},
@@ -806,11 +806,11 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Look for Push Buttons SW4 and SW5 on the board \n2- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for Push Buttons SW4 and SW5 on the board \n2- Click 'OK' when you are ready.\n3- Image location=611,150, size=33,24.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Press Push Buttons SW4 followed by SW5 and then any button\n2- Click 'OK' when done.\n"
+						"Instruction" : "\n1- Press Push Buttons SW4 followed by SW5 and then any button\n2- Click 'OK' when done.\n3- Image location=611,150, size=33,24.\n"
 					},
 					"Level 2" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -826,11 +826,11 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Look for DIP switches SW6 on the board\n2- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for DIP switches SW6 on the board\n2- Click 'OK' when you are ready.\n3- Image location=640,150, size=30,24.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "Display_Instruction",
-						"Instruction" : "\n1- Turn On and Turn Off DIP Switches SW6 \n2- Click 'OK' done.\n"
+						"Instruction" : "\n1- Turn On and Turn Off DIP Switches SW6 \n2- Click 'OK' done.\n3- Image location=640,150, size=30,24.\n"
 					},
 					"Level 2" : {
 						"Plat_BIT_Op" : "XSDB_BIT",

@@ -1,5 +1,5 @@
 {
-	"License" : "Copyright (c) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VN-P-B2197-00" : {
 		"FEATURE" : {
@@ -609,8 +609,8 @@
 		},
 		"BITs": {
 			"BIT_CLOCKS_CHECK" : {
-				"Name" : "Check Clocks",
-				"Description" : "This test verifies clock settings.",
+				"Name" : "Verify Clock Settings",
+				"Description" : "This test verifies clock synthesizer settings are set to default values. The test will fail if the default settings of clock synthesizer are modified.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -619,8 +619,8 @@
 				}
 			},
 			"BIT_VOLTAGES_CHECK" : {
-				"Name" : "Check Voltages",
-				"Description" : "This test verifies board voltages.",
+				"Name" : "Verify Voltages",
+				"Description" : "This test verifies all board voltages to be within the factory default valid voltage ranges. The test will fail if the default settings of voltage regulators are modified.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {

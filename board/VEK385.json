@@ -383,7 +383,7 @@
 		"BITs": {
 			"BIT_VOLTAGES_CHECK" : {
 				"Name" : "Verify Voltages",
-				"Description" : "This test verifies board voltages.",
+				"Description" : "This test verifies all board voltages to be within the factory default valid voltage ranges. The test will fail if the default settings of voltage regulators are modified.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {

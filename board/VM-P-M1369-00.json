@@ -595,7 +595,7 @@
 		"BITs": {
 			"BIT_IDCODE_VERIFY" : {
 				"Name" : "IDCODE Verify",
-				"Description" : "This test verifies Versal device ID code.",
+				"Description" : "This test verifies Versal silicon device ID code. The test failure means it is not a compatible device.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -606,7 +606,7 @@
 			},
 			"BIT_EFUSE_VERIFY" : {
 				"Name" : "EFUSE Verify",
-				"Description" : "This test verifies eFuse data.",
+				"Description" : "This test verifies the eFuse data matches the factory defaults. The test failure might be due to a non-compatible device or some eFuses have been set.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -616,8 +616,8 @@
 				}
 			},
 			"BIT_VOLTAGES_CHECK" : {
-				"Name" : "Check Voltages",
-				"Description" : "This test verifies board voltages.",
+				"Name" : "Verify Voltages",
+				"Description" : "This test verifies all board voltages to be within the factory default valid voltage ranges. The test will fail if the default settings of voltage regulators are modified.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {

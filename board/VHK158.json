@@ -760,7 +760,7 @@
 		"BITs": {
 			"BIT_IDCODE_VERIFY" : {
 				"Name" : "IDCODE Verify",
-				"Description" : "This test verifies Versal device ID code.",
+				"Description" : "This test verifies Versal silicon device ID code. The test failure means it is not a compatible device.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -771,7 +771,7 @@
 			},
 			"BIT_EFUSE_VERIFY" : {
 				"Name" : "EFUSE Verify",
-				"Description" : "This test verifies eFuse data.",
+				"Description" : "This test verifies the eFuse data matches the factory defaults. The test failure might be due to a non-compatible device or some eFuses have been set.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -782,7 +782,7 @@
 			},
 			"BIT_VOLTAGES_CHECK" : {
 				"Name" : "Verify Voltages",
-				"Description" : "This test verifies board voltages.",
+				"Description" : "This test verifies all board voltages to be within the factory default valid voltage ranges. The test will fail if the default settings of voltage regulators are modified.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -792,7 +792,7 @@
 			},
 			"BIT_CLOCKS_CHECK" : {
 				"Name" : "Verify Clock Settings",
-				"Description" : "This test verifies clock settings.",
+				"Description" : "This test verifies clock synthesizer settings are set to default values. The test will fail if the default settings of clock synthesizer are modified.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -802,7 +802,7 @@
 			},
 			"BIT_CLOCKS_OUTPUT_TEST" : {
 				"Name" : "Clocks Output Test",
-				"Description" : "This test verifies the clock output frequencies.",
+				"Description" : "This test verifies the clock output frequencies by measuring the clocks at the Versal with clock counters. The test will fail in case the clock settings are different than default values.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -813,7 +813,7 @@
 			},
 			"BIT_RTC_CLOCK_VERIFY" : {
 				"Name" : "RTC Clock Verify",
-				"Description" : "This test verifies real time clock (RTC).",
+				"Description" : "This non-destructive test verifies real time clock (RTC) by checking the time increment. The possible reason of failures might be because of oscillator, etc.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -824,7 +824,7 @@
 			},
 			"BIT_DIMM_EEPROM_CHECK" : {
 				"Name" : "DIMM EEPROM Check",
-				"Description" : "This test verifies DIMM EEPROM.",
+				"Description" : "This test verifies DIMM EEPROM is accessible.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -834,7 +834,7 @@
 			},
 			"BIT_DDRMC_1_CAL_TEST" : {
 				"Name" : "DDRMC_1 Cal Test",
-				"Description" : "This test verifies DDR memory controller 1.",
+				"Description" : "This test verifies Versal DDR memory controller 1 successfully completed calibration.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -844,7 +844,7 @@
 			},
 			"BIT_DDRMC_2_CAL_TEST" : {
 				"Name" : "DDRMC_2 Cal Test",
-				"Description" : "This test verifies DDR memory controller 2.",
+				"Description" : "This test verifies Versal DDR memory controller 2 successfully completed calibration.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -854,7 +854,7 @@
 			},
 			"BIT_DRAM_MEM_TEST" : {
 				"Name" : "DRAM Mem Test",
-				"Description" : "This test verifies DRAM read/write.",
+				"Description" : "This test verifies DRAM access by 8MB write, read and compare with cache on/off. The patterns used are 0s, 1's, 0xAAAA5555, row, col, bank.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -865,7 +865,7 @@
 			},
 			"BIT_OSPI_TEST" : {
 				"Name" : "OSPI Test",
-				"Description" : "This test verifies OSPI Flash read/write.",
+				"Description" : "This test verifies OSPI Flash read/write (non-destructive). The test operation consists of save first sector (4K byte) data, erase, write random data, read, compare and restore the original data. Warning!! This might corrupt OSPI memory in case the test fails.",
 				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -876,7 +876,7 @@
 			},
 			"BIT_PL_UART_TEST" : {
 				"Name" : "PL UART Test",
-				"Description" : "This test verifies PL UART and requires manual verification.",
+				"Description" : "This test verifies PL UART and requires manual verification. The test performs by printing Hello world to PL UART port. It requires USB/jtag connection connected to a terminal application.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -892,7 +892,7 @@
 			},
 			"BIT_LEDS_TEST" : {
 				"Name" : "LEDs Test",
-				"Description" : "This test verifies board LEDs (DS3-DS6).\nIt requires physical access to the Versal board and takes about 30 secs.\nAlso, it needs a manual verification.",
+				"Description" : "This test verifies board LEDs (DS3-DS6). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -912,7 +912,7 @@
 			},
 			"BIT_BUTTONS_TEST" : {
 				"Name" : "Buttons Test",
-				"Description" : "This test verifies push buttons (SW4, SW5).\nIt requires physical access to the Versal board and waits for about 60 secs to press buttons.",
+				"Description" : "This test verifies push buttons (SW4, SW5). See the buttons on the board as displayed on the image to locate buttons. The test waits for about 60 secs to press buttons. The test fails if the buttons are pressed in the order within the time limit.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -932,7 +932,7 @@
 			},
 			"BIT_DIP_SWITCHES_TEST" : {
 				"Name" : "DIP Switches Test",
-				"Description" : "This test verifies DIP switches (SW6).\nIt requires physical access to the Versal board and waits for about 60 secs to change DIP switches.",
+				"Description" : "This test verifies DIP switches (SW6). Look at  the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to change DIP switches. The test fails if the buttons are pressed in the order within the time limit.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {

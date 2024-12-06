@@ -141,26 +141,32 @@ Board_Identification(char *Board_Name)
 	snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, Board_Name);
 	SC_INFO("Board File: %s", Board_File);
 	if (access(Board_File, F_OK) == 0) {
-		/*
-		 * The task to check silicon revision is enabled by default. It can be
-		 * disabled by adding 'Silicon_Revision: 0' entry in CONFIGFILE.
-		 */
-		if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
-			return -1;
-		}
-
-		/* Identify the silicon */
-		if (!Found || (Found && (1 <= atoi(Config_Var)))) {
-			if (Silicon_Identification(Silicon_Revision,
-						   STRLEN_MAX) != 0) {
-				return -1;
-			}
-		}
-
 		if (Parse_JSON(Board_File, Plat_Devs) != 0) {
 			SC_ERR("failed to parse JSON file for board '%s'",
 			       Board_Name);
 			return -1;
+		}
+
+		/*
+		 * If silicon revision has not been identified during parsing of
+		 * JSON file, identify it now.
+		 */
+		if (strcmp(Silicon_Revision, "") == 0) {
+			/*
+			 * The task to check silicon revision is enabled by default. It can
+			 * be disabled by adding 'Silicon_Revision: 0' entry in CONFIGFILE.
+			 */
+			if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
+				return -1;
+			}
+
+			/* Identify the silicon */
+			if (!Found || (Found && (1 <= atoi(Config_Var)))) {
+				if (Silicon_Identification(Silicon_Revision,
+							   STRLEN_MAX) != 0) {
+					return -1;
+				}
+			}
 		}
 
 		Plat_Devs->OnBoard_EEPROM = OnBoard_EEPROM;
@@ -2315,6 +2321,8 @@ Boot_Config_PDI(char *Entry)
 {
 	char PDI_File[STRLEN_MAX];
 	char Buffer[SYSCMD_MAX];
+	char Config_Var[STRLEN_MAX];
+	int Found = 0;
 
 	/*
 	 * If PDIFILE does already exist, that indicates a manual PDI boot
@@ -2325,7 +2333,23 @@ Boot_Config_PDI(char *Entry)
 		return 0;
 	}
 
-	/* For default PDI, adjust the name based on version of silicon */
+	/*
+	 * The task to check silicon revision is enabled by default. It can be
+	 * disabled by adding 'Silicon_Revision: 0' entry in CONFIGFILE.
+	 */
+	if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
+		return -1;
+	}
+
+	/* Identify the silicon */
+	if (!Found || (Found && (1 <= atoi(Config_Var)))) {
+		if (Silicon_Identification(Silicon_Revision,
+					   STRLEN_MAX) != 0) {
+			return -1;
+		}
+	}
+
+	/* For default PDI, adjust the name based on silicon revision */
 	(void) strcpy(PDI_File, Entry);
 	if ((strcmp(PDI_File, DEFAULT_PDI) == 0) &&
 	    (strcmp(Silicon_Revision, "ES1") == 0)) {

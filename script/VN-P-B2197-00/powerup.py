@@ -42,7 +42,7 @@ def read_product_name(bus, address):
 # Main routine
 #
 
-DIR = "/usr/share/system-controller-app/BIT/VN-P-B2197-00/"
+DIR = "/usr/share/system-controller-app/script/VN-P-B2197-00/"
 
 DC_EEPROM_BUS = "/dev/i2c-1"
 DC_EEPROM_ADDRESS = 0x52

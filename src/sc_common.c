@@ -177,6 +177,52 @@ Board_Identification(char *Board_Name)
 	return 0;
 }
 
+static int
+Identify_PDI(char *Revision)
+{
+	char Buffer[XLSTRLEN_MAX];
+	char PDI_File[LSTRLEN_MAX];
+
+	/* If a symbolic link already exists to default PDI, return */
+	(void) sprintf(Buffer, "%s%s", CUSTOM_PDIS_PATH, "default.pdi");
+	if (access(Buffer, F_OK) == 0) {
+		SC_INFO("File '%s' already exists", Buffer);
+		return 0;
+	}
+
+	/* Create a symbolic link to default PDI based on silicon revision */
+	if (strcmp(Revision, "ES1") == 0) {
+		(void) sprintf(PDI_File, "%s%s/es1_%s", BIT_PATH, Board_Name, DEFAULT_PDI);
+	} else if (strcmp(Revision, "PROD") == 0) {
+		(void) sprintf(PDI_File, "%s%s/%s", BIT_PATH, Board_Name, DEFAULT_PDI);
+	} else {
+		SC_ERR("unsupported silicon revision");
+		return -1;
+	}
+
+	/* If there is no default PDI file for this board, return */
+	if (access(PDI_File, F_OK) == -1) {
+		SC_INFO("PDI file '%s' does not exist", PDI_File);
+		return 0;
+	}
+
+	(void) sprintf(Buffer, "%s", CUSTOM_PDIS_PATH);
+	if (access(Buffer, F_OK) == -1) {
+		if (mkdir(Buffer, 0755) == -1) {
+			SC_ERR("mkdir %s failed: %m", Buffer);
+			return -1;
+		}
+	}
+
+	(void) sprintf(Buffer, "%s%s", CUSTOM_PDIS_PATH, "default.pdi");
+	if (symlink(PDI_File, Buffer) == -1) {
+		SC_ERR("failed to create symbolic link to default PDI");
+		return -1;
+	}
+
+	return 0;
+}
+
 int
 Silicon_Identification(char *Revision, int Length)
 {
@@ -188,6 +234,11 @@ Silicon_Identification(char *Revision, int Length)
 
 		(void) strtok(Revision, "\n");
 		SC_INFO("Silicon Revision: %s", Revision);
+	}
+
+	if (Identify_PDI(Revision) != 0) {
+		SC_ERR("failed to identify PDI");
+		return -1;
 	}
 
 	return 0;

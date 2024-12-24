@@ -745,7 +745,7 @@
 			},
 			"BIT_BUTTONS_TEST" : {
 				"Name" : "Buttons Test",
-				"Description" : "This test verifies push buttons (SW4, SW5). See the buttons on the board as displayed on the image to locate buttons. The test waits for about 60 secs to press buttons. The test fails if the buttons are pressed in the order within the time limit.",
+				"Description" : "This test verifies push buttons (SW4, SW5). See the buttons on the board as displayed on the image to locate buttons. The test waits for about 60 secs to press buttons. The test fails if the buttons are not pressed in the order within the time limit.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
@@ -765,7 +765,7 @@
 			},
 			"BIT_DIP_SWITCHES_TEST" : {
 				"Name" : "DIP Switches Test",
-				"Description" : "This test verifies DIP switches (SW6). Look at  the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to change DIP switches. The test fails if the buttons are pressed in the order within the time limit.",
+				"Description" : "This test verifies DIP switches (SW6). Look at the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to toggle DIP switches. The test fails if the DIP switches are not toggled in the order within the time limit.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {

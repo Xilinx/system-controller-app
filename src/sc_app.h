@@ -42,6 +42,7 @@
 #define SCRIPT_PATH	INSTALLDIR"/script/"
 #define CUSTOM_CFS_PATH		"/data/clock_files/"
 #define CUSTOM_PDIS_PATH	"/data/PDIs/"
+#define ONBOARD_EEPROM_PATH	"/sys/bus/i2c/devices/*/eeprom_cc*"
 
 #define SC_INFO(msg, ...) fprintf(stdout, msg "\n", ##__VA_ARGS__);
 #define SC_ERR(msg, ...) do { \
@@ -214,7 +215,7 @@ typedef enum {
  */
 typedef struct {
 	char	*Name;
-	char	*I2C_Bus;
+	char	I2C_Bus[STRLEN_MAX];
 	int	I2C_Address;
 } OnBoard_EEPROM_t;
 

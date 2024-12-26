@@ -16,21 +16,6 @@
 extern Plat_Devs_t *Plat_Devs;
 extern char Board_Name[];
 
-/*
- * On-board EEPROM
- */
-OnBoard_EEPROM_t Legacy_OnBoard_EEPROM = {
-	.Name = "onboard",
-	.I2C_Bus = "/dev/i2c-11",
-	.I2C_Address = 0x54,
-};
-
-OnBoard_EEPROM_t Common_OnBoard_EEPROM = {
-	.Name = "onboard",
-	.I2C_Bus = "/dev/i2c-1",
-	.I2C_Address = 0x54,
-};
-
 int
 VCK190_ES1_Vccaux_Workaround(void *Arg)
 {

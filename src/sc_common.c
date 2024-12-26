@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <glob.h>
 #include <libgen.h>
 #include <gpiod.h>
 #include <sys/stat.h>
@@ -24,8 +25,6 @@ Plat_Devs_t *Plat_Devs;
 char SC_APP_File[SYSCMD_MAX];
 extern char Board_Name[];
 extern char Silicon_Revision[];
-extern OnBoard_EEPROM_t Common_OnBoard_EEPROM;
-extern OnBoard_EEPROM_t Legacy_OnBoard_EEPROM;
 
 char *
 Appfile(char *Filename)
@@ -105,9 +104,52 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 }
 
 int
+Find_OnBoard_EEPROM(OnBoard_EEPROM_t *OnBoard)
+{
+	glob_t Glob_Buffer;
+	char *Path, *Node, *CP;
+
+	if (glob(ONBOARD_EEPROM_PATH, 0, NULL, &Glob_Buffer) != 0) {
+		SC_ERR("failed to find onboard EEPROM");
+		return -1;
+	}
+
+	if (Glob_Buffer.gl_pathc == 0 || Glob_Buffer.gl_pathc > 1) {
+		SC_ERR("could not find any or an unique onboard EEPROM");
+		return -1;
+	}
+
+	SC_INFO("EEPROM Path: %s", Glob_Buffer.gl_pathv[0]);
+	Path = strdup(Glob_Buffer.gl_pathv[0]);
+	Node = strrchr(Path, '/');
+	*Node = '\0';
+	Node = strrchr(Path, '/');
+	Node++;
+	SC_INFO("Find EEPROM 1: %s", Node);
+	CP = strtok(Node, "-");
+	SC_INFO("Find EEPROM 2: %s", CP);
+	(void) sprintf(OnBoard->I2C_Bus, "/dev/i2c-%d", (int)strtoul(CP, NULL, 10));
+	CP = strtok(NULL, "-");
+	SC_INFO("Find EEPROM 3: %s", CP);
+	OnBoard->I2C_Address = strtoul(CP, NULL, 16);
+
+	SC_INFO("OnBoard_EEPROM->Name = %s", OnBoard->Name);
+	SC_INFO("OnBoard_EEPROM->I2C_Bus = %s", OnBoard->I2C_Bus);
+	SC_INFO("OnBoard_EEPROM->I2C_Address = 0x%x", OnBoard->I2C_Address);
+
+	free(Path);
+	globfree(&Glob_Buffer);
+
+	return 0;
+}
+
+OnBoard_EEPROM_t OnBoard_EEPROM = {
+	.Name = "onboard",
+};
+
+int
 Board_Identification(char *Board_Name)
 {
-	OnBoard_EEPROM_t *OnBoard_EEPROM;
 	char Board_File[SYSCMD_MAX];
 	char Board_Path[LSTRLEN_MAX];
 	char Value[LSTRLEN_MAX];
@@ -116,15 +158,13 @@ Board_Identification(char *Board_Name)
 
 	Plat_Devs = (Plat_Devs_t *)calloc(1, sizeof(Plat_Devs_t));
 
-	OnBoard_EEPROM = &Common_OnBoard_EEPROM;
-	SC_INFO("Accessing 'Common_OnBoard_EEPROM'");
-	if (Get_Product_Name(OnBoard_EEPROM, Board_Name) != 0) {
-		OnBoard_EEPROM = &Legacy_OnBoard_EEPROM;
-		SC_INFO("Accessing 'Legacy_OnBoard_EEPROM'");
-		if (Get_Product_Name(OnBoard_EEPROM, Board_Name) != 0) {
-			SC_ERR("failed to identify the board");
-			return -1;
-		}
+	if (Find_OnBoard_EEPROM(&OnBoard_EEPROM) != 0) {
+		return -1;
+	}
+
+	if (Get_Product_Name(&OnBoard_EEPROM, Board_Name) != 0) {
+		SC_ERR("failed to identify the board");
+		return -1;
 	}
 
 	/*
@@ -169,7 +209,7 @@ Board_Identification(char *Board_Name)
 			}
 		}
 
-		Plat_Devs->OnBoard_EEPROM = OnBoard_EEPROM;
+		Plat_Devs->OnBoard_EEPROM = &OnBoard_EEPROM;
 	} else {
 		(void) strcpy(Board_Name, "Unknown");
 	}

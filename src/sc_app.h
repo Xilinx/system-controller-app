@@ -40,8 +40,9 @@
 #define BOARD_PATH	INSTALLDIR"/board/"
 #define CFS_PATH	INSTALLDIR"/BIT/clock_files/"
 #define SCRIPT_PATH	INSTALLDIR"/script/"
-#define CUSTOM_CFS_PATH		"/data/clock_files/"
-#define CUSTOM_PDIS_PATH	"/data/PDIs/"
+#define DATADIR		"/data"
+#define CUSTOM_CFS_PATH		DATADIR"/clock_files/"
+#define CUSTOM_PDIS_PATH	DATADIR"/PDIs/"
 #define ONBOARD_EEPROM_PATH	"/sys/bus/i2c/devices/*/eeprom_cc*"
 
 #define SC_INFO(msg, ...) fprintf(stdout, msg "\n", ##__VA_ARGS__);

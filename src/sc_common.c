@@ -246,6 +246,15 @@ Identify_PDI(char *Revision)
 		return 0;
 	}
 
+	/* If '/data' directory doesn't exist, create it */
+	(void) sprintf(Buffer, "%s", DATADIR);
+	if (access(Buffer, F_OK) == -1) {
+		if (mkdir(Buffer, 0755) == -1) {
+			SC_ERR("mkdir %s failed: %m", Buffer);
+			return -1;
+		}
+	}
+
 	(void) sprintf(Buffer, "%s", CUSTOM_PDIS_PATH);
 	if (access(Buffer, F_OK) == -1) {
 		if (mkdir(Buffer, 0755) == -1) {

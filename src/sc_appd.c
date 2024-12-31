@@ -2100,6 +2100,7 @@ const char *Manufacturer_ID[] = {"UKNOWN", "AMD", "AMI", "Fairchild", "Fujitsu",
 
 int DDR4_SDRAM_Size[] = { 0, 512, 1, 2, 4, 8, 16 };
 int DDR5_SDRAM_Size[] = { 0, 4, 8, 12, 16, 24, 32, 48, 64};
+int DDR5_DIE_Per_Package[] = { 1, 2, 2, 4, 8, 16};
 
 #define DDR4	0xC
 #define DDR5	0x12
@@ -2118,12 +2119,18 @@ int DDR_Ops(void)
 	short Temp;
 	int DRAM_Size_Index;
 	int Ret = 0;
+	float Size = 0;
 	float Week;
 	float Freq;
 	float Freq_Offset;
 	int DDR_Type;
 	int Module_Org_Byte;
+	int Symmetry;
+	int SDRAM_Device_Width;
+	int Package_Ranks;
 	int ECC_Support_Byte;
+	int Primary_Bus_Width;
+	int DIMM_Channels;
 	int Manufactuerer_ID_Byte;
 	int Manufactuering_Date_Code_Byte;
 	int Serial_Number_Byte;
@@ -2302,35 +2309,35 @@ int DDR_Ops(void)
 			SC_ERR("Unexpected module type");
 		}
 
-		SC_INFO("DRAM Size: %#x", In_Buffer[4]);
+		SC_INFO("SDRAM Density and Banks: %#x", In_Buffer[4]);
 		DRAM_Size_Index = In_Buffer[4] & 0xF;
 		if (DDR4 == DDR_Type) {
 			/*
 			 * Byte 0x4 - DRAM Size (lower nibble) =
-			 *			(0: 0MB, 1: 512MB, 2: 1GB, 3: 2GB, 4: 4GB,
-			 *			 5: 8GB, 6: 16GB)
+			 *			(0: 0Mb, 1: 512Mb, 2: 1Gb, 3: 2Gb, 4: 4Gb,
+			 *			 5: 8Gb, 6: 16Gb)
 			 */
-			SC_PRINT("Size(%cb):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'),
+			SC_INFO("SDRAM density per die(%cb):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'),
 				 DDR4_SDRAM_Size[DRAM_Size_Index]);
 		} else if (DDR5 == DDR_Type) {
 			/*
 			 * Byte 0x4/0x8  - DRAM Size (lower nibble) =
-			 *			(0: 0GB, 1: 4GB, 2: 8GB, 3: 12GB, 4: 16GB,
-			 *			 5: 24GB, 6: 32GB, 7: 48GB, 8: 64 GB)
+			 *			(0: 0Gb, 1: 4Gb, 2: 8Gb, 3: 12Gb, 4: 16Gb,
+			 *			 5: 24Gb, 6: 32Gb, 7: 48Gb, 8: 64 Gb)
 			 */
 			SC_INFO("DRAM Size: %#x", In_Buffer[8]);
-			SC_PRINT("First SDRAM Size(Gb):\t%d", DDR5_SDRAM_Size[DRAM_Size_Index]);
+			SC_INFO("First SDRAM density per die(Gb):\t%d", DDR5_SDRAM_Size[DRAM_Size_Index]);
 			DRAM_Size_Index = In_Buffer[8] & 0xF;
-			SC_PRINT("Second SDRAM Size(Gb):\t%d", DDR5_SDRAM_Size[DRAM_Size_Index]);
+			SC_INFO("Second SDRAM density per die(Gb):\t%d", DDR5_SDRAM_Size[DRAM_Size_Index]);
 		}
 
 		SC_INFO("Thermal Sensor: %#x", In_Buffer[0xE]);
 		if (DDR4 == DDR_Type) {
 			/* Byte 0xE - Thermal Sensor = (0x0: No, 0x80: Yes) */
-			SC_PRINT("Temp. Sensor?\t%s", ((In_Buffer[0xE] & 0x80) ? "Supported" : "Not supported"));
+			SC_PRINT("Temp. Sensor:\t%s", ((In_Buffer[0xE] & 0x80) ? "Supported" : "Not supported"));
 		} else if (DDR5 == DDR_Type) {
 			/* Byte 0xE - Thermal Sensor = (0x0: No, 0x8: Yes) */
-			SC_PRINT("Temp. Sensor?\t%s", ((In_Buffer[0xE] & 0x08) ? "Supported" : "Not supported"));
+			SC_PRINT("Temp. Sensor:\t%s", ((In_Buffer[0xE] & 0x08) ? "Supported" : "Not supported"));
 		}
 
 		if (DDR4 == DDR_Type) {
@@ -2358,10 +2365,13 @@ int DDR_Ops(void)
 		 * 		Symmetry (bit 6) = 0: symmetric, 1: asymmetric
 		 */
 		SC_INFO("Module Organization: %#x", (0x7F & In_Buffer[Module_Org_Byte]));
-		SC_PRINT("Symmetry? \t%s", (In_Buffer[Module_Org_Byte] & 0x40) ? "Asymmetrical" : "Symmetrical");
-		SC_PRINT("Package Ranks per DIMM?\t%i", ((In_Buffer[Module_Org_Byte] & 0x38) >> 3) + 1);
+		Symmetry = (In_Buffer[Module_Org_Byte] >> 6) & 0x1;
+		SC_PRINT("Symmetry: \t%s", Symmetry ? "Asymmetrical" : "Symmetrical");
+		Package_Ranks = ((In_Buffer[Module_Org_Byte] & 0x38) >> 3) + 1;
+		SC_PRINT("Package Ranks per DIMM:\t%i", Package_Ranks);
 		if (DDR4 == DDR_Type) {
-			SC_PRINT("SDRAM Device Width? \t%i bits", (int)pow(2, ((In_Buffer[Module_Org_Byte] & 0x7) + 2)));
+			SDRAM_Device_Width = (int)pow(2, ((In_Buffer[Module_Org_Byte] & 0x7) + 2));
+			SC_PRINT("SDRAM Device Width: \t%i bits", SDRAM_Device_Width);
 		}
 
 		/*
@@ -2370,7 +2380,8 @@ int DDR_Ops(void)
 		 *									   3: 64 bits
 		 */
 		SC_INFO("ECC Supported Bus Width: %#x", In_Buffer[ECC_Support_Byte]);
-		SC_PRINT("Primary Bus Width: \t%i bits", (int)pow(2, ((In_Buffer[ECC_Support_Byte] & 0x7) + 3)));
+		Primary_Bus_Width = (int)pow(2, ((In_Buffer[ECC_Support_Byte] & 0x7) + 3));
+		SC_PRINT("Primary Bus Width: \t%i bits", Primary_Bus_Width);
 		if (DDR4 == DDR_Type) {
 			/* Bus width extension (bits 3-4) = 0: 0 bits, 1: 8 bits */
 			SC_PRINT("Bus Width Extension: \t%s bits", (In_Buffer[ECC_Support_Byte] & 0x8) ? "8" : "0");
@@ -2387,7 +2398,71 @@ int DDR_Ops(void)
 			}
 
 			/* Channels per DIMM (bits 5-6) = 0: 1 channel, 1: 2 channels */
-			SC_PRINT("Channels per DIMM: \t%s", (In_Buffer[ECC_Support_Byte] & 0x60) ? "2" : "1");
+			DIMM_Channels = ((In_Buffer[ECC_Support_Byte] >> 5) & 0x3) + 1;
+			SC_PRINT("Channels per DIMM: \t%d", DIMM_Channels);
+		}
+
+		/* Calculate memory size of DIMM */
+		if (DDR4 == DDR_Type) {
+			if (0 == Symmetry) {
+				Size = (float)DDR4_SDRAM_Size[DRAM_Size_Index] / 8 *
+					(float)Primary_Bus_Width / (float)SDRAM_Device_Width *
+					(float)Package_Ranks;
+				/* If lower 2 bits equal 0x2, die count (byte 6: bits 4-6) must be taken into account. */
+				if (0x2 == (In_Buffer[6] & 0x2)) {
+					Size = Size * (float)(((In_Buffer[6] >> 4) & 0x7) + 1);
+				}
+
+			} else {
+				/* If lower 2 bits equal 0x2 (3DS), die count (byte 6: bits 4-6) must be taken into account. */
+				if (0x2 == (In_Buffer[6] & 0x2)) {
+					Size = (float)DDR4_SDRAM_Size[DRAM_Size_Index] / 8 *
+						(float)Primary_Bus_Width / (float)SDRAM_Device_Width *
+						(float)((Package_Ranks + (Package_Ranks % 2)) / 2) *
+						(float)(((In_Buffer[6] >> 4) & 0x7) + 1);
+				} else {
+					Size = (float)DDR4_SDRAM_Size[DRAM_Size_Index] / 8 *
+						(float)Primary_Bus_Width / (float)SDRAM_Device_Width *
+						(float)((Package_Ranks + (Package_Ranks % 2)) / 2);
+				}
+
+				/* If lower 2 bits equal 0x2 (3DS), die count (byte 10: bits 4-6) must be taken into account. */
+				if (0x2 == (In_Buffer[10] & 0x2)) {
+					/*
+					 * Byte 10, bits 2-3 = 00: secondary device density is same as primary,
+					 * 01: secondary is one standard less than primary,
+					 * 10: secondary is 2 orders less than primary
+					 */
+					Size = Size + (float)DDR4_SDRAM_Size[DRAM_Size_Index - ((In_Buffer[10] >> 2) & 0x3)] /
+							8 * (float)Primary_Bus_Width / (float)SDRAM_Device_Width *
+							(float)((Package_Ranks - (Package_Ranks % 2)) / 2) *
+							(float)(((In_Buffer[10] >> 4) & 0x7) + 1);
+				} else {
+					Size = Size + (float)DDR4_SDRAM_Size[DRAM_Size_Index - ((In_Buffer[10] >> 2) & 0x3)] /
+							8 * (float)Primary_Bus_Width / (float)SDRAM_Device_Width *
+							(float)((Package_Ranks - (Package_Ranks % 2)) / 2);
+				}
+			}
+
+			SC_PRINT("Size(%cB):\t%d", ((DRAM_Size_Index >= 2) ? 'G' : 'M'), (int)Size);
+		} else if (DDR5 == DDR_Type) {
+			/* Symmetry (bit 6) = 0: symmetric, 1: asymmetric */
+			if (0 == Symmetry) {
+				Size = (float)DIMM_Channels * (float)Primary_Bus_Width / (float)pow(2, ((In_Buffer[6] >> 5) & 0x7) + 2) *
+					(float)DDR5_DIE_Per_Package[(In_Buffer[4] >> 5) & 0x7] * (float)DDR5_SDRAM_Size[In_Buffer[4] & 0xF] / 8 * (float)Package_Ranks;
+			} else {
+				/* I/O width of first (byte 6) and second (byte 10) modules must be the same in an asymmetrical assembly. */
+				if ((In_Buffer[6] & 0xE0) != (In_Buffer[10] & 0xE0)) {
+					SC_ERR("SDRAM I/O Width mismatch between first and second modules");
+					return -1;
+				}
+
+				Size = (float)DIMM_Channels * (float)Primary_Bus_Width / (float)pow(2, ((In_Buffer[10] >> 5) & 0x7) + 2) / 8 *
+					(((float)DDR5_DIE_Per_Package[(In_Buffer[4] >> 5) & 0x7] * (float)DDR5_SDRAM_Size[In_Buffer[4] & 0xF] * (float)((Package_Ranks + (Package_Ranks % 2)) / 2)) +
+					((float)DDR5_DIE_Per_Package[(In_Buffer[8] >> 5) & 0x7] * (float)DDR5_SDRAM_Size[In_Buffer[8] & 0xF] * (float)((Package_Ranks - (Package_Ranks % 2)) / 2)));
+			}
+
+			SC_PRINT("Size(GB):\t%d", (int)Size);
 		}
 
 		/*

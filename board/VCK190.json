@@ -21,7 +21,7 @@
 			"SI570_ZSFP" : {
 				"Name" : "zSFP Si570",
 				"Type" : "Si570",
-				"Sysfs_Path" : "/sys/devices/platform/si570_zsfp_clk/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/si570-zsfp-clk/set_rate",
 				"Default_Freq" : 156.25,
 				"Upper_Freq" : 810.0,
 				"Lower_Freq" : 10.0,
@@ -32,7 +32,7 @@
 			"SI570_USER1_FMC" : {
 				"Name" : "User1 FMC2 Si570",
 				"Type" : "Si570",
-				"Sysfs_Path" : "/sys/devices/platform/si570_user1_clk/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/si570-user1-clk/set_rate",
 				"Default_Freq" : 100.0,
 				"Upper_Freq" : 1250.0,
 				"Lower_Freq" : 10.0,
@@ -64,7 +64,7 @@
 			"SI570_REF" : {
 				"Name" : "Versal Sys Clk Si570",
 				"Type" : "Si570",
-				"Sysfs_Path" : "/sys/devices/platform/ref_clk/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/ref-clk/set_rate",
 				"Default_Freq" : 33.333,
 				"Upper_Freq" : 160.0,
 				"Lower_Freq" : 10.0,
@@ -74,7 +74,7 @@
 			"SI570_DIMM1" : {
 				"Name" : "Dimm1 Si570",
 				"Type" : "Si570",
-				"Sysfs_Path" : "/sys/devices/platform/si570_ddrdimm1_clk/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/si570-ddrdimm1-clk/set_rate",
 				"Default_Freq" : 200.0,
 				"Upper_Freq" : 810.0,
 				"Lower_Freq" : 10.0,
@@ -84,7 +84,7 @@
 			"SI570_LPDDR4_CLK1" : {
 				"Name" : "LPDDR4 CLK1 Si570",
 				"Type" : "Si570",
-				"Sysfs_Path" : "/sys/devices/platform/si570_lpddr4_clk1/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/si570-lpddr4-clk1/set_rate",
 				"Default_Freq" : 200.0,
 				"Upper_Freq" : 810.0,
 				"Lower_Freq" : 10.0,
@@ -94,7 +94,7 @@
 			"SI570_LPDDR4_CLK2" : {
 				"Name" : "LPDDR4 CLK2 Si570",
 				"Type" : "Si570",
-				"Sysfs_Path" : "/sys/devices/platform/si570_lpddr4_clk2/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/si570-lpddr4-clk2/set_rate",
 				"Default_Freq" : 200.0,
 				"Upper_Freq" : 810.0,
 				"Lower_Freq" : 10.0,
@@ -104,7 +104,7 @@
 			"SI570_HSDP" : {
 				"Name" : "HSDP Si570",
 				"Type" : "Si570",
-				"Sysfs_Path" : "/sys/devices/platform/si570_hsdp_clk/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/si570-hsdp-clk/set_rate",
 				"Default_Freq" : 156.25,
 				"Upper_Freq" : 810.0,
 				"Lower_Freq" : 10.0,

@@ -1,14 +1,13 @@
 #! /usr/bin/env python3
 
 #
-# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 import sys
 from periphery import I2C
-
 
 #
 # This routine sets VOUT of a TPS546B24A voltage regulator.
@@ -49,24 +48,13 @@ def set_tps546b24a(bus, address, voltage):
 #
 # Main routine
 #
+if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print("ERROR: missing regulator address and voltage value")
+        quit(-1)
 
-if len(sys.argv) != 3:
-    print("ERROR: missing voltage target and value")
-    quit(-1)
+    bus = "/dev/i2c-0"
+    address = sys.argv[1]
+    value = sys.argv[2]
 
-target = sys.argv[1]
-value = sys.argv[2]
-bus = "/dev/i2c-0"
-if target == "VCCO_500":
-    address = 0x4A
-elif target == "VCCO_501":
-    address = 0x4B
-elif target == "VCCO_502":
-    address = 0x4C
-elif target == "VCCO_503":
-    address = 0x4D
-else:
-    print("ERROR: invalid voltage target")
-    quit(-1)
-
-set_tps546b24a(bus, address, float(value))
+    set_tps546b24a(bus, int(address, 16), float(value))

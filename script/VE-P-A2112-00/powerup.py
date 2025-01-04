@@ -1,14 +1,14 @@
 #! /usr/bin/env python3
 
 #
-# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 import os
 from periphery import I2C
-
+import set_tps546b24a as tps546b24a
 
 #
 # This routine reads 'Product Name' field of an EEPROM.
@@ -41,17 +41,8 @@ def read_product_name(bus, address):
 #
 # Main routine
 #
-
-DIR = "/usr/share/system-controller-app/script/VE-P-A2112-00/"
-
 DC_EEPROM_BUS = "/dev/i2c-1"
 DC_EEPROM_ADDRESS = 0x52
-
-REGULATOR_BUS = "/dev/i2c-0"
-VCCO_500_ADDRESS = 0x4A
-VCCO_501_ADDRESS = 0x4B
-VCCO_502_ADDRESS = 0x4C
-VCCO_503_ADDRESS = 0x4D
 
 #
 # Determine which Daughter Card is plugged-in.
@@ -59,17 +50,21 @@ VCCO_503_ADDRESS = 0x4D
 name = read_product_name(DC_EEPROM_BUS, DC_EEPROM_ADDRESS)
 #print("Daughter Card: ", name)
 
+REGULATOR_BUS = "/dev/i2c-0"
+
+#
+# VCCO_500 is at 0x1A, VCCO_501 is at 0x1B, and VCCO_502 is at 0x1C.
+#
 if name == "X-PRC-07" or name == "X-PRC-08":
-    os.system(DIR + "set_tps546b24a.py VCCO_500 1.8")
-    os.system(DIR + "set_tps546b24a.py VCCO_501 1.8")
-    os.system(DIR + "set_tps546b24a.py VCCO_502 3.3")
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1A, 1.8)
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1B, 1.8)
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1C, 3.2)
 elif name == "X-PRC-09" or name == "X-PRC-10" or name == "X-PRC-11":
-    os.system(DIR + "set_tps546b24a.py VCCO_500 1.8")
-    os.system(DIR + "set_tps546b24a.py VCCO_501 1.8")
-    os.system(DIR + "set_tps546b24a.py VCCO_502 1.8")
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1A, 1.8)
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1B, 1.8)
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1C, 1.8)
 else:
     print("WARNING: unknown DC '" + name + "' is detected.  Set rails to 1.8v")
-    os.system(DIR + "set_tps546b24a.py VCCO_500 1.8")
-    os.system(DIR + "set_tps546b24a.py VCCO_501 1.8")
-    os.system(DIR + "set_tps546b24a.py VCCO_502 1.8")
-
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1A, 1.8)
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1B, 1.8)
+    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1C, 1.8)

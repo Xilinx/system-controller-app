@@ -1,14 +1,13 @@
 #! /usr/bin/env python3
 
 #
-# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 import sys
 from periphery import I2C
-
 
 #
 # This routine gets VOUT of a TPS53681 voltage regulator.
@@ -29,7 +28,11 @@ def get_tps53681(bus, address, channel):
     i2c.transfer(address, msgs)
     if (msgs[1].data[0] & 0x1F) == 0x7:
         DAC_step = 0.005
-    elif (msgs[1].data[0] & 0x1F) == 0x3:
+    elif (msgs[1].data[0] & 0x1F) == 0x1:
+        # VOUT_MODE is not set correctly on TPS53681 parts on this board.  It is
+        # reading 0x1 instead of 0x7.
+        DAC_step = 0.005
+    elif (msgs[1].data[0] & 0x1F) == 0x4:
         DAC_step = 0.01
     else:
         print("ERROR: invalid VOUT_MODE value")
@@ -54,7 +57,6 @@ def get_tps53681(bus, address, channel):
 #
 # Main routine
 #
-
 if len(sys.argv) != 2:
     print("ERROR: missing voltage target")
     quit(-1)

@@ -1,10 +1,10 @@
 {
-	"License" : "Copyright (c) 2024 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VE-P-A2112-00" : {
 		"FEATURE" : {
 			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
-				  "gpio", "FMC"]
+				  "gpio"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -63,7 +63,7 @@
 				"Upper_Freq": 2100.0,
 				"Lower_Freq": 15.0,
 				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x57"
+				"I2C_Address": "0x40"
 			},
 			"DDR5_UDIMM_OSC_CLK": {
 				"Name": "DDR5_UDIMM_OSC_CLK",
@@ -345,7 +345,7 @@
 				"Name" : "VCCINT",
 				"Part_Name" : "TPS53681",
 				"Maximum_Volt" : -1,
-				"Typical_Volt" : 0.725,
+				"Typical_Volt" : 0.8,
 				"Minimum_Volt" : -1,
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x60",
@@ -367,7 +367,7 @@
 				"Name" : "VCC_AIE",
 				"Part_Name" : "TPS53681",
 				"Maximum_Volt" : -1,
-				"Typical_Volt" : 0.725,
+				"Typical_Volt" : 0.8,
 				"Minimum_Volt" : -1,
 				"I2C_Bus" : "/dev/i2c-0",
 				"I2C_Address" : "0x61",
@@ -732,7 +732,7 @@
 			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTLR_DUT_POR_B_RDBK",
 			"BB_SW_ON_RO" : "SYSCTLR_BB_SW_ON_STATUS",
 			"BB_PWR_DIS_B" : "SYSCTLR_BB_PWR_DIS_B",
-			"BB_PWR_DIS_B" : "SYSCTLR_DUT_PWR_DIS_B",
+			"DUT_PWR_DIS_B" : "SYSCTLR_DUT_PWR_DIS_B",
 			"BB_SEQ_DIS_B" : "SYSCTLR_BB_SEQ_DIS_B",
 			"BB_PGOOD_RO" : "SYSCTLR_BB_PGOOD",
 			"DUT_GPIO0" : "SYSCTLR_GPIO0_LS",
@@ -826,26 +826,6 @@
 			"GTYP_MMI_AVTT_PG_RO" : "GTYP_MMI_AVTT_PGOOD",
 			"GTYP_MMI_AVCCAUX_PG_RO" : "GTYP_MMI_AVCCAUX_PGOOD"
 		},
-		"FMCs" : {
-			"FMC_1" : {
-				"Name" : "FMC1",
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x50",
-				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B"],
-				"Supported_Volts": [1.2],
-				"Voltage_Regulator": "VCCO_706-709",
-				"Default_Volt": 1.2
-			},
-			"FMC_2" : {
-				"Name" : "FMC2",
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x51",
-				"Presence_Labels": ["FMCP2_FMC_PRSNT_M2C_B"],
-				"Supported_Volts": [1.2],
-				"Voltage_Regulator": "VCCO_706-709",
-				"Default_Volt": 1.2
-			}
-		},
 		"Constraints" : {
 			"Power_Up" : {
 				"Type" : "Complete",
@@ -856,10 +836,6 @@
 					"DC_Detection" : {
 						"Type" : "External",
 						"Command" : "powerup.py"
-					},
-					"FMC_Detection" : {
-						"Type" : "Internal",
-						"Command" : "FMC_Autodetect_Vadj"
 					}
 				}
 			},

@@ -1,14 +1,25 @@
 #! /bin/bash
 
 #
-# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
+while getopts "d" OPTS; do
+	case "$OPTS" in
+		d)
+			DRY_RUN="--dry-run"
+			;;
+		\?)
+			echo "Usage: $0 [-d]"
+			exit
+			;;
+	esac
+done
+
 RELEASE="2024.2"
 BASE_URL="system-controller/sc_app_bsp/$RELEASE"
-#OPTS="--dry-run"
 
 INTERNAL=( \
 	"VN-P-B2197-00" \
@@ -22,14 +33,15 @@ get_latest() {
 }
 
 mirror_release () {
-	DATE_DIR="${RELEASE}_$(date +%m%d%y%H%M)"
+	DATE_DIR="${RELEASE}_$(date +%Y%m%d%H%M)"
 
 	#Find the most recent artifacts
 	COPY_DIR=$1
 	NEW_PROJ="$BASE_URL"/"$DATE_DIR"
 
 	#Copying the artifacts works fine, but it doesn't update the directory creation date
-	jf rt copy $OPTS --flat=true "$COPY_DIR" "$NEW_PROJ"
+	echo ">>> jf rt copy ${DRY_RUN} --flat=true ${COPY_DIR} ${NEW_PROJ}"
+	jf rt copy ${DRY_RUN} --flat=true "${COPY_DIR}" "${NEW_PROJ}"
 }
 
 COPY_DIR=$(get_latest)
@@ -48,5 +60,6 @@ for J in $(ls *.json | sed 's/\.json//'); do
 		fi
 	done
 
-	jf rt upload $OPTS "$J.json" "$COPY_DIR"/"$DIR"/"$J"/"$J.json"
+	echo ">>> jf rt upload ${DRY_RUN} ${J}.json ${COPY_DIR}/${DIR}/${J}/${J}.json"
+	jf rt upload ${DRY_RUN} "${J}.json" "${COPY_DIR}"/"${DIR}"/"${J}"/"${J}.json"
 done

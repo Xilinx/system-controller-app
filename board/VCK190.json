@@ -229,7 +229,7 @@
 			"INA226_MGTYAVCC" : {
 				"Name" : "MGTYAVCC",
 				"I2C_Bus" : "/dev/i2c-6",
-				"I2C_Address" : "0x48",
+				"I2C_Address" : "0x4B",
 				"Shunt_Resistor" : 2000,
 				"Maximum_Current" : 6000,
 				"Phase_Multiplier" : 1

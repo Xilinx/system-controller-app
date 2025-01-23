@@ -59,12 +59,7 @@ if name == "X-PRC-07" or name == "X-PRC-08":
     tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1A, 1.8)
     tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1B, 1.8)
     tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1C, 3.2)
-elif name == "X-PRC-09" or name == "X-PRC-10" or name == "X-PRC-11":
-    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1A, 1.8)
-    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1B, 1.8)
-    tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1C, 1.8)
 else:
-    print("WARNING: unknown DC '" + name + "' is detected.  Set rails to 1.8v")
     tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1A, 1.8)
     tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1B, 1.8)
     tps546b24a.set_tps546b24a(REGULATOR_BUS, 0x1C, 1.8)

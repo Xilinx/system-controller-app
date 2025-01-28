@@ -1,0 +1,609 @@
+{
+	"License" : "Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
+	"VE-X-A2112-00" : {
+		"FEATURE" : {
+			"List" : ["eeprom", "bootmode", "clock", "voltage", "temp", "power",
+				  "gpio"]
+		},
+		"BOOTMODES" : {
+			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
+			"Modes" : {
+				"JTAG" : "0x0",
+				"QSPI_24" : "0x1",
+				"QSPI_32" : "0x2",
+				"SD_LS_SE11" : "0x3",
+				"SD_2.0" : "0x5",
+				"eMMC" : "0x6",
+				"USB" : "0x7",
+				"OSPI" : "0x8",
+				"SMAP" : "0xa",
+				"UFS" : "0xb",
+				"DFT" : "0xd",
+				"SD_LS_SE10" : "0xe"
+			}
+		},
+		"CLOCK": {
+			"USB3_PHY_REF_PAD_CLK": {
+				"Name": "USB3_PHY_REF_PAD_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys-clk-1/set_rate",
+				"Default_Freq": 24.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x63"
+			},
+			"LPDDR5_C0_C1_OSC_CLK": {
+				"Name": "LPDDR5_C0_C1_OSC_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys-clk-2/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x57"
+			},
+			"XPL7_PS_REFCLK": {
+				"Name": "XPL7_PS_REFCLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys-clk-3/set_rate",
+				"Default_Freq": 33.333,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x55"
+			},
+			"LPDDR5_C2_OSC_CLK": {
+				"Name": "LPDDR5_C2_OSC_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys-clk-4/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x59"
+			},
+			"LPDDR5_C3_C4_OSC_CLK": {
+				"Name": "LPDDR5_C3_C4_OSC_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys-clk-5/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-1",
+				"I2C_Address": "0x56"
+			}
+		},
+		"INA226" : {
+			"INA226_VR_LPD_0V8" : {
+				"Name" : "VR_LPD_0V8",
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x40",
+				"Shunt_Resistor" : 1000,
+				"Maximum_Current" : 5000,
+				"Phase_Multiplier" : 1
+			},
+			"INA226_VCC_FPD" : {
+				"Name" : "VCC_FPD",
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x41",
+				"Shunt_Resistor" : 1000,
+				"Maximum_Current" : 25000,
+				"Phase_Multiplier" : 1
+			}
+		},
+		"VOLTAGE" : {
+			"VCCINT" : {
+				"Name" : "VCCINT",
+				"Part_Name" : "TPS53681",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x60",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : 0
+			},
+			"VCC_FPD" : {
+				"Name" : "VCC_FPD",
+				"Part_Name" : "TPS53681",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x60",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : 1
+			},
+			"VCC_AIE" : {
+				"Name" : "VCC_AIE",
+				"Part_Name" : "TPS53681",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x61",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : 0
+			},
+			"VCC_IO_SOC" : {
+				"Name" : "VCC_IO_SOC",
+				"Part_Name" : "TPS53681",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x61",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : 1
+			},
+			"VR_RAM_0V8" : {
+				"Name" : "VR_RAM_0V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x19",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_MIO_1V8" : {
+				"Name" : "VR_MIO_1V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x1D",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_LPD_0V8": {
+				"Name" : "VR_LPD_0V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x10",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_AUX_LPD_1V5" : {
+				"Name" : "VR_AUX_LPD_1V5",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.5,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x13",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_MIPI_1V2" : {
+				"Name" : "VR_MIPI_1V2",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.2,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x1F",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_VCC_USB2_0V8" : {
+				"Name" : "VR_VCC_USB2_0V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x24",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_VCC_PAUX_USB3_0V8" : {
+				"Name" : "VR_VCC_PAUX_USB3_0V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x25",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_VCCIO_REG_USB2_3V3" : {
+				"Name" : "VR_VCCIO_REG_USB2_3V3",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 3.3,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x26",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_VCCIO_PAUX_1V8" : {
+				"Name" : "VR_VCCIO_PAUX_1V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x27",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_UTIL_1V8" : {
+				"Name" : "VR_UTIL_1V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x11",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_UTIL_3V3" : {
+				"Name" : "VR_UTIL_3V3",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 3.3,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x17",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_VCCIO_USB3_1V2" : {
+				"Name" : "VR_VCCIO_USB3_1V2",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.2,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x14",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_AUX_1V5" : {
+				"Name" : "VR_AUX_1V5",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.5,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x15",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_MMD_0V8" : {
+				"Name" : "VR_MMD_0V8",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.8,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x18",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_LP5_1V0" : {
+				"Name" : "VR_LP5_1V0",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.0,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x20",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_LP5_VDD2_1V05" : {
+				"Name" : "VR_LP5_VDD2_1V05",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.05,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x21",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_LP5_VDDQ_0V5" : {
+				"Name" : "VR_LP5_VDDQ_0V5",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.5,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x22",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_HDIO_3V3" : {
+				"Name" : "VR_HDIO_3V3",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 3.3,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x23",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_GTYP_MMI_AVCC_0V92" : {
+				"Name" : "VR_GTYP_MMI_AVCC_0V92",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 0.92,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x29",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_GTYP_MMI_AVTT_1V2" : {
+				"Name" : "VR_GTYP_MMI_AVTT_1V2",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.2,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x2A",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_GTYP_MMI_AVCCAUX_1V5" : {
+				"Name" : "VR_GTYP_MMI_AVCCAUX_1V5",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 1.5,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x2B",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			},
+			"VR_UTIL_5V0" : {
+				"Name" : "VR_UTIL_5V0",
+				"Part_Name" : "TPS546B24A",
+				"Maximum_Volt" : -1,
+				"Typical_Volt" : 5.0,
+				"Minimum_Volt" : -1,
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x16",
+				"PMBus_VOUT_MODE" : 1,
+				"Page_Select" : -1
+			}
+		},
+		"Temperature": {
+			"Name": "Versal-AIEPG2",
+			"Sensor": "versal-isa-0000"
+		},
+		"GPIO_Group": {
+			"SW10": {
+				"Name": "SW9",
+				"Type": "RW",
+				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW10 Readback": {
+				"Name": "SW9 Readback",
+				"Type": "RO",
+				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3_READBACK",
+						"SYSCTLR_VERSAL_MODE2_READBACK",
+						"SYSCTLR_VERSAL_MODE1_READBACK",
+						"SYSCTLR_VERSAL_MODE0_READBACK"]
+			},
+			"SW3": {
+				"Name": "SW11",
+				"Type": "RW",
+				"GPIO_Lines": ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
+		"GPIO" : {
+			"SYSCTLR_JTAG_S0" : "SYSCTLR_MIO26_JTAG_S0",
+			"SYSCTLR_JTAG_S1" : "SYSCTLR_MIO27_JTAG_S1",
+			"SYSCTLR_VERSAL_MODE0" : "SYSCTRL_MIO38_DUT_MODE0",
+			"SYSCTLR_VERSAL_MODE1" : "SYSCTLR_MIO39_DUT_MODE1",
+			"SYSCTLR_VERSAL_MODE2" : "SYSCTLR_MIO40_DUT_MODE2",
+			"SYSCTLR_VERSAL_MODE3" : "SYSCTLR_MIO41_DUT_MODE3",
+			"SYSCTLR_VERSAL_MODE0_READBACK_RO" : "SYSCTLR_MIO42_MODE0_Rdbk",
+			"SYSCTLR_VERSAL_MODE1_READBACK_RO" : "SYSCTLR_MIO43_MODE1_Rdbk",
+			"SYSCTLR_VERSAL_MODE2_READBACK_RO" : "SYSCTLR_MIO44_MODE2_Rdbk",
+			"SYSCTLR_VERSAL_MODE3_READBACK_RO" : "SYSCTLR_MIO45_MODE3_Rdbk",
+			"SYSCTLR_I2C_MAIN_EN" : "SCM_I2C_MAIN_EN",
+			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE",
+			"VERSAL_ERROR_OUT_LS_RO" : "SYSCTRL_MIO28_DUT_ERR_Rd",
+			"VERSAL_ERROR_STATUS_LS_RO" : "SYSCTLR_PS_ERR_STATUS_M2C",
+			"SYSCTLR_POR_B_LS" : "SYSCTLR_DUT_POR_B",
+			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTRL_MIO46_DUT_POR_Rd",
+			"DUT_PWR_DIS_B" : "SC_SYSCTLR_DUT_PWR_DIS_B",
+			"BB_SEQ_DIS_B" : "SC_SYSCTLR_BB_SEQ_DIS_B",
+			"BB_PGOOD_RO" : "SYSCTLR_BB_PGOOD",
+			"UTIL_1V8_EN_LS_RO" : "SYSCTLR_UTIL_1V8_EN_LS",
+			"UTIL_3V3_EN_LS_RO" : "SYSCTLR_UTIL_3V3_EN_LS",
+			"UTIL_5V0_EN_LS_RO" : "SYSCTLR_UTIL_5V0_EN_LS",
+			"TI_CABLE_B" : "SC_TI_CABLE_B",
+			"LP5_VDD2_1V05_EN_OD" : "SYSCTLR_LP5_VDD2_1V05_EN",
+			"LP5_VDDQ_0V5_EN_OD" : "SYSCTLR_LP5_VDDQ_0V5_EN",
+			"VR_HDIO_3V3_EN_OD" : "SYSCTLR_VR_HDIO_3V3_EN",
+			"VR_MIPI_1V2_EN_OD" : "SYSCTLR_VR_MIPI_1V2_EN",
+			"VR_MIO_1V8_EN_OD" : "SYSCTLR_VR_MIO_1V8_EN",
+			"VCC_LPD_EN_OD" : "SYSCTLR_VCC_LPD_EN",
+			"VCCAUX_LPD_EN_OD" : "SYSCTLR_VCCAUX_LPD_EN",
+			"VCC_FPD_EN_OD" : "SYSCTLR_VCC_FPD_EN",
+			"VCC_USB2_504_EN_OD" : "SYSCTLR_VCC_USB2_504_EN",
+			"VCC_PAUX_USB3_504_EN_OD" : "SYSCTLR_VCC_PAUX_USB3_504_EN",
+			"VCCIO_REG_USB2_504_EN_OD" : "SYSCTLR_VCCIO_REG_USB2_504_EN",
+			"VCCIO_PAUX_504_EN_OD" : "SYSCTLR_VCCIO_PAUX_504_EN",
+			"VCCIO_USB3_504_EN_OD" : "SYSCTLR_VCCIO_USB3_504_EN",
+			"VCCAUX_EN_OD" : "SYSCTLR_VCCAUX_EN",
+			"VCC_IO_SOC_EN_OD" : "SYSCTLR_VCC_IO_SOC_EN",
+			"VCC_MMD_EN_OD" : "SYSCTLR_VCC_MMD_EN",
+			"VCCINT_EN_OD" : "SYSCTLR_VCCINT_EN",
+			"VCC_AIE_EN_OD" : "SYSCTLR_VCC_AIE_EN",
+			"VCC_RAM_EN_OD" : "SYSCTLR_VCC_RAM_EN",
+			"GTYP_MMI_AVCC_EN_OD" : "SYSCTLR_GTYP_MMI_AVCC_EN",
+			"GTYP_MMI_AVTT_EN_OD" : "SYSCTLR_GTYP_MMI_AVTT_EN",
+			"GTYP_MMI_AVCCAUX_EN_OD" : "SYSCTLR_GTYP_MMI_AVCCAUX_EN",
+			"VR_LP5_1V0_EN_OD" : "SYSCTLR_VR_LP5_1V0_EN"
+		},
+		"Constraints" : {
+			"Get_VCCINT" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCCINT",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCCINT" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCCINT",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_VCC_FPD" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCC_FPD",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCC_FPD" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCC_FPD",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_VCC_AIE" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCC_AIE",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCC_AIE" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCC_AIE",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_VCC_IO_SOC" : {
+				"Type" : "Terminate",
+				"Command" : "getvoltage",
+				"Target" : "VCC_IO_SOC",
+				"Pre_Phases" : {
+					"Get_TPS53681" : {
+						"Type" : "External",
+						"Command" : "get_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Set_VCC_IO_SOC" : {
+				"Type" : "Terminate",
+				"Command" : "setvoltage",
+				"Target" : "VCC_IO_SOC",
+				"Value" : "$ANY",
+				"Pre_Phases" : {
+					"Set_TPS53681" : {
+						"Type" : "External",
+						"Command" : "set_tps53681.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCCINT" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCCINT",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCC_FPD" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCC_FPD",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCC_AIE" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCC_AIE",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			},
+			"Get_Power_VCC_IO_SOC" : {
+				"Type" : "Terminate",
+				"Command" : "getpower",
+				"Target" : "VCC_IO_SOC",
+				"Pre_Phases" : {
+					"Get_Sensor" : {
+						"Type" : "External",
+						"Command" : "get_sensors.py",
+						"Args" : "$PASSON"
+					}
+				}
+			}
+		}
+	}
+}

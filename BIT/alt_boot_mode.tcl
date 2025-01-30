@@ -1,4 +1,4 @@
-#! /usr/local/xilinx_vitis/xsdb
+#!/opt/labtools/xilinx_vitis/xsdb
 
 #
 # Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.

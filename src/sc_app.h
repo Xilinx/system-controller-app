@@ -459,10 +459,8 @@ typedef struct {
 /*
  * Definitions for invoking xsdb.
  */
-#define XSDB_ENV	"export XILINX_VITIS=/usr/local/xilinx_vitis; \
-			 export TCLLIBPATH=/usr/local/xilinx_vitis; \
-			 export TCL_LIBRARY=/usr/local/lib/tcl8.5"
-#define XSDB_CMD	"/usr/local/xilinx_vitis/xsdb"
+#define XSDB_ENV    "source /etc/profile.d/xsdb-variables.sh"
+#define XSDB_CMD	"xsdb"
 
 #define IDCODE_TCL	"idcode_verify.tcl"
 #define BOOTMODE_TCL	"alt_boot_mode.tcl"

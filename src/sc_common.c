@@ -797,6 +797,8 @@ FMCAutoVadj_Op(void)
 	int State;
 	char *Regulator_Name;
 	float Target_Volt, Default_Volt;
+	int Use_RAFT;
+	char System_Cmd[SYSCMD_MAX];
 
 	FMCs = Plat_Devs->FMCs;
 	if (FMCs == NULL) {
@@ -912,6 +914,25 @@ FMCAutoVadj_Op(void)
 	 */
 	if ((Present[0] == 0 && Present[1] == 0) || (Voltage == 0)) {
 		Voltage = Default_Volt;
+	}
+
+	Use_RAFT = 1;
+	for (int i = 0; i < Plat_Devs->FeatureList->Numbers; i++) {
+		if (strcmp(Plat_Devs->FeatureList->Feature[i], "voltage") == 0) {
+			Use_RAFT = 0;
+			break;
+		}
+	}
+
+	if (Use_RAFT) {
+		(void) sprintf(System_Cmd, "python3 %s setvoltage %s %f >/dev/null", RAFT_CLI,
+			       Regulator_Name, Voltage);
+		SC_INFO("Invoke RAFT command '%s'", System_Cmd);
+		if (Shell_Execute(System_Cmd) != 0) {
+			SC_ERR("failed to set voltage of %s regulator", Regulator_Name);
+		}
+
+		return 0;
 	}
 
 	Voltages  = Plat_Devs->Voltages;

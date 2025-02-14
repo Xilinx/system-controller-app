@@ -44,6 +44,7 @@
 #define CUSTOM_CFS_PATH		DATADIR"/clock_files/"
 #define CUSTOM_PDIS_PATH	DATADIR"/PDIs/"
 #define ONBOARD_EEPROM_PATH	"/sys/bus/i2c/devices/*/eeprom_cc*"
+#define RAFT_CLI	"/usr/share/raft/examples/python/pmtool/pm-cmd.py"
 
 #define SC_INFO(msg, ...) fprintf(stdout, msg "\n", ##__VA_ARGS__);
 #define SC_ERR(msg, ...) do { \

@@ -3,7 +3,7 @@
 
 	"VEK385": {
 		"FEATURE": {
-			"List" : ["eeprom", "bootmode", "temp", "gpio", "SFP", "FMC"]
+			"List" : ["eeprom", "bootmode", "temp", "gpio", "FMC"]
 		},
 		"BOOTMODES": {
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -359,14 +359,6 @@
 			"UART_MUXSEL0": "SYSCTRL_MIO48_UART_MUXsel0",
 			"VERSAL_ERROR_OUT_LS_RO": "SYSCTRL_MIO28_DUT_ERR_Rd",
 			"VERSAL_DONE_RO": "SYSCTRL_MIO29_DUT_DONE"
-		},
-		"SFPs" : {
-			"SFP" : {
-				"Name" : "SFP",
-				"Type" : "sfp",
-				"I2C_Bus" : "/dev/i2c-4",
-				"I2C_Address" : "0x50"
-			}
 		},
 		"FMCs": {
 			"FMC": {

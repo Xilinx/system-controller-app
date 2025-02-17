@@ -34,9 +34,12 @@ if {$mode == 0} {
    } elseif {$revision_str == "invalid"} {
       puts "ERROR: unsupported silicon revision"
       set retcode -1
+   } elseif {$revision_str == "unknown"} {
+      puts "ERROR: couldn't obtain silicon revision"
+      set retcode -1
    }
 } elseif {$mode == 1} {
-   if {$revision_str == "invalid"} {
+   if {($revision_str == "invalid") || ($revision_str == "unknown")} {
       puts "FAIL"
    } else {
       puts "PASS"

@@ -202,10 +202,7 @@ Board_Identification(char *Board_Name)
 
 			/* Identify the silicon */
 			if (!Found || (Found && (1 <= atoi(Config_Var)))) {
-				if (Silicon_Identification(Silicon_Revision,
-							   STRLEN_MAX) != 0) {
-					return -1;
-				}
+				(void) Silicon_Identification(Silicon_Revision, STRLEN_MAX);
 			}
 		}
 
@@ -278,6 +275,11 @@ Silicon_Identification(char *Revision, int Length)
 	if (Revision[0] == 0) {
 		if (Get_IDCODE(Revision, Length) != 0) {
 			SC_ERR("failed to get silicon revision");
+			return -1;
+		}
+
+		if (strstr(Revision, "ERROR:") != NULL) {
+			Revision[0] = 0;
 			return -1;
 		}
 

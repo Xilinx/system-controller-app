@@ -131,16 +131,19 @@ proc silicon_revision {} {
    #
    # IDCODE[11:0] = 0x093   // Xilinx Manufacturer
    set idcode_str [lindex [jtag ta -filter {idcode =~ "*093"}] 3]
+   if {$idcode_str == ""} {
+      return "unknown"
+   }
+
    set prefix "0x"
-   set idcode $prefix$idcode_str
+   set idcode_val $prefix$idcode_str
    set mask [expr 0xFFF]
-   if {($idcode & $mask) != 0x93} {
-      revision_str "invalid"
-      return $revision_str
+   if {($idcode_val & $mask) != 0x93} {
+      return "invalid"
    }
 
    # IDCODE[31:28]         // Silicon Revision
-   set revision [expr $idcode >> 28]
+   set revision [expr $idcode_val >> 28]
    if {$revision == 0} {
       set revision_str "es1_"
    } elseif {$revision == 1} {

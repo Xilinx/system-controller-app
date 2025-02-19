@@ -49,7 +49,7 @@
 				"Name": "XPL7_PS_REFCLK",
 				"Type": "ProXO-XP",
 				"Sysfs_Path": "/sys/devices/platform/sys-clk-3/set_rate",
-				"Default_Freq": 33.333,
+				"Default_Freq": 50.0,
 				"Upper_Freq": 2100.0,
 				"Lower_Freq": 15.0,
 				"I2C_Bus": "/dev/i2c-1",

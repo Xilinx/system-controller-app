@@ -3,7 +3,7 @@
 
 	"VEK385": {
 		"FEATURE": {
-			"List" : ["eeprom", "bootmode", "temp", "gpio", "FMC"]
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC"]
 		},
 		"BOOTMODES": {
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -12,6 +12,24 @@
 				"JTAG": "0x0",
 				"OSPI": "0x8",
 				"UFS": "0xb"
+			}
+		},
+		"CLOCK": {
+			"SiT95211_CLK": {
+				"Name": "SiT95211_CLK",
+				"Type": "SIT95211",
+				"Vendor_Managed": 1,
+				"Default_Design": "VEK385_SiT95211",
+				"I2C_Bus": "/dev/i2c-15",
+				"I2C_Address": "0x69"
+			},
+			"SiT95314_CLK": {
+				"Name": "SiT95314_CLK",
+				"Type": "SIT95314",
+				"Vendor_Managed": 1,
+				"Default_Design": "VEK385_SiT95314",
+				"I2C_Bus": "/dev/i2c-16",
+				"I2C_Address": "0x69"
 			}
 		},
 		"VOLTAGE": {

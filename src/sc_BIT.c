@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -51,7 +51,7 @@ Clocks_Check(void *Arg1, void *Arg2)
 	}
 
 	for (int i = 0; i < Clocks->Numbers; i++) {
-		if (Clocks->Clock[i].Type == IDT_8A34001) {
+		if (Clocks->Clock[i].Vendor_Managed) {
 			continue;
 		}
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -997,6 +997,7 @@ Clock_Ops(void)
 	char Output[STRLEN_MAX];
 	double Frequency;
 	double Upper, Lower;
+	char *CP;
 
 	Clocks = Plat_Devs->Clocks;
 	if (Clocks == NULL) {
@@ -1006,8 +1007,8 @@ Clock_Ops(void)
 
 	if (Command.CmdId == LISTCLOCK) {
 		for (int i = 0; i < Clocks->Numbers; i++) {
-			if (Clocks->Clock[i].Type == IDT_8A34001) {
-				SC_PRINT("%s", Clocks->Clock[i].Name);
+			    if (Clocks->Clock[i].Vendor_Managed) {
+				SC_PRINT("%s - Vendor Utility", Clocks->Clock[i].Name);
 			} else if (Clocks->Clock[i].Lower_Freq == -1 &&
 				   Clocks->Clock[i].Upper_Freq == -1) {
 				SC_PRINT("%s - (%.3f MHz)",
@@ -1030,6 +1031,12 @@ Clock_Ops(void)
 		return -1;
 	}
 
+	/* If the name indicates a vendor-managed clock, strip that info out */
+	CP = strstr(Target_Arg, " - Vendor Utility");
+	if (CP != NULL) {
+		*CP = '\0';
+	}
+
 	for (int i = 0; i < Clocks->Numbers; i++) {
 		if (strcmp(Target_Arg, (char *)Clocks->Clock[i].Name) == 0) {
 			Target_Index = i;
@@ -1045,8 +1052,12 @@ Clock_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETCLOCK:
-		if (Clock->Type == IDT_8A34001) {
+		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
 			return Get_IDT_8A34001(Clock);
+		}
+
+		if (Clock->Vendor_Managed) {
+			return Vendor_Utility_Clock(Clock, Command_Arg, Target_Arg, Value_Arg);
 		}
 
 		(void) sprintf(System_Cmd, "cat %s", Clock->Sysfs_Path);
@@ -1074,12 +1085,12 @@ Clock_Ops(void)
 		   ((signed long)(Frequency * 1000) * 0.001f));
 		break;
 	case GETMEASUREDCLOCK:
-		if (Clock->Type == IDT_8A34001) {
-			return Get_Measured_IDT_8A34001(Clock);
+		if (Clock->Vendor_Managed) {
+			return Get_Measured_Clock_Vendor(Clock);
 		}
 
-		if (Clock->FPGA_Counter_Reg[0] != '\0') {
-			return Get_Measured_Clock(Clock->FPGA_Counter_Reg, "Frequency(MHz):\t");
+		if (Clock->FPGA_Counter_Reg[0][0] != '\0') {
+			return Get_Measured_Clock(Clock->FPGA_Counter_Reg[0], "Frequency(MHz):\t");
 		} else {
 			SC_PRINT("Not Available");
 		}
@@ -1093,12 +1104,16 @@ Clock_Ops(void)
 			return -1;
 		}
 
-		if (Clock->Type == IDT_8A34001) {
+		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
 			if (Command.CmdId == SETCLOCK) {
 				return Set_IDT_8A34001(Clock, Value_Arg, 0);
 			} else {
 				return Set_IDT_8A34001(Clock, Value_Arg, 1);
 			}
+		}
+
+		if (Clock->Vendor_Managed) {
+			return Vendor_Utility_Clock(Clock, Command_Arg, Target_Arg, Value_Arg);
 		}
 
 		Frequency = strtod(Value_Arg, NULL);
@@ -1145,13 +1160,17 @@ Clock_Ops(void)
 
 		break;
 	case RESTORECLOCK:
+		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
+			return Restore_IDT_8A34001(Clock);
+		}
+
+		if (Clock->Vendor_Managed) {
+			return Vendor_Utility_Clock(Clock, Command_Arg, Target_Arg, Value_Arg);
+		}
+
 		if (Clock->Upper_Freq == -1 && Clock->Lower_Freq == -1) {
 			SC_INFO("no need to restore frequency of a fixed clock");
 			break;
-		}
-
-		if (Clock->Type == IDT_8A34001) {
-			return Restore_IDT_8A34001(Clock);
 		}
 
 		Frequency = Clock->Default_Freq;
@@ -3965,6 +3984,12 @@ Boot_Set_Clocks(void)
 	char Buffer[SYSCMD_MAX];
 	char Value[SYSCMD_MAX];
 
+	/* Remove 'vendor_clock' directory, if there is one */
+	(void) sprintf(Buffer, "rm -rf %s", VENDORCLOCKDIR);
+	if (Shell_Execute(Buffer) != 0) {
+		SC_ERR("failed to remove \'%s\' directory", VENDORCLOCKDIR);
+	}
+
 	/* Remove '8A34001' file, if there is one */
 	(void) remove(IDT8A34001FILE);
 
@@ -3997,7 +4022,7 @@ Boot_Set_Clocks(void)
 			return -1;
 		}
 
-		if (Clock->Type == IDT_8A34001) {
+		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
 			if (Set_IDT_8A34001(Clock, Value, 0) != 0) {
 				(void) fclose(FP);
 				return -1;

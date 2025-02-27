@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,6 +8,7 @@
 #ifndef SC_APP_H_
 #define SC_APP_H_
 
+#include <stdbool.h>
 #include <syslog.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -35,10 +36,11 @@
 #define IDT8A34001FILE	Appfile("8A34001")
 #define PDIFILE		Appfile("PDI")
 #define BITLOGFILE	Appfile("BIT.log")
+#define VENDORCLOCKDIR	Appfile("vendor_clock")
 
 #define BIT_PATH	INSTALLDIR"/BIT/"
 #define BOARD_PATH	INSTALLDIR"/board/"
-#define CFS_PATH	INSTALLDIR"/BIT/clock_files/"
+#define IDT8A34001_CFS_PATH	INSTALLDIR"/BIT/clock_files/8A34001/"
 #define SCRIPT_PATH	INSTALLDIR"/script/"
 #define DATADIR		"/data"
 #define CUSTOM_CFS_PATH		DATADIR"/clock_files/"
@@ -100,22 +102,20 @@ typedef struct BootModes {
 /*
  * Clocks
  */
-typedef enum {
-	Si570,
-	IDT_8A34001,
-} Clock_Type;
-
 typedef struct {
 	char	*Name;
+	char	*Part_Name;
+	bool	Vendor_Managed;
+	int	Outputs;
 	double	Default_Freq;
 	double	Upper_Freq;
 	double	Lower_Freq;
-	Clock_Type	Type;
 	void	*Type_Data;
 	char	*Sysfs_Path;
+	char	*Default_Design;
 	char	*I2C_Bus;
 	int	I2C_Address;
-	char	FPGA_Counter_Reg[LEVELS_MAX];
+	char	FPGA_Counter_Reg[LEVELS_MAX][LEVELS_MAX];
 } Clock_t;
 
 typedef struct Clocks {
@@ -124,12 +124,10 @@ typedef struct Clocks {
 } Clocks_t;
 
 typedef struct {
-	char	*Default_Design;
 	int	Number_Label;
 	char	**Display_Label;
 	char	**Internal_Label;
 	int	(*Chip_Reset)(void);
-	char	FPGA_Counter_Reg[12][LEVELS_MAX];
 } IDT_8A34001_Data_t;
 
 /*
@@ -460,7 +458,7 @@ typedef struct {
 /*
  * Definitions for invoking xsdb.
  */
-#define XSDB_ENV    "source /etc/profile.d/xsdb-variables.sh"
+#define XSDB_ENV	"source /etc/profile.d/xsdb-variables.sh"
 #define XSDB_CMD	"xsdb"
 
 #define IDCODE_TCL	"idcode_verify.tcl"
@@ -504,7 +502,7 @@ int Get_GPIO(char *, int *);
 int Get_IDCODE(char *, int);
 int Get_IDT_8A34001(Clock_t *);
 int Get_Measured_Clock(char *, char *);
-int Get_Measured_IDT_8A34001(Clock_t *);
+int Get_Measured_Clock_Vendor(Clock_t *);
 int Get_Temperature(Temperature_t *);
 int JTAG_Op(int);
 int Parse_JSON(const char *, Plat_Devs_t *);
@@ -520,6 +518,7 @@ int Shell_Execute(char *);
 int Silicon_Identification(char *, int);
 int VCK190_ES1_Vccaux_Workaround(void *);
 int VCK190_QSFP_ModuleSelect(SFP_t *, int);
+int Vendor_Utility_Clock(Clock_t *, char *, char *, char *);
 int Voltages_Check(void *, void *);
 int XSDB_BIT(void *, void *);
 int XSDB_Op(const char *, const char *, char *, int);

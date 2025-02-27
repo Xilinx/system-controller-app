@@ -1,5 +1,5 @@
 {
-	"License" : "Copyright (c) 2024 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2024 - 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VPK180-112": {
 		"FEATURE": {
@@ -38,9 +38,9 @@
 				"I2C_Address": "0x9",
 				"FPGA_Counter_Reg": "0x801B0000"
 			},
-			"IDT_8A34001": {
+			"8A34001": {
 				"Name": "8A34001",
-				"Type": "IDT_8A34001",
+				"Type": "8A34001",
 				"Default_Design" : "VPK180-112_8A34001_156MHz_312MHz",
 				"Display_Label" : ["CLK0 - From 8A34001 Q0; Q0 - To 8A34001 CLK0",
 					"CLK1 - From Bank 703; Q1 - To Bank 219 GTM RX2",

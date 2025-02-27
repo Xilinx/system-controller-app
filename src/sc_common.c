@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -1380,7 +1380,7 @@ Get_Measured_Clock(char *Counter_Reg, char *Label)
 }
 
 static int
-Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File, char *BIN_File)
+Check_IDT_8A34001_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File, char *BIN_File)
 {
 	char TCS[SYSCMD_MAX];
 	char TXT[SYSCMD_MAX];
@@ -1402,15 +1402,15 @@ Check_Clock_Files(char *Clock_Files, char *TCS_File, char *TXT_File, char *BIN_F
 			return -1;
 		}
 
-		(void) sprintf(TCS_File, "%s%s", CFS_PATH, TCS);
-		(void) sprintf(TXT_File, "%s%s", CFS_PATH, TXT);
+		(void) sprintf(TCS_File, "%s%s", IDT8A34001_CFS_PATH, TCS);
+		(void) sprintf(TXT_File, "%s%s", IDT8A34001_CFS_PATH, TXT);
 	} else {
 		(void) sprintf(TCS, "%s.tcs", Buffer);
 		(void) sprintf(TXT, "%s.txt", Buffer);
 		(void) sprintf(BIN, "%s.bin", Buffer);
-		(void) sprintf(TCS_File, "%s%s", CFS_PATH, TCS);
-		(void) sprintf(TXT_File, "%s%s", CFS_PATH, TXT);
-		(void) sprintf(BIN_File, "%s%s", CFS_PATH, BIN);
+		(void) sprintf(TCS_File, "%s%s", IDT8A34001_CFS_PATH, TCS);
+		(void) sprintf(TXT_File, "%s%s", IDT8A34001_CFS_PATH, TXT);
+		(void) sprintf(BIN_File, "%s%s", IDT8A34001_CFS_PATH, BIN);
 	}
 
 	if (access(TCS_File, F_OK) != 0) {
@@ -1507,7 +1507,7 @@ Get_IDT_8A34001(Clock_t *Clock)
 	char BIN_File[SYSCMD_MAX] = { 0 };
 	int Found = 0;
 	struct dirent *File;
-	char CFS_Dirs[][LSTRLEN_MAX] = { CFS_PATH, CUSTOM_CFS_PATH };
+	char CFS_Dirs[][LSTRLEN_MAX] = { IDT8A34001_CFS_PATH, CUSTOM_CFS_PATH };
 
 	if (Clock->Type_Data == NULL) {
 		SC_ERR("no data is available for 8A34001 clock");
@@ -1525,7 +1525,7 @@ Get_IDT_8A34001(Clock_t *Clock)
 		 * If the content of EEPROM is blank, it indicates that the clock
 		 * outputs are 0.
 		 */
-		(void) sprintf(BIN_File, "%s%s", CFS_PATH, "blank_image");
+		(void) sprintf(BIN_File, "%s%s", IDT8A34001_CFS_PATH, "blank_image");
 		if (EEPROM_IDT_8A34001_Verify(Clock, BIN_File) == 0) {
 			for (int i = 0; i < Clock_Data->Number_Label; i++) {
 				SC_PRINT("%s:\t0 MHz/PPS", Clock_Data->Display_Label[i]);
@@ -1592,7 +1592,7 @@ Get_IDT_8A34001(Clock_t *Clock)
 	(void) fclose(FP);
 	SC_INFO("File '%s' contains '%s'", IDT8A34001FILE, Clock_File);
 
-	if (Check_Clock_Files(Clock_File, TCS_File, TXT_File, BIN_File) != 0) {
+	if (Check_IDT_8A34001_Clock_Files(Clock_File, TCS_File, TXT_File, BIN_File) != 0) {
 		return -1;
 	}
 
@@ -1634,27 +1634,19 @@ Get_IDT_8A34001(Clock_t *Clock)
 }
 
 int
-Get_Measured_IDT_8A34001(Clock_t *Clock)
+Get_Measured_Clock_Vendor(Clock_t *Clock)
 {
 	char Label[STRLEN_MAX];
-	IDT_8A34001_Data_t *Clock_Data;
 
-	if (Clock->Type_Data == NULL) {
-		SC_ERR("no data is available for 8A34001 clock");
-		return -1;
-	}
-
-	Clock_Data = (IDT_8A34001_Data_t *)Clock->Type_Data;
-	/* The IDT_8A34001 clock chip has 12 outputs */
-	for (int i = 0; i < 12; i++) {
-		if (Clock_Data->FPGA_Counter_Reg[i][0] != '\0') {
-			(void) sprintf(Label, "Q%d - Frequency(MHz):\t", i);
-			if (Get_Measured_Clock(Clock_Data->FPGA_Counter_Reg[i], Label) != 0) {
+	for (int i = 0; i < Clock->Outputs; i++) {
+		if (Clock->FPGA_Counter_Reg[i][0] != '\0') {
+			(void) sprintf(Label, "O%d - Frequency(MHz):\t", i);
+			if (Get_Measured_Clock(Clock->FPGA_Counter_Reg[i], Label) != 0) {
 				SC_ERR("failed to get measured clock");
 				return -1;
 			}
 		} else {
-			SC_PRINT("Q%d - Not Available", i);
+			SC_PRINT("O%d - Not Available", i);
 		}
 	}
 
@@ -1681,7 +1673,7 @@ Set_IDT_8A34001(Clock_t *Clock, char *Clock_Files, int Mode)
 	int Ret = 0;
 
 	(void) strncpy(Buffer, Clock_Files, XLSTRLEN_MAX);
-	if (Check_Clock_Files(Buffer, TCS_File, TXT_File, BIN_File) != 0) {
+	if (Check_IDT_8A34001_Clock_Files(Buffer, TCS_File, TXT_File, BIN_File) != 0) {
 		return -1;
 	}
 
@@ -1848,13 +1840,13 @@ Restore_IDT_8A34001(Clock_t *Clock)
 	}
 
 	/* Restore the clock and set its EEPROM to the default image */
-	(void) sprintf(Buffer, "%s%s.bin", CFS_PATH, Clock_Data->Default_Design);
+	(void) sprintf(Buffer, "%s%s.bin", IDT8A34001_CFS_PATH, Clock->Default_Design);
 	if (access(Buffer, F_OK) == -1) {
-		SC_ERR("failed to find the default '%s.bin' image", Clock_Data->Default_Design);
+		SC_ERR("failed to find the default '%s.bin' image", Clock->Default_Design);
 		return -1;
 	}
 
-	if (Set_IDT_8A34001(Clock, Clock_Data->Default_Design, 1) != 0) {
+	if (Set_IDT_8A34001(Clock, Clock->Default_Design, 1) != 0) {
 		SC_ERR("failed to restore '%s'", Clock->Name);
 		return -1;
 	}
@@ -1890,6 +1882,29 @@ Reset_IDT_8A34001(void)
 	}
 
 	return 0;
+}
+
+int
+Vendor_Utility_Clock(Clock_t *Clock, char *Command, char *Target, char *Value)
+{
+	FILE *FP;
+	char System_Cmd[2 * SYSCMD_MAX];
+
+	(void) sprintf(System_Cmd, "%s%s.py %s %s %d %s %s %s %s 2>&1", SCRIPT_PATH,
+		       Clock->Part_Name, Board_Name, Clock->I2C_Bus, Clock->I2C_Address,
+		       Clock->Default_Design, Command, Target, Value);
+	SC_INFO("Command: %s", System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke '%s': %m", System_Cmd);
+		return -1;
+	}
+
+	while (fgets(System_Cmd, sizeof(System_Cmd), FP)) {
+		SC_PRINT_N("%s", System_Cmd);
+	}
+
+	return pclose(FP);
 }
 
 int

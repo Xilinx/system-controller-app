@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -324,57 +324,95 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		Check_Attribute("Type", "CLOCK");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 		                    Tokens[*Index].end - Tokens[*Index].start);
-		if (strcmp(Value_Str, "Si570") == 0) {
-			(*CLKs)->Clock[Clk_Items].Type = Si570;
-		} else if (strcmp(Value_Str, "IDT_8A34001") == 0) {
-			(*CLKs)->Clock[Clk_Items].Type = IDT_8A34001;
-		}
+		Validate_Str_Size(Value_Str, "CLOCK", "Type", STRLEN_MAX);
+		(*CLKs)->Clock[Clk_Items].Part_Name = Value_Str;
+		SC_INFO("Part_Name (Type): %s", (*CLKs)->Clock[Clk_Items].Part_Name);
 
-		SC_INFO("Type: %s", Value_Str);
-		free(Value_Str);
-		if ((*CLKs)->Clock[Clk_Items].Type != IDT_8A34001) {
+		if (strcmp((*CLKs)->Clock[Clk_Items].Part_Name, "8A34001") != 0) {
 			(*Index)++;
-			Check_Attribute("Sysfs_Path", "CLOCK");
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 			                    Tokens[*Index].end - Tokens[*Index].start);
-			Validate_Str_Size(Value_Str, "CLOCK", "Sysfs_Path", SYSCMD_MAX);
-			(*CLKs)->Clock[Clk_Items].Sysfs_Path = Value_Str;
-			SC_INFO("Sysfs Path: %s", (*CLKs)->Clock[Clk_Items].Sysfs_Path);
+			if (strcmp(Value_Str, "Vendor_Managed") != 0) {
+				(*CLKs)->Clock[Clk_Items].Vendor_Managed = false;
+				(*Index)--;
+			} else {
+				(*Index)++;
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
+				(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
+			}
 
-			(*Index)++;
-			Check_Attribute("Default_Freq", "CLOCK");
-			Value_Str = strndup(Json_File + Tokens[*Index].start,
-					    Tokens[*Index].end - Tokens[*Index].start);
-			(*CLKs)->Clock[Clk_Items].Default_Freq = atof(Value_Str);
-			free(Value_Str);
-			SC_INFO("Default Freq: %f", (*CLKs)->Clock[Clk_Items].Default_Freq);
+			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
+			if ((*CLKs)->Clock[Clk_Items].Vendor_Managed) {
+				(*Index)++;
+				Check_Attribute("Default_Design", "CLOCK");
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "CLOCK", "Default_Design", STRLEN_MAX);
+				(*CLKs)->Clock[Clk_Items].Default_Design = Value_Str;
+				SC_INFO("Default_Design: %s", (*CLKs)->Clock[Clk_Items].Default_Design);
+			} else {
+				(*Index)++;
+				Check_Attribute("Sysfs_Path", "CLOCK");
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+				                    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "CLOCK", "Sysfs_Path", SYSCMD_MAX);
+				(*CLKs)->Clock[Clk_Items].Sysfs_Path = Value_Str;
+				SC_INFO("Sysfs Path: %s", (*CLKs)->Clock[Clk_Items].Sysfs_Path);
 
-			(*Index)++;
-			Check_Attribute("Upper_Freq", "CLOCK");
-			Value_Str = strndup(Json_File + Tokens[*Index].start,
-					    Tokens[*Index].end - Tokens[*Index].start);
-			(*CLKs)->Clock[Clk_Items].Upper_Freq = atof(Value_Str);
-			free(Value_Str);
-			SC_INFO("Upper Freq: %f", (*CLKs)->Clock[Clk_Items].Upper_Freq);
+				(*Index)++;
+				Check_Attribute("Default_Freq", "CLOCK");
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				(*CLKs)->Clock[Clk_Items].Default_Freq = atof(Value_Str);
+				free(Value_Str);
+				SC_INFO("Default Freq: %f", (*CLKs)->Clock[Clk_Items].Default_Freq);
 
+				(*Index)++;
+				Check_Attribute("Upper_Freq", "CLOCK");
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				(*CLKs)->Clock[Clk_Items].Upper_Freq = atof(Value_Str);
+				free(Value_Str);
+				SC_INFO("Upper Freq: %f", (*CLKs)->Clock[Clk_Items].Upper_Freq);
+
+				(*Index)++;
+				Check_Attribute("Lower_Freq", "CLOCK");
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				(*CLKs)->Clock[Clk_Items].Lower_Freq = atof(Value_Str);
+				free(Value_Str);
+				SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
+			}
+
+		} else {	// (Type == 8A34001)
 			(*Index)++;
-			Check_Attribute("Lower_Freq", "CLOCK");
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
-					    Tokens[*Index].end - Tokens[*Index].start);
-			(*CLKs)->Clock[Clk_Items].Lower_Freq = atof(Value_Str);
-			free(Value_Str);
-			SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
-		} else {	// (Type == IDT_8A34001)
-			IDT_8A34001_Data =
-				(IDT_8A34001_Data_t *)calloc(1, sizeof(IDT_8A34001_Data_t));
+			                    Tokens[*Index].end - Tokens[*Index].start);
+			if (strcmp(Value_Str, "Vendor_Managed") != 0) {
+				(*CLKs)->Clock[Clk_Items].Vendor_Managed = true;
+				(*Index)--;
+			} else {
+				(*Index)++;
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
+				(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
+			}
+
+			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
 
 			(*Index)++;
 			Check_Attribute("Default_Design", "CLOCK");
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
 			Validate_Str_Size(Value_Str, "CLOCK", "Default_Design", LSTRLEN_MAX);
-			IDT_8A34001_Data->Default_Design = Value_Str;
-			SC_INFO("Default_Design: %s", IDT_8A34001_Data->Default_Design);
+			(*CLKs)->Clock[Clk_Items].Default_Design = Value_Str;
+			SC_INFO("Default_Design: %s", (*CLKs)->Clock[Clk_Items].Default_Design);
+
+			IDT_8A34001_Data =
+				(IDT_8A34001_Data_t *)calloc(1, sizeof(IDT_8A34001_Data_t));
 
 			(*Index)++;
 			Check_Attribute("Display_Label", "CLOCK");
@@ -433,34 +471,30 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		if (strcmp(Value_Str, "FPGA_Counter_Reg") == 0) {
 			free(Value_Str);
 			(*Index)++;
-
-			if ((*CLKs)->Clock[Clk_Items].Type != IDT_8A34001) {
+			if (!(*CLKs)->Clock[Clk_Items].Vendor_Managed) {
+				(*CLKs)->Clock[Clk_Items].Outputs = 1;
 				Value_Str = strndup(Json_File + Tokens[*Index].start,
 						    Tokens[*Index].end - Tokens[*Index].start);
 				Validate_Str_Size(Value_Str, "CLOCK", "FPGA_Counter_Reg", LEVELS_MAX);
-				strncpy((*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg, Value_Str, LEVELS_MAX);
+				strncpy((*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg[0], Value_Str, LEVELS_MAX);
 				free(Value_Str);
 				SC_INFO("FPGA Counter Reg: %s\n",
-					(*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg);
+					(*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg[0]);
 			} else {
-				if (Tokens[*Index].size < 12) {
-					SC_ERR("Found only %d FPGA counter reg address", Tokens[*Index].size);
-					return -1;
-				}
-
-				for (int i = 0; i < 12; i++) {
+				(*CLKs)->Clock[Clk_Items].Outputs = Tokens[*Index].size;
+				SC_INFO("Number of outputs: %d", (*CLKs)->Clock[Clk_Items].Outputs);
+				for (int i = 0; i < (*CLKs)->Clock[Clk_Items].Outputs; i++) {
 					(*Index)++;
 					Value_Str = strndup(Json_File + Tokens[*Index].start,
 							    Tokens[*Index].end - Tokens[*Index].start);
 					Validate_Str_Size(Value_Str, "CLOCK", "FPGA_Counter_Reg", LEVELS_MAX);
-					IDT_8A34001_Data_t *Data = (*CLKs)->Clock[Clk_Items].Type_Data;
 					if (strcmp(Value_Str, "0x0") != 0) {
-						(void) strncpy(Data->FPGA_Counter_Reg[i], Value_Str,
+						(void) strncpy((*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg[i], Value_Str,
 							       LEVELS_MAX);
 					}
 
 					free(Value_Str);
-					SC_INFO("FPGA Counter Reg[%d]: %s", i, Data->FPGA_Counter_Reg[i]);
+					SC_INFO("FPGA Counter Reg[%d]: %s", i, (*CLKs)->Clock[Clk_Items].FPGA_Counter_Reg[i]);
 				}
 
 				SC_INFO("");	// Add a blank line

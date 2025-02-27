@@ -1,6 +1,6 @@
 {
 	"License" : "Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
-	"License" : "Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VCK190" : {
 		"FEATURE" : {
@@ -39,10 +39,10 @@
 				"I2C_Bus" : "/dev/i2c-9",
 				"I2C_Address" : "0x5f"
 			},
-			"IDT_8A34001_FMC2" : {
+			"8A34001_FMC2" : {
 				"Name" : "8A34001 FMC2",
-				"Type" : "IDT_8A34001",
-				"Default_Design" : "8A34001_2020-0318_156MHz",
+				"Type" : "8A34001",
+				"Default_Design" : "VCK190_8A34001_2020-0318_156MHz",
 				"Display_Label" : ["CIN 1 From Bank 200 GTY_REF",
 					"CIN 2 From Bank 706", "Q0 to CIN 0",
 					"Q1 to Bank 200 GTY_REF",

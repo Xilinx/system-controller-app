@@ -15,6 +15,7 @@
 
 extern Plat_Devs_t *Plat_Devs;
 extern char Board_Name[];
+extern char Silicon_Revision[];
 
 /*
  * Remove BIT log from the last run.
@@ -96,6 +97,8 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	char TCL_Args[STRLEN_MAX] = { 0 };
 	char TclCmd[STRLEN_MAX]; /* TCL file and or argument with space delimter */
 	char *TclFile, *TestBitIndex;
+	Default_PDI_t *Default_PDI;
+	char *ImageID, *UniqueID;
 	int Ret;
 
 	Remove_BIT_Log();
@@ -113,11 +116,25 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	TclFile = strtok(TclCmd, " ");
 	(void) sprintf(TCL_File, "%s%s", BIT_PATH, TclFile);
 	TestBitIndex = strtok(NULL, " ");
+
+	Default_PDI = Plat_Devs->Default_PDI;
+	if (Default_PDI == NULL) {
+		SC_ERR("no default PDI is defined");
+		return -1;
+	}
+
+	ImageID = Default_PDI->ImageID;
+	if (strcmp(Silicon_Revision, "ES1") == 0) {
+		UniqueID = Default_PDI->UniqueID_Rev0;
+	} else {
+		UniqueID = Default_PDI->UniqueID_Rev1;
+	}
+
 	if (strcmp(TclFile, BIT_LOAD_TCL) == 0) {
 		if (TestBitIndex == NULL) {
-			(void) sprintf(TCL_Args, "%s", Board_Name);
+			(void) sprintf(TCL_Args, "%s %s %s", Board_Name, ImageID, UniqueID);
 		} else {
-			(void) sprintf(TCL_Args, "%s %s", Board_Name, TestBitIndex);
+			(void) sprintf(TCL_Args, "%s %s %s %s", Board_Name, ImageID, UniqueID, TestBitIndex);
 		}
 	} else {
 		if (TestBitIndex != NULL) {
@@ -361,6 +378,8 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
 	char Buffer[STRLEN_MAX];
+	Default_PDI_t *Default_PDI;
+	char *ImageID, *UniqueID;
 	int Ret = 0;
 
 	Remove_BIT_Log();
@@ -372,9 +391,22 @@ DDRMC_Test(void *Arg1, void *Arg2)
 		return -1;
 	}
 
+	Default_PDI = Plat_Devs->Default_PDI;
+	if (Default_PDI == NULL) {
+		SC_ERR("no default PDI is defined");
+		return -1;
+	}
+
+	ImageID = Default_PDI->ImageID;
+	if (strcmp(Silicon_Revision, "ES1") == 0) {
+		UniqueID = Default_PDI->UniqueID_Rev0;
+	} else {
+		UniqueID = Default_PDI->UniqueID_Rev1;
+	}
+
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s 2>&1 | tee %s",
-				Buffer, *DDRMC, Board_Name, BITLOGFILE);
+	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s %s %s 2>&1 | tee %s",
+				Buffer, *DDRMC, Board_Name, ImageID, UniqueID, BITLOGFILE);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {

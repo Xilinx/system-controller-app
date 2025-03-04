@@ -1367,9 +1367,25 @@ Get_Measured_Clock(char *Counter_Reg, char *Label)
 {
 	char TCL_Path[SYSCMD_MAX], TCL_Args[STRLEN_MAX];
 	char Output[STRLEN_MAX] = { 0 };
+	Default_PDI_t *Default_PDI;
+	char *ImageID, *UniqueID;
+
+	Default_PDI = Plat_Devs->Default_PDI;
+	if (Default_PDI == NULL) {
+		SC_ERR("no default PDI is defined");
+		return -1;
+	}
+
+	ImageID = Default_PDI->ImageID;
+	if (strcmp(Silicon_Revision, "ES1") == 0) {
+		UniqueID = Default_PDI->UniqueID_Rev0;
+	} else {
+		UniqueID = Default_PDI->UniqueID_Rev1;
+	}
 
 	(void) sprintf(TCL_Path, "%s%s", SCRIPT_PATH, TCL_CMD_TCL);
-	(void) sprintf(TCL_Args, "%s %s %s", Board_Name, READ_CLOCK_CMD, Counter_Reg);
+	(void) sprintf(TCL_Args, "%s %s %s %s %s", Board_Name, ImageID, UniqueID, READ_CLOCK_CMD,
+		       Counter_Reg);
 	if (XSDB_Op(TCL_Path, TCL_Args, Output, sizeof(Output)) != 0) {
 		SC_ERR("failed to get measured clock");
 		return -1;
@@ -2455,7 +2471,7 @@ Check_Config_File(char *Name, char *Value, int *Found)
 }
 
 int
-Boot_Config_PDI(char *Entry)
+Boot_Config_PDI(Default_PDI_t *Default_PDI)
 {
 	char PDI_File[STRLEN_MAX];
 	char Buffer[SYSCMD_MAX];
@@ -2488,7 +2504,7 @@ Boot_Config_PDI(char *Entry)
 	}
 
 	/* For default PDI, adjust the name based on silicon revision */
-	(void) strcpy(PDI_File, Entry);
+	(void) strcpy(PDI_File, Default_PDI->PDI);
 	if ((strcmp(PDI_File, DEFAULT_PDI) == 0) &&
 	    (strcmp(Silicon_Revision, "ES1") == 0)) {
 		(void) sprintf(PDI_File, "es1_%s", DEFAULT_PDI);

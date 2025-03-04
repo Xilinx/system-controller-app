@@ -287,6 +287,16 @@ typedef struct Workarounds {
 } Workarounds_t;
 
 /*
+ * Default PDI
+ */
+typedef struct {
+	char	*PDI;
+	char	*ImageID;
+	char	*UniqueID_Rev0;
+	char	*UniqueID_Rev1;
+} Default_PDI_t;
+
+/*
  * Board Interface Tests (BITs)
  */
 typedef struct {
@@ -407,6 +417,7 @@ typedef struct {
 	Workarounds_t	*Workarounds;
 	BITs_t		*BITs;
 	Constraints_t	*Constraints;
+	Default_PDI_t	*Default_PDI;
 } Plat_Devs_t;
 
 #define I2C_READ_BYTES(FD, Address, OutLen, InLen, Out, In, Return) \
@@ -483,7 +494,7 @@ int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 int Access_Regulator(Voltage_t *, float *, int);
 int Assert_Reset(void *, void *);
 int Board_Identification(char *);
-int Boot_Config_PDI(char *);
+int Boot_Config_PDI(Default_PDI_t *);
 int Check_Config_File(char *, char *, int *);
 int Clocks_Check(void *, void *);
 int DDRMC_1_Test(void *, void *);

@@ -1,7 +1,7 @@
 #!/opt/labtools/xilinx_vitis/xsdb
 
 #
-# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -156,7 +156,7 @@ proc silicon_revision {} {
 }
 
 # Load the default PDI
-proc load_default_pdi {board} {
+proc load_default_pdi {board image_id image_uid} {
     set revision_str [silicon_revision]
     if {$revision_str == "invalid"} {
         puts "ERROR: unsupported silicon revision"
@@ -167,10 +167,6 @@ proc load_default_pdi {board} {
     # Download the PDI file
     set pdi "/usr/share/system-controller-app/BIT/"
     append pdi $board "/" $revision_str "system_wrapper.pdi"
-
-    set image_info [exec /usr/share/system-controller-app/BIT/get_image_info.sh $pdi]
-    set image_id [lindex $image_info 0]
-    set image_uid [lindex $image_info 1]
 
     set uid_reg [unique_id $image_id]
     if {$image_uid != $uid_reg} {
@@ -194,18 +190,23 @@ proc read_clock {reg} {
 }
 
 # Print a message on the console
-proc print_console {message} {
-    set uart0 0xFF000000
+proc print_console {uart0 message} {
     foreach char [split $message ""] {
         mw -force $uart0 [scan $char "%c"]
     }
 }
 
 proc print_banner {} {
-    print_console "\r\n"
-    print_console "***********************************************\r\n"
-    print_console "* Versal image is loaded by System Controller *\r\n"
-    print_console "***********************************************\r\n"
+    if {[string length [targets -filter {name =~ "*Versal Gen 2*"}]] != 0} {
+        set uart0 0xF1920000
+    } else {
+        set uart0 0xFF000000
+    }
+
+    print_console $uart0 "\r\n"
+    print_console $uart0 "***********************************************\r\n"
+    print_console $uart0 "* Versal image is loaded by System Controller *\r\n"
+    print_console $uart0 "***********************************************\r\n"
 }
 
 # Wait for jtag targets to become accessible

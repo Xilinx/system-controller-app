@@ -32,7 +32,7 @@ int Parse_FMC(const char *, jsmntok_t *, int *, FMCs_t **);
 int Parse_Workaround(const char *, jsmntok_t *, int *, Workarounds_t **);
 int Parse_BIT(const char *, jsmntok_t *, int *, BITs_t **);
 int Parse_Constraint(const char *, jsmntok_t *, int *, Constraints_t **);
-int Parse_BootConfig(const char *, jsmntok_t *, int *);
+int Parse_BootConfig(const char *, jsmntok_t *, int *, Default_PDI_t **);
 
 const char * GPIO_Type_Str[] = { IO_TYPES };
 #define Check_Attribute(Attribute, Feature) { \
@@ -196,7 +196,8 @@ Parse_JSON(const char *Board_File, Plat_Devs_t *Dev_Parse) {
 				return -1;
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "Boot Config") == 0) {
-			if (Parse_BootConfig(Json_File, Tokens, &i) != 0) {
+			if (Parse_BootConfig(Json_File, Tokens, &i,
+					     &Dev_Parse->Default_PDI) != 0) {
 				return -1;
 			}
 		}
@@ -341,6 +342,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 						    Tokens[*Index].end - Tokens[*Index].start);
 				Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
 				(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
+				free(Value_Str);
 			}
 
 			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
@@ -399,6 +401,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 						    Tokens[*Index].end - Tokens[*Index].start);
 				Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
 				(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
+				free(Value_Str);
 			}
 
 			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
@@ -1534,29 +1537,56 @@ Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constrain
 }
 
 int
-Parse_BootConfig(const char *Json_File, jsmntok_t *Tokens, int *Index)
+Parse_BootConfig(const char *Json_File, jsmntok_t *Tokens, int *Index, Default_PDI_t **Default_PDI)
 {
 	char *Value_Str;
-	int Numbers;
 
 	SC_INFO("*************** Boot Config ****************");
+	*Default_PDI = (Default_PDI_t *)calloc(1, sizeof(Default_PDI_t));
+
+	*Index += 2;
+	Check_Attribute("PDI", "Boot Config");
+	Value_Str = strndup(Json_File + Tokens[*Index].start,
+			    Tokens[*Index].end - Tokens[*Index].start);
+	Validate_Str_Size(Value_Str, "Boot Config", "PDI", LSTRLEN_MAX);
+	(*Default_PDI)->PDI = Value_Str;
+	SC_INFO("PDI: %s", (*Default_PDI)->PDI);
 
 	(*Index)++;
-	Numbers = Tokens[*Index].size;
-	for (int i = 0; i < Numbers; i++) {
-		(*Index)++;
-		Check_Attribute("PDI", "Boot Config");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "Boot Config", "PDI", LSTRLEN_MAX);
-		SC_INFO("PDI: %s", Value_Str);
-		if (Boot_Config_PDI(Value_Str) != 0) {
-			SC_ERR("failed to set boot config for PDI %s", Value_Str);
-			free(Value_Str);
-			return -1;
-		}
+	Check_Attribute("ImageID", "Boot Config");
+	Value_Str = strndup(Json_File + Tokens[*Index].start,
+			    Tokens[*Index].end - Tokens[*Index].start);
+	Validate_Str_Size(Value_Str, "Boot Config", "ImageID", STRLEN_MAX);
+	(*Default_PDI)->ImageID = Value_Str;
+	SC_INFO("ImageID: %s", (*Default_PDI)->ImageID);
 
+	(*Index)++;
+	Check_Attribute("UniqueID_Rev0", "Boot Config");
+	Value_Str = strndup(Json_File + Tokens[*Index].start,
+			    Tokens[*Index].end - Tokens[*Index].start);
+	Validate_Str_Size(Value_Str, "Boot Config", "UniqueID_Rev0", STRLEN_MAX);
+	(*Default_PDI)->UniqueID_Rev0 = Value_Str;
+	SC_INFO("UniqueID_Rev0: %s", (*Default_PDI)->UniqueID_Rev0);
+
+	(*Index)++;
+	Value_Str = strndup(Json_File + Tokens[*Index].start,
+			    Tokens[*Index].end - Tokens[*Index].start);
+	if (strcmp(Value_Str, "UniqueID_Rev1") != 0) {
+		(*Index)--;
 		free(Value_Str);
+		return 0;
+	}
+
+	free(Value_Str);
+	(*Index)++;
+	Value_Str = strndup(Json_File + Tokens[*Index].start,
+			    Tokens[*Index].end - Tokens[*Index].start);
+	Validate_Str_Size(Value_Str, "Boot Config", "UniqueID_Rev1", STRLEN_MAX);
+	(*Default_PDI)->UniqueID_Rev1 = Value_Str;
+	SC_INFO("UniqueID_Rev1: %s", (*Default_PDI)->UniqueID_Rev1);
+	if (Boot_Config_PDI(*Default_PDI) != 0) {
+		SC_ERR("failed to set boot config for PDI %s", (*Default_PDI)->PDI);
+		return -1;
 	}
 
 	return 0;

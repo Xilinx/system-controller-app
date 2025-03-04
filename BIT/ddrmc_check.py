@@ -2,7 +2,7 @@
 
 #
 # Copyright (c) 2022 Xilinx, Inc.  All rights reserved.
-# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,12 +22,14 @@ import time
 import subprocess
 from chipscopy import create_session
 
-if len(sys.argv) != 3:
-    print("ERROR: missing DDRMC number and board name")
+if len(sys.argv) != 5:
+    print("ERROR: missing DDRMC number, board name, image id, and unique id")
     quit(-1)
 
 DDRMC = int(sys.argv[1])
 BOARD_NAME = str(sys.argv[2])
+image_id = int(sys.argv[3], 16)
+image_uid = int(sys.argv[4], 16)
 
 # Specify locations of the running hw_server and cs_server below
 CS_URL = os.getenv("CS_SERVER_URL", "TCP:localhost:3042")
@@ -87,13 +89,7 @@ with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL, pre_device_scan_
 
     PDI_FILE = BOARD_NAME + "/" + Revision_Str + "system_wrapper.pdi"
 
-    result = subprocess.check_output(['/usr/share/system-controller-app/BIT/get_image_info.sh', PDI_FILE ]).decode("utf-8")
-    result = result.split()
-    image_id = int(result[0], 0)
-    image_uid = int(result[1], 0)
-
     unique_id = get_unique_id(versal_device, image_id)
-
     if (image_uid != unique_id):
         # Program the PDI
         versal_device.program(PDI_FILE)

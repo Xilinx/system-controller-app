@@ -608,6 +608,12 @@
 				"Plat_Workaround_Op" : "VCK190_ES1_Vccaux_Workaround"
 			}
 		},
+		"Boot Config": {
+			"PDI": "system_wrapper.pdi",
+			"ImageID": "0x18700000",
+			"UniqueID_Rev0": "0x0",
+			"UniqueID_Rev1": "0xcf9e881c"
+		},
 		"BITs": {
 			"BIT_IDCODE_VERIFY" : {
 				"Name" : "IDCODE Verify",

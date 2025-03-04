@@ -1,6 +1,6 @@
 {
 	"License" : "Copyright (c) 2022 Xilinx, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
-	"License" : "Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VEK280": {
 		"FEATURE": {
@@ -588,7 +588,10 @@
 			}
 		},
 		"Boot Config": {
-			"PDI": "system_wrapper.pdi"
+			"PDI": "system_wrapper.pdi",
+			"ImageID": "0x18700000",
+			"UniqueID_Rev0": "0xfab71d58",
+			"UniqueID_Rev1": "0xe36854e2"
 		},
 		"BITs": {
 			"BIT_IDCODE_VERIFY" : {

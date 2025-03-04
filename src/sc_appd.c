@@ -3490,13 +3490,16 @@ int FMC_List(void)
 	FMCs = Plat_Devs->FMCs;
 	for (int i = 0; i < FMCs->Numbers; i++) {
 		FMC = &FMCs->FMC[i];
+		FMC_Access(FMC, true);
 		FD = open(FMC->I2C_Bus, O_RDWR);
 		if (FD < 0) {
+			FMC_Access(FMC, false);
 			SC_ERR("unable to access I2C bus %s: %m", FMC->I2C_Bus);
 			return -1;
 		}
 
 		if (ioctl(FD, I2C_SLAVE_FORCE, FMC->I2C_Address) < 0) {
+			FMC_Access(FMC, false);
 			SC_ERR("unable to access I2C device address %#x",
 			       FMC->I2C_Address);
 			(void) close(FD);
@@ -3510,6 +3513,7 @@ int FMC_List(void)
 		Out_Buffer[0] = 0x0;
 		if (write(FD, Out_Buffer, 1) != 1) {
 			SC_PRINT("%s - Not connected", FMC->Name);
+			FMC_Access(FMC, false);
 			(void) close(FD);
 			continue;
 		}
@@ -3523,10 +3527,12 @@ int FMC_List(void)
 		Out_Buffer[0] = 0x0;    // EEPROM offset 0
 		I2C_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
+			FMC_Access(FMC, false);
 			(void) close(FD);
 			return -1;
 		}
 
+		FMC_Access(FMC, false);
 		(void) close(FD);
 		Offset = 0xE;
 		Length = (In_Buffer[Offset] & 0x3F);
@@ -3620,8 +3626,10 @@ int FMC_Ops(void)
 		return -1;
 	}
 
+	FMC_Access(FMC, true);
 	FD = open(FMC->I2C_Bus, O_RDWR);
 	if (FD < 0) {
+		FMC_Access(FMC, false);
 		SC_ERR("unable to access I2C bus %s: %m", FMC->I2C_Bus);
 		return -1;
 	}
@@ -3631,10 +3639,12 @@ int FMC_Ops(void)
 	Out_Buffer[0] = 0x0;
 	I2C_READ(FD, FMC->I2C_Address, 256, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
+		FMC_Access(FMC, false);
 		(void) close(FD);
 		return Ret;
 	}
 
+	FMC_Access(FMC, false);
 	(void) close(FD);
 	switch (Area) {
 	case EEPROM_ALL:

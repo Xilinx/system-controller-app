@@ -265,6 +265,8 @@ typedef struct {
 	float	*Supported_Volts;
 	char	*Voltage_Regulator;
 	float	Default_Volt;
+	char	*Access_Label;
+	int	Access_Level;
 } FMC_t;
 
 typedef struct FMCs {
@@ -507,6 +509,7 @@ int EBM_EEPROM_Check(void *, void *);
 int EEPROM_Common(char *);
 int EEPROM_Board(char *, int);
 int EEPROM_MultiRecord(char *, int);
+void FMC_Access(FMC_t *, bool);
 int FMCAutoVadj_Op(void);
 int Get_BootMode(int);
 int Get_GPIO(char *, int *);

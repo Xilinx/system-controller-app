@@ -709,6 +709,26 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 	return 0;
 }
 
+void
+FMC_Access(FMC_t *FMC, bool State) {
+	int Level;
+
+	if (FMC->Access_Label == 0) {
+		return;
+	}
+
+	if (State) {
+		Level = FMC->Access_Level;
+	} else {
+		Level = (~FMC->Access_Level & 0x1);
+	}
+
+	SC_INFO("%s access to FMC", (State == true) ? "enable" : "disable");
+	if (Set_GPIO(FMC->Access_Label, Level) != 0) {
+		SC_ERR("failed to set '%s' to %d", FMC->Access_Label, Level);
+	}
+}
+
 int
 FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 {
@@ -719,9 +739,12 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 	int Found;
 	int Ret = 0;
 
+	FMC_Access(FMC, true);
+
 	/* Read FMC's EEPROM */
 	FD = open(FMC->I2C_Bus, O_RDWR);
 	if (FD < 0) {
+		FMC_Access(FMC, false);
 		SC_ERR("unable to access I2C bus %s: %m", FMC->I2C_Bus);
 		return -1;
 	}
@@ -731,6 +754,7 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 	Out_Buffer[0] = 0x0;    // EEPROM offset 0
 	I2C_READ(FD, FMC->I2C_Address, 0xFF, Out_Buffer, In_Buffer, Ret);
 	if (Ret != 0) {
+		FMC_Access(FMC, false);
 		(void) close(FD);
 		return Ret;
 	}
@@ -775,6 +799,8 @@ FMC_Vadj_Range(FMC_t *FMC, float *Min_Voltage, float *Max_Voltage)
 
 	SC_INFO("Min Voltage: %.2f, Max Voltage: %.2f", *Min_Voltage,
 		*Max_Voltage);
+
+	FMC_Access(FMC, false);
 
 	return 0;
 }

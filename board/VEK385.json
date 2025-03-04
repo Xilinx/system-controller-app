@@ -388,7 +388,9 @@
 				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
 				"Supported_Volts": [1.2],
 				"Voltage_Regulator": "VADJ_FMC",
-				"Default_Volt": 1.2
+				"Default_Volt": 1.2,
+				"Access_Label": "I2C0_SW_SEL",
+				"Access_Level": 0
 			}
 		},
 		"Boot Config": {

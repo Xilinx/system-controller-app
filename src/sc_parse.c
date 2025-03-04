@@ -1225,6 +1225,30 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 		free(Value_Str);
 		SC_INFO("Default Voltage: %f", (*FMCs)->FMC[Item].Default_Volt);
 
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		if (strcmp(Value_Str, "Access_Label") == 0) {
+			free(Value_Str);
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "FMC", "Access_Label", STRLEN_MAX);
+			(*FMCs)->FMC[Item].Access_Label = Value_Str;
+			SC_INFO("Access_Label: %s", (*FMCs)->FMC[Item].Access_Label);
+
+			(*Index)++;
+			Check_Attribute("Access_Level", "FMC");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*FMCs)->FMC[Item].Access_Level = atoi(Value_Str);
+			SC_INFO("Access_Level: %d", (*FMCs)->FMC[Item].Access_Level);
+			free(Value_Str);
+		} else {
+			free(Value_Str);
+			(*Index)--;
+		}
+
 		Item++;
 	}
 

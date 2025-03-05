@@ -3,7 +3,7 @@
 
 	"VEK385": {
 		"FEATURE": {
-			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC"]
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC", "BIT"]
 		},
 		"BOOTMODES": {
 			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -397,6 +397,48 @@
 			"PDI": "system_wrapper.pdi",
 			"ImageID": "0x18700000",
 			"UniqueID_Rev0": "0xf4319796"
+		},
+		"BITs": {
+			"BIT_DDRMC_1_CAL_TEST" : {
+				"Name" : "DDRMC_1 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 1 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_1_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_2_CAL_TEST" : {
+				"Name" : "DDRMC_2 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 2 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_2_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_3_CAL_TEST" : {
+				"Name" : "DDRMC_3 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 3 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_3_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_4_CAL_TEST" : {
+				"Name" : "DDRMC_4 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 4 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_4_Test"
+					}
+				}
+			}
 		}
 	}
 }

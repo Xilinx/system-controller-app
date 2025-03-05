@@ -58,6 +58,10 @@ def get_unique_id (versal_device, image_id):
     return 0xdeadbeef
 
 with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL, pre_device_scan_delay=3000) as session:
+    # XXX- a workaround for early release of labtools binaries for T50
+    if BOARD_NAME == "VEK385":
+        session = create_session(cs_server_url=CS_URL, hw_server_url=HW_URL)
+
     check_for_device = True
     start_time = time.time()
     while check_for_device:

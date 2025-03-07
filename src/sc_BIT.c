@@ -370,11 +370,9 @@ Assert_Reset(void *Arg1, void *Arg2)
 	return 0;
 }
 
-int
-DDRMC_Test(void *Arg1, void *Arg2)
+static int
+DDRMC_Test_Internal(BIT_t *BIT_p, int DDRMC)
 {
-	BIT_t *BIT_p = Arg1;
-	int *DDRMC = (int *)Arg2;
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
 	char Buffer[STRLEN_MAX];
@@ -406,7 +404,7 @@ DDRMC_Test(void *Arg1, void *Arg2)
 
 	(void) JTAG_Op(1);
 	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s %s %s 2>&1 | tee %s",
-				Buffer, *DDRMC, Board_Name, ImageID, UniqueID, BITLOGFILE);
+		       Buffer, DDRMC, Board_Name, ImageID, UniqueID, BITLOGFILE);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
 	if (FP == NULL) {
@@ -432,7 +430,7 @@ DDRMC_Test(void *Arg1, void *Arg2)
 	if ((strstr(Buffer, "PASS") != NULL)) {
 		SC_PRINT("%s: PASS", BIT_p->Name);
 	} else {
-		SC_ERR("%s: FAIL", BIT_p->Name);
+		SC_PRINT("%s: FAIL", BIT_p->Name);
 		Ret = -1;
 	}
 
@@ -444,34 +442,9 @@ Out:
 }
 
 int
-DDRMC_1_Test(void *Arg1, __attribute__((unused)) void *Arg2)
+DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 {
-	int DDRMC = 1;
+	BIT_t *BIT_p = Arg1;
 
-	return (DDRMC_Test(Arg1, (void *)&DDRMC));
+	return (DDRMC_Test_Internal(BIT_p, atoi(BIT_p->Level[0].Arg)));
 }
-
-int
-DDRMC_2_Test(void *Arg1, __attribute__((unused)) void *Arg2)
-{
-	int DDRMC = 2;
-
-	return (DDRMC_Test(Arg1, (void *)&DDRMC));
-}
-
-int
-DDRMC_3_Test(void *Arg1, __attribute__((unused)) void *Arg2)
-{
-	int DDRMC = 3;
-
-	return (DDRMC_Test(Arg1, (void *)&DDRMC));
-}
-
-int
-DDRMC_4_Test(void *Arg1, __attribute__((unused)) void *Arg2)
-{
-	int DDRMC = 4;
-
-	return (DDRMC_Test(Arg1, (void *)&DDRMC));
-}
-

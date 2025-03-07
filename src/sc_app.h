@@ -304,6 +304,7 @@ typedef struct {
 typedef struct {
 	char	*Instruction;
 	int	(*Plat_BIT_Op)(void *, void *);
+	char	Arg[LEVELS_MAX];
 	char	*TCL_File;
 } BIT_Level_t;
 
@@ -499,10 +500,7 @@ int Board_Identification(char *);
 int Boot_Config_PDI(Default_PDI_t *);
 int Check_Config_File(char *, char *, int *);
 int Clocks_Check(void *, void *);
-int DDRMC_1_Test(void *, void *);
-int DDRMC_2_Test(void *, void *);
-int DDRMC_3_Test(void *, void *);
-int DDRMC_4_Test(void *, void *);
+int DDRMC_Test(void *, void *);
 int DIMM_EEPROM_Check(void *, void *);
 int Display_Instruction(void *, void *);
 int EBM_EEPROM_Check(void *, void *);

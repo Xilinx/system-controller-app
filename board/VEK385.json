@@ -438,6 +438,16 @@
 						"Plat_BIT_Op" : "DDRMC_4_Test"
 					}
 				}
+			},
+			"BIT_DDRMC_5_CAL_TEST" : {
+				"Name" : "DDRMC_5 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 5 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_5_Test"
+					}
+				}
 			}
 		}
 	}

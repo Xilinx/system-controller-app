@@ -15,6 +15,7 @@
 
 extern Plat_Devs_t *Plat_Devs;
 extern char Board_Name[];
+extern char Silicon_Revision[];
 
 int
 VCK190_ES1_Vccaux_Workaround(void *Arg)
@@ -66,6 +67,8 @@ VCK190_QSFP_ModuleSelect(__attribute__((unused)) SFP_t *Arg, int State)
 	char TCL_File[STRLEN_MAX];
 	char TCL_Args[STRLEN_MAX];
 	char Output[STRLEN_MAX] = { 0 };
+	Default_PDI_t *Default_PDI;
+	char *ImageID, *UniqueID;
 
 	if (State != 0 && State != 1) {
 		SC_ERR("invalid SFP module select state");
@@ -82,8 +85,21 @@ VCK190_QSFP_ModuleSelect(__attribute__((unused)) SFP_t *Arg, int State)
 		return 0;
 	}
 
+	Default_PDI = Plat_Devs->Default_PDI;
+	if (Default_PDI == NULL) {
+		SC_ERR("no default PDI is defined");
+		return -1;
+	}
+
+	ImageID = Default_PDI->ImageID;
+	if (strcmp(Silicon_Revision, "ES1") == 0) {
+		UniqueID = Default_PDI->UniqueID_Rev0;
+	} else {
+		UniqueID = Default_PDI->UniqueID_Rev1;
+	}
+
 	/* State == 1 */
-	(void) sprintf(TCL_File, "%s%s", BIT_PATH, QSFP_MODSEL_TCL);
-	(void) sprintf(TCL_Args, "%s", Board_Name);
+	(void) sprintf(TCL_File, "%s%s", SCRIPT_PATH, TCL_CMD_TCL);
+	(void) sprintf(TCL_Args, "%s %s %s", ImageID, UniqueID, LOAD_DEFAULT_PDI_CMD);
 	return XSDB_Op(TCL_File, TCL_Args, Output, sizeof(Output));
 }

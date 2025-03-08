@@ -272,18 +272,51 @@ Identify_PDI(char *Revision)
 int
 Silicon_Identification(char *Revision, int Length)
 {
+	FILE *FP;
+	char Buffer[STRLEN_MAX];
+
 	if (Revision[0] == 0) {
-		if (Get_IDCODE(Revision, Length) != 0) {
-			SC_ERR("failed to get silicon revision");
-			return -1;
+		if (access(SILICONFILE, F_OK) == 0) {
+			FP = fopen(SILICONFILE, "r");
+			if (FP == NULL) {
+				SC_ERR("failed to read file %s: %m", SILICONFILE);
+				return -1;
+			 }
+
+			if (fgets(Buffer, sizeof(Buffer), FP) == NULL) {
+				fclose(FP);
+				SC_ERR("file '%s' is empty", SILICONFILE);
+				return -1;
+			}
+
+			(void) strncpy(Revision, Buffer, Length);
+		} else {
+			if (Get_IDCODE(Revision, Length) != 0) {
+				SC_ERR("failed to get silicon revision");
+				return -1;
+			}
+
+			if (strstr(Revision, "ERROR:") != NULL) {
+				Revision[0] = 0;
+				return -1;
+			}
+
+			(void) strtok(Revision, "\n");
+
+			FP = fopen(SILICONFILE, "w");
+			if (FP == NULL) {
+				SC_ERR("failed to write file %s: %m", SILICONFILE);
+				return -1;
+			 }
+
+			if (fputs(Revision, FP) == EOF) {
+				fclose(FP);
+				SC_ERR("failed to store silicon revision");
+				return -1;
+			}
 		}
 
-		if (strstr(Revision, "ERROR:") != NULL) {
-			Revision[0] = 0;
-			return -1;
-		}
-
-		(void) strtok(Revision, "\n");
+		fclose(FP);
 		SC_INFO("Silicon Revision: %s", Revision);
 	}
 
@@ -1410,8 +1443,7 @@ Get_Measured_Clock(char *Counter_Reg, char *Label)
 	}
 
 	(void) sprintf(TCL_Path, "%s%s", SCRIPT_PATH, TCL_CMD_TCL);
-	(void) sprintf(TCL_Args, "%s %s %s %s %s", Board_Name, ImageID, UniqueID, READ_CLOCK_CMD,
-		       Counter_Reg);
+	(void) sprintf(TCL_Args, "%s %s %s %s", ImageID, UniqueID, READ_CLOCK_CMD, Counter_Reg);
 	if (XSDB_Op(TCL_Path, TCL_Args, Output, sizeof(Output)) != 0) {
 		SC_ERR("failed to get measured clock");
 		return -1;
@@ -1958,28 +1990,13 @@ Reset_Op(void)
 	BootModes_t *BootModes;
 	BootMode_t *BootMode;
 
-	if (access(SILICONFILE, F_OK) == 0) {
-		FP = fopen(SILICONFILE, "r");
-		if (FP == NULL) {
-			SC_ERR("failed to open silicon file %s: %m", SILICONFILE);
+	if (((strcmp(Board_Name, "VCK190") == 0) || (strcmp(Board_Name, "VMK180") == 0)) &&
+	    (strcmp(Silicon_Revision, "ES1") == 0)) {
+		// Turn VCCINT_RAM off
+		State = 0;
+		if (VCK190_ES1_Vccaux_Workaround(&State) != 0) {
+			SC_ERR("failed to turn VCCINT_RAM off");
 			return -1;
-		}
-
-		if (fgets(Buffer, SYSCMD_MAX, FP) == NULL) {
-			SC_ERR("failed to read silicon file %s: %m", SILICONFILE);
-			(void) fclose(FP);
-			return -1;
-		}
-
-		(void) fclose(FP);
-		SC_INFO("%s: %s", SILICONFILE, Buffer);
-		if (strcmp(Buffer, "ES1\n") == 0) {
-			// Turn VCCINT_RAM off
-			State = 0;
-			if (VCK190_ES1_Vccaux_Workaround(&State) != 0) {
-				SC_ERR("failed to turn VCCINT_RAM off");
-				return -1;
-			}
 		}
 	}
 

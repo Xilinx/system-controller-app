@@ -370,12 +370,14 @@ Assert_Reset(void *Arg1, void *Arg2)
 	return 0;
 }
 
-static int
-DDRMC_Test_Internal(BIT_t *BIT_p, int DDRMC)
+int
+DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 {
+	BIT_t *BIT_p = Arg1;
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
 	char Buffer[STRLEN_MAX];
+	int DDRMC;
 	Default_PDI_t *Default_PDI;
 	char *ImageID, *UniqueID;
 	int Ret = 0;
@@ -388,6 +390,8 @@ DDRMC_Test_Internal(BIT_t *BIT_p, int DDRMC)
 		SC_ERR("failed to access file %s: %m", System_Cmd);
 		return -1;
 	}
+
+	DDRMC = atoi(BIT_p->Level[0].Arg);
 
 	Default_PDI = Plat_Devs->Default_PDI;
 	if (Default_PDI == NULL) {
@@ -439,12 +443,4 @@ DDRMC_Test_Internal(BIT_t *BIT_p, int DDRMC)
 Out:
 	(void) JTAG_Op(0);
 	return Ret;
-}
-
-int
-DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
-{
-	BIT_t *BIT_p = Arg1;
-
-	return (DDRMC_Test_Internal(BIT_p, atoi(BIT_p->Level[0].Arg)));
 }

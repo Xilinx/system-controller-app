@@ -156,18 +156,8 @@ proc silicon_revision {} {
 }
 
 # Load the default PDI
-proc load_default_pdi {board image_id image_uid} {
-    set revision_str [silicon_revision]
-    if {$revision_str == "invalid"} {
-        puts "ERROR: unsupported silicon revision"
-        disconnect
-        exit -1
-    }
-
-    # Download the PDI file
-    set pdi "/usr/share/system-controller-app/BIT/"
-    append pdi $board "/" $revision_str "system_wrapper.pdi"
-
+proc load_default_pdi {image_id image_uid} {
+    set pdi "/data/PDIs/default.pdi"
     set uid_reg [unique_id $image_id]
     if {$image_uid != $uid_reg} {
         switch_to_jtag

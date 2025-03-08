@@ -73,25 +73,7 @@ with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL, pre_device_scan_
                 print("ERROR: no device found on the JTAG chain")
                 quit(-1)
 
-    device_properties = versal_device.chipscope_node.props
-    IDCODE = device_properties['idcode']
-
-    # IDCODE[11:0] = 0x93   // Xilinx Manufacturer
-    if hex(IDCODE & 0xFFF) != hex(0x93):
-        print("ERROR: invalid manufacturer")
-        quit(-1)
-
-    # IDCODE[31:28]         // Silicon Revision
-    Revision = (IDCODE >> 28)
-    if Revision == 0:
-        Revision_Str = "es1_"
-    elif Revision == 1:
-        Revision_Str = ""
-    else:
-        print("ERROR: unsupported revision")
-        quit(-1)
-
-    PDI_FILE = BOARD_NAME + "/" + Revision_Str + "system_wrapper.pdi"
+    PDI_FILE = "/data/PDIs/default.pdi"
 
     unique_id = get_unique_id(versal_device, image_id)
     if (image_uid != unique_id):

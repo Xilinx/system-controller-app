@@ -11,9 +11,14 @@ source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 versal_connect
 
 # Download the default PDI
-load_default_pdi [lindex $argv 0] [lindex $argv 1] [lindex $argv 2]
+load_default_pdi [lindex $argv 0] [lindex $argv 1]
+
+# If the proc is 'load_default_pdi', we are done
+if {[lindex $argv 2] eq "load_default_pdi"} {
+    exit
+}
 
 # Invoke the proc
-puts [[lindex $argv 3] [lrange $argv 4 end]]
+puts [[lindex $argv 2] [lrange $argv 3 end]]
 
 disconnect

@@ -477,7 +477,6 @@ typedef struct {
 
 #define IDCODE_TCL	"idcode_verify.tcl"
 #define BOOTMODE_TCL	"alt_boot_mode.tcl"
-#define QSFP_MODSEL_TCL	"qsfp_download.tcl"
 #define BIT_LOAD_TCL	"versal_bit_download.tcl"
 #define PDI_LOAD_TCL	"versal_pdi_download.tcl"
 #define TCL_CMD_TCL	"versal_tcl_cmd.tcl"
@@ -485,6 +484,7 @@ typedef struct {
 #define DEFAULT_PDI	"system_wrapper.pdi"
 #define PROGRAM_8A34001	"8A34001_eeprom.py"
 #define READ_CLOCK_CMD	"read_clock"
+#define LOAD_DEFAULT_PDI_CMD	"load_default_pdi"
 
 #define MAX(x, y)	(((x) > (y)) ? (x) : (y))
 #define MIN(x, y)	(((x) < (y)) ? (x) : (y))

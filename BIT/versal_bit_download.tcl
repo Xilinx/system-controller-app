@@ -17,7 +17,7 @@ versal_connect
 set board [lindex $argv 0]
 
 # Download the default PDI
-load_default_pdi $board [lindex $argv 1] [lindex $argv 2]
+load_default_pdi [lindex $argv 1] [lindex $argv 2]
 
 # Download the ELF file and run it on APU
 targets -set -nocase -filter {name =~ "*A72*0"}

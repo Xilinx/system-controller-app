@@ -1591,19 +1591,15 @@ Parse_BootConfig(const char *Json_File, jsmntok_t *Tokens, int *Index, Default_P
 	(*Index)++;
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
-	if (strcmp(Value_Str, "UniqueID_Rev1") != 0) {
+	if (strcmp(Value_Str, "UniqueID_Rev1") == 0) {
+		Validate_Str_Size(Value_Str, "Boot Config", "UniqueID_Rev1", STRLEN_MAX);
+		(*Default_PDI)->UniqueID_Rev1 = Value_Str;
+		SC_INFO("UniqueID_Rev1: %s", (*Default_PDI)->UniqueID_Rev1);
+	} else {
 		(*Index)--;
 		free(Value_Str);
-		return 0;
 	}
 
-	free(Value_Str);
-	(*Index)++;
-	Value_Str = strndup(Json_File + Tokens[*Index].start,
-			    Tokens[*Index].end - Tokens[*Index].start);
-	Validate_Str_Size(Value_Str, "Boot Config", "UniqueID_Rev1", STRLEN_MAX);
-	(*Default_PDI)->UniqueID_Rev1 = Value_Str;
-	SC_INFO("UniqueID_Rev1: %s", (*Default_PDI)->UniqueID_Rev1);
 	if (Boot_Config_PDI(*Default_PDI) != 0) {
 		SC_ERR("failed to set boot config for PDI %s", (*Default_PDI)->PDI);
 		return -1;

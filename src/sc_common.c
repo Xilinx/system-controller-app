@@ -2520,6 +2520,7 @@ Boot_Config_PDI(Default_PDI_t *Default_PDI)
 	char Buffer[SYSCMD_MAX];
 	char Config_Var[STRLEN_MAX];
 	int Found = 0;
+	unsigned int Line_Offset;
 
 	/*
 	 * If PDIFILE does already exist, that indicates a manual PDI boot
@@ -2544,6 +2545,15 @@ Boot_Config_PDI(Default_PDI_t *Default_PDI)
 					   STRLEN_MAX) != 0) {
 			return -1;
 		}
+	}
+
+	/*
+	 * On boards with 'VERSAL_DONE' GPIO line, no default PDI loading
+	 * is required for fancontrol to determine Versal's temperature.
+	 */
+	if (gpiod_ctxless_find_line(GPIO_DONE, Buffer, SYSCMD_MAX, &Line_Offset) == 1) {
+		SC_INFO("GPIO label '%s' is found on '%s'", GPIO_DONE, Buffer);
+		return 0;
 	}
 
 	/* For default PDI, adjust the name based on silicon revision */

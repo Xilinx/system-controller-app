@@ -1,0 +1,77 @@
+{
+	"License" : "Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
+	"VR-R-A2488-01" : {
+		"FEATURE" : {
+			"List" : ["eeprom", "clock", "gpio"]
+		},
+		"CLOCK": {
+			"CH0_LP5_CLK": {
+				"Name": "CH0_LP5_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_0/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-3",
+				"I2C_Address": "0x56"
+			},
+			"CH1_LP5_CLK": {
+				"Name": "CH1_LP5_CLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_1/set_rate",
+				"Default_Freq": 320.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-4",
+				"I2C_Address": "0x57"
+			},
+			"PS_REFCLK": {
+				"Name": "XPL7_PS_REFCLK",
+				"Type": "ProXO-XP",
+				"Sysfs_Path": "/sys/devices/platform/sys_clk_2/set_rate",
+				"Default_Freq": 50.0,
+				"Upper_Freq": 2100.0,
+				"Lower_Freq": 15.0,
+				"I2C_Bus": "/dev/i2c-10",
+				"I2C_Address": "0x55"
+			}
+		},
+		"GPIO": {
+			"FPGA_PWR_EN_B": "FPGA_PWR_EN_B",
+			"VCCINT_EN": "VCCINT_EN",
+			"VCC_RAM_EN": "VCC_RAM_EN",
+			"LP5_VDD1_1V8_EN": "LP5_VDD1_1V8_EN",
+			"VCCO_X5IO_EN": "VCCO_X5IO_EN",
+			"LP5_VDD2H_1V05_EN": "LP5_VDD2H_1V05_EN",
+			"LP5_VCCO_1V0_EN": "LP5_VCCO_1V0_EN",
+			"GTYP_AVCC_EN": "GTYP_AVCC_EN",
+			"GTYP_AVTT_EN": "GTYP_AVTT_EN",
+			"GTYP_VCCAUX_EN": "GTYP_VCCAUX_EN",
+			"VCCINT_GT_EN": "VCCINT_GT_EN",
+			"GTM_AVCC_EN": "GTM_AVCC_EN",
+			"GTM_AVTT_EN": "GTM_AVTT_EN",
+			"GTM_AVCCAUX_EN": "GTM_AVCCAUX_EN",
+			"VCC_SOC_EN": "VCC_SOC_EN",
+			"VCC_IO_EN": "VCC_IO_EN",
+			"VCCAUX_EN": "VCCAUX_EN",
+			"LP5_VDDQ_0V5_EN": "LP5_VDDQ_0V5_EN",
+			"VCC_PSFP_EN": "VCC_PSFP_EN",
+			"VCC_PSLP_EN": "VCC_PSLP_EN",
+			"VCC_PMC_EN": "VCC_PMC_EN",
+			"UTIL_1V8_EN": "UTIL_1V8_EN",
+			"VCCO_MIO_EN": "VCCO_MIO_EN",
+			"SI5518_POR_B": "SI5518_POR_B",
+			"UCD90320_POR_B": "UCD90320_POR_B",
+			"VCCO_713_EN": "VCCO_713_EN",
+			"VCCO_503_EN": "VCCO_503_EN",
+			"VCC_AIE_EN": "VCC_AIE_EN",
+			"VCCAUX_PMC_EN": "VCCAUX_PMC_EN",
+			"UCD90320_CTLR_B": "UCD90320_CTLR_B",
+			"DC_12V_PWRDN_B_SW_ON": "DC_12V_PWRDN_B_SW_ON",
+			"VCCOEN_PS_M2C": "VCCOEN_PS_M2C",
+			"VCCOEN_PL_M2C": "VCCOEN_PL_M2C",
+			"UCD90320_POR_B_SW": "UCD90320_POR_B_SW"
+		}
+	}
+}

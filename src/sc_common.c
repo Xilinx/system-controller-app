@@ -2033,7 +2033,7 @@ Reset_Op(void)
 		BootModes = Plat_Devs->BootModes;
 		for (int i = 0; i < BootModes->Numbers; i++) {
 			BootMode = &BootModes->BootMode[i];
-			if (strcmp(Buffer, (char *)BootMode->Name) == 0) {
+			if (strcmp(strtok(Buffer, "\n"), (char *)BootMode->Name) == 0) {
 				if (Set_AltBootMode(BootMode->Value) != 0) {
 					SC_ERR("failed to set alternative boot mode");
 					return -1;

@@ -22,12 +22,13 @@ RELEASE="2024.2"
 BASE_URL="system-controller/sc_app_bsp/$RELEASE"
 
 INTERNAL=( \
-	"VN-P-B2197-00" \
-	"VEK385" \
-	"VPK180-112" \
-	"VR-R-A2488-00" \
 	"VE-P-A2112-00" \
 	"VE-X-A2112-00" \
+	"VEK385" \
+	"VM-P-M1369-00" \
+	"VN-P-B2197-00" \
+	"VPK180-112" \
+	"VR-R-A2488-01" \
 )
 
 get_latest() {

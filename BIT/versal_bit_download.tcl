@@ -31,7 +31,7 @@ con
 after 1000
 
 # Set BIT test index
-mwr $PGG1 [lindex $argv 1]
+mwr $PGG1 [lindex $argv 3]
 
 # Wait for the test status cleared (= 0)
 variable stat 0xFFFFFFFF

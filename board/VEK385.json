@@ -399,6 +399,28 @@
 			"UniqueID_Rev0": "0xf4319796"
 		},
 		"BITs": {
+			"BIT_CLOCKS_OUTPUT_TEST" : {
+				"Name" : "Clocks Output Test",
+				"Description" : "This test verifies the clock output frequencies by measuring the clocks at the Versal with clock counters. The test will fail in case the clock settings are different than default values.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x01"
+					}
+				}
+			},
+			"BIT_RTC_CLOCK_VERIFY" : {
+				"Name" : "RTC Clock Verify",
+				"Description" : "This non-destructive test verifies real time clock (RTC) by checking the time increment. The possible reason of failures might be because of oscillator, etc.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x02"
+					}
+				}
+			},
 			"BIT_DDRMC_1_CAL_TEST" : {
 				"Name" : "DDRMC_1 Cal Test",
 				"Description" : "This test verifies Versal DDR memory controller 1 successfully completed calibration.",
@@ -446,6 +468,77 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "DDRMC_5_Test"
+					}
+				}
+			},
+			"BIT_OSPI_TEST" : {
+				"Name" : "OSPI Test",
+				"Description" : "This test verifies OSPI Flash read/write (non-destructive). The test operation consists of save first sector (4K byte) data, erase, write random data, read, compare and restore the original data. Warning!! This might corrupt OSPI memory in case the test fails.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x10"
+					}
+				}
+			},
+			"BIT_LEDS_TEST" : {
+				"Name" : "LEDs Test",
+				"Description" : "This test verifies board LEDs (DS4-DS7). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Look for LEDs (DS4-DS7) on the board.\n2- Click 'OK' when you are ready.\n3- Image location=715,492, size=19,28.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Observe LED1 to LED4 blinking, then turn on/off in sequence.\n2- Click 'OK' when done.\n3- Image location=715,492, size=19,28.\n"
+					},
+					"Level 2" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x40",
+						"Instruction" : "\n1- Did you see the LEDs sequencing and blinking?\n2- Click 'Pass' if you observe it.\n3- Image location=715,492, size=19,28.\n"
+					}
+				}
+			},
+			"BIT_BUTTONS_TEST" : {
+				"Name" : "Buttons Test",
+				"Description" : "This test verifies push buttons (SW6, SW7). See the buttons on the board as displayed on the image to locate buttons. The test waits for about 60 secs to press buttons. The test fails if the buttons are not pressed in the order within the time limit.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Look for Push Buttons SW6 and SW7 on the board \n2- Click 'OK' when you are ready.\n3- Image location=639,210, size=35,61.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Press Push Buttons SW7 followed by SW6 and then any button\n2- Click 'OK' when done.\n3- Image location=639,210, size=35,61.\n"
+					},
+					"Level 2" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x80",
+						"Instruction" : "\n1- Click 'OK'.\n"
+					}
+				}
+			},
+			"BIT_DIP_SWITCHES_TEST" : {
+				"Name" : "DIP Switches Test",
+				"Description" : "This test verifies DIP switches (SW5). Look at the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to toggle DIP switches. The test fails if the DIP switches are not toggled in the order within the time limit.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Look for DIP switches SW5 on the board\n2- Click 'OK' when you are ready.\n3- Image location=678,276, size=46,39.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "Display_Instruction",
+						"Instruction" : "\n1- Turn On and Turn Off DIP Switches SW5 \n2- Click 'OK' done.\n3- Image location=678,276, size=46,39.\n"
+					},
+					"Level 2" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x100",
+						"Instruction" : "\n1- Click 'OK'.\n"
 					}
 				}
 			}

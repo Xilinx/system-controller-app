@@ -13,6 +13,10 @@ set PGG3 0xf111005C
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
 versal_connect
+# XXX- need to revisit this workaround when full labtools support is available for T50.
+if {[string length [targets -nocase -filter {name =~ "*A78*"}]] != 0} {
+    rst -system
+}
 
 set board [lindex $argv 0]
 
@@ -20,7 +24,12 @@ set board [lindex $argv 0]
 load_default_pdi [lindex $argv 1] [lindex $argv 2]
 
 # Download the ELF file and run it on APU
-targets -set -nocase -filter {name =~ "*A72*0"}
+if {[catch {targets -set -nocase -filter {name =~ "*A72*0"}} err]} {
+    if {[catch {targets -set -nocase -filter {name =~ "*A78*#0.0"}} err]} {
+        puts "Failed to set target"
+    }
+}
+
 rst -clear-registers -skip-activate-subsystem -processor
 set elf $board
 append elf "/" versal_bit.elf

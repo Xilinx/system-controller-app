@@ -1600,10 +1600,5 @@ Parse_BootConfig(const char *Json_File, jsmntok_t *Tokens, int *Index, Default_P
 		free(Value_Str);
 	}
 
-	if (Boot_Config_PDI(*Default_PDI) != 0) {
-		SC_ERR("failed to set boot config for PDI %s", (*Default_PDI)->PDI);
-		return -1;
-	}
-
 	return 0;
 }

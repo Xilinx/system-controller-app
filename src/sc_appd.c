@@ -895,6 +895,10 @@ EEPROM_Ops(void)
 	switch (Target) {
 	case EEPROM_SUMMARY:
 		SC_PRINT("Language: %d", In_Buffer[0xA]);
+		if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+			return -1;
+		}
+
 		SC_PRINT("Silicon Revision: %s", Silicon_Revision);
 
 		/* Base build date for manufacturing is 1/1/1996 */
@@ -3674,6 +3678,10 @@ static int
 Validate_PDI(const char *PDI_File, char *Full_Path)
 {
 	char Default_ES1_PDI[STRLEN_MAX];
+
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
 
 	if (strcmp(PDI_File, DEFAULT_PDI) == 0 &&
 	    strcmp(Silicon_Revision, "PROD") != 0) {

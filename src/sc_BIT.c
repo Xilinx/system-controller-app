@@ -124,6 +124,10 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	}
 
 	ImageID = Default_PDI->ImageID;
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
+
 	if (strcmp(Silicon_Revision, "ES1") == 0) {
 		UniqueID = Default_PDI->UniqueID_Rev0;
 	} else {
@@ -400,6 +404,10 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 	}
 
 	ImageID = Default_PDI->ImageID;
+        if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+                return -1;
+        }
+
 	if (strcmp(Silicon_Revision, "ES1") == 0) {
 		UniqueID = Default_PDI->UniqueID_Rev0;
 	} else {

@@ -153,7 +153,6 @@ Board_Identification(char *Board_Name)
 	char Board_File[SYSCMD_MAX];
 	char Board_Path[LSTRLEN_MAX];
 	char Value[LSTRLEN_MAX];
-	char Config_Var[STRLEN_MAX];
 	int Found = 0;
 
 	Plat_Devs = (Plat_Devs_t *)calloc(1, sizeof(Plat_Devs_t));
@@ -185,25 +184,6 @@ Board_Identification(char *Board_Name)
 			SC_ERR("failed to parse JSON file for board '%s'",
 			       Board_Name);
 			return -1;
-		}
-
-		/*
-		 * If silicon revision has not been identified during parsing of
-		 * JSON file, identify it now.
-		 */
-		if (strcmp(Silicon_Revision, "") == 0) {
-			/*
-			 * The task to check silicon revision is enabled by default. It can
-			 * be disabled by adding 'Silicon_Revision: 0' entry in CONFIGFILE.
-			 */
-			if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
-				return -1;
-			}
-
-			/* Identify the silicon */
-			if (!Found || (Found && (1 <= atoi(Config_Var)))) {
-				(void) Silicon_Identification(Silicon_Revision, STRLEN_MAX);
-			}
 		}
 
 		Plat_Devs->OnBoard_EEPROM = &OnBoard_EEPROM;
@@ -270,10 +250,12 @@ Identify_PDI(char *Revision)
 }
 
 int
-Silicon_Identification(char *Revision, int Length)
+Get_Silicon_Revision(char *Revision)
 {
 	FILE *FP;
 	char Buffer[STRLEN_MAX];
+	char Config_Var[STRLEN_MAX];
+	int Found = 0;
 
 	if (Revision[0] == 0) {
 		if (access(SILICONFILE, F_OK) == 0) {
@@ -289,9 +271,18 @@ Silicon_Identification(char *Revision, int Length)
 				return -1;
 			}
 
-			(void) strncpy(Revision, Buffer, Length);
+			(void) strncpy(Revision, Buffer, STRLEN_MAX);
 		} else {
-			if (Get_IDCODE(Revision, Length) != 0) {
+			if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
+				return -1;
+			}
+
+			if (Found && (0 == atoi(Config_Var))) {
+				SC_INFO("ignored getting silicon revision");
+				return 0;
+			}
+
+			if (Get_IDCODE(Revision, STRLEN_MAX) != 0) {
 				SC_ERR("failed to get silicon revision");
 				return -1;
 			}
@@ -1436,6 +1427,10 @@ Get_Measured_Clock(char *Counter_Reg, char *Label)
 	}
 
 	ImageID = Default_PDI->ImageID;
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
+
 	if (strcmp(Silicon_Revision, "ES1") == 0) {
 		UniqueID = Default_PDI->UniqueID_Rev0;
 	} else {
@@ -1990,6 +1985,10 @@ Reset_Op(void)
 	BootModes_t *BootModes;
 	BootMode_t *BootMode;
 
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
+
 	if (((strcmp(Board_Name, "VCK190") == 0) || (strcmp(Board_Name, "VMK180") == 0)) &&
 	    (strcmp(Silicon_Revision, "ES1") == 0)) {
 		// Turn VCCINT_RAM off
@@ -2508,65 +2507,6 @@ Check_Config_File(char *Name, char *Value, int *Found)
 		}
 
 		(void) fclose(FP);
-	}
-
-	return 0;
-}
-
-int
-Boot_Config_PDI(Default_PDI_t *Default_PDI)
-{
-	char PDI_File[STRLEN_MAX];
-	char Buffer[SYSCMD_MAX];
-	char Config_Var[STRLEN_MAX];
-	int Found = 0;
-	unsigned int Line_Offset;
-
-	/*
-	 * If PDIFILE does already exist, that indicates a manual PDI boot
-	 * configuration has been perfomed on this system.  A manual configuration
-	 * overrides any default setting read from the JSON file.
-	 */
-	if (access(PDIFILE, F_OK) == 0) {
-		return 0;
-	}
-
-	/*
-	 * The task to check silicon revision is enabled by default. It can be
-	 * disabled by adding 'Silicon_Revision: 0' entry in CONFIGFILE.
-	 */
-	if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
-		return -1;
-	}
-
-	/* Identify the silicon */
-	if (!Found || (Found && (1 <= atoi(Config_Var)))) {
-		if (Silicon_Identification(Silicon_Revision,
-					   STRLEN_MAX) != 0) {
-			return -1;
-		}
-	}
-
-	/*
-	 * On boards with 'VERSAL_DONE' GPIO line, no default PDI loading
-	 * is required for fancontrol to determine Versal's temperature.
-	 */
-	if (gpiod_ctxless_find_line(GPIO_DONE, Buffer, SYSCMD_MAX, &Line_Offset) == 1) {
-		SC_INFO("GPIO label '%s' is found on '%s'", GPIO_DONE, Buffer);
-		return 0;
-	}
-
-	/* For default PDI, adjust the name based on silicon revision */
-	(void) strcpy(PDI_File, Default_PDI->PDI);
-	if ((strcmp(PDI_File, DEFAULT_PDI) == 0) &&
-	    (strcmp(Silicon_Revision, "ES1") == 0)) {
-		(void) sprintf(PDI_File, "es1_%s", DEFAULT_PDI);
-	}
-
-	(void) sprintf(Buffer, "echo '%s' > %s; sync", PDI_File, PDIFILE);
-	if (Shell_Execute(Buffer) != 0) {
-		SC_ERR("failed to update 'PDI' config file: %m");
-		return -1;
 	}
 
 	return 0;

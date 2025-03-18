@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -92,6 +92,10 @@ VCK190_QSFP_ModuleSelect(__attribute__((unused)) SFP_t *Arg, int State)
 	}
 
 	ImageID = Default_PDI->ImageID;
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
+
 	if (strcmp(Silicon_Revision, "ES1") == 0) {
 		UniqueID = Default_PDI->UniqueID_Rev0;
 	} else {

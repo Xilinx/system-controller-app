@@ -1592,6 +1592,9 @@ Parse_BootConfig(const char *Json_File, jsmntok_t *Tokens, int *Index, Default_P
 	Value_Str = strndup(Json_File + Tokens[*Index].start,
 			    Tokens[*Index].end - Tokens[*Index].start);
 	if (strcmp(Value_Str, "UniqueID_Rev1") == 0) {
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
 		Validate_Str_Size(Value_Str, "Boot Config", "UniqueID_Rev1", STRLEN_MAX);
 		(*Default_PDI)->UniqueID_Rev1 = Value_Str;
 		SC_INFO("UniqueID_Rev1: %s", (*Default_PDI)->UniqueID_Rev1);

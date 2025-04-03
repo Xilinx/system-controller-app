@@ -17,16 +17,36 @@ extern Plat_Devs_t *Plat_Devs;
 extern char Board_Name[];
 extern char Silicon_Revision[];
 
-/*
- * Remove BIT log from the last run.
- */
 void
-Remove_BIT_Log(void)
+Clear_BIT_Log(void)
 {
 	char Command[SYSCMD_MAX];
 
-	(void) sprintf(Command, "rm %s", BITLOGFILE);
+	(void) sprintf(Command, "> %s", BITLOGFILE);
 	(void) Shell_Execute(Command);
+}
+
+void
+Title_BIT_Log(BIT_t *BIT_p)
+{
+	char Command[SYSCMD_MAX];
+
+	/* Clear BIT log from the last run */
+	Clear_BIT_Log();
+
+	(void) sprintf(Command, "echo '>>> Testing: %s' > %s", BIT_p->Name, BITLOGFILE);
+	(void) Shell_Execute(Command);
+}
+
+void
+Record_BIT_Log(char *String)
+{
+	char Command[SYSCMD_MAX];
+
+	(void) sprintf(Command, "echo '%s' >> %s", String, BITLOGFILE);
+	(void) Shell_Execute(Command);
+
+	SC_PRINT("%s", String);
 }
 
 /*
@@ -41,9 +61,10 @@ Clocks_Check(void *Arg1, void *Arg2)
 	int FD;
 	Clocks_t *Clocks;
 	char ReadBuffer[STRLEN_MAX];
+	char Result[STRLEN_MAX];
 	double Freq, Lower, Upper, Delta;
 
-	Remove_BIT_Log();
+	Title_BIT_Log(BIT_p);
 
 	Clocks = Plat_Devs->Clocks;
 	if (Clocks == NULL) {
@@ -62,7 +83,8 @@ Clocks_Check(void *Arg1, void *Arg2)
 		if (read(FD, ReadBuffer, sizeof(ReadBuffer)-1) == -1) {
 			SC_ERR("failed to access clock %s",
 			       Clocks->Clock[i].Name);
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 			(void) close(FD);
 			return -1;
 		}
@@ -75,12 +97,14 @@ Clocks_Check(void *Arg1, void *Arg2)
 		if (Freq < Lower || Freq > Upper) {
 			SC_ERR("%s: BIT failed for clock %s", BIT_p->Name,
 			    Clocks->Clock[i].Name);
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 			return 0;
 		}
 	}
 
-	SC_PRINT("%s: PASS", BIT_p->Name);
+	(void) sprintf(Result, "%s: PASS", BIT_p->Name);
+	Record_BIT_Log(Result);
 	return 0;
 }
 
@@ -96,16 +120,22 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	char TCL_File[STRLEN_MAX];
 	char TCL_Args[STRLEN_MAX] = { 0 };
 	char TclCmd[STRLEN_MAX]; /* TCL file and or argument with space delimter */
+	char Result[STRLEN_MAX];
 	char *TclFile, *TestBitIndex;
 	Default_PDI_t *Default_PDI;
 	char *ImageID, *UniqueID;
 	int Ret;
 
-	Remove_BIT_Log();
-
 	if (Level > BIT_p->Levels) {
 		SC_ERR("Invalid level invocation");
 		return -1;
+	}
+
+	/* Log the test title once for multi-level manual BITs */
+	if (Level == 0) {
+		Title_BIT_Log(BIT_p);
+	} else {
+		Clear_BIT_Log();
 	}
 
 	if (BIT_p->Manual) {
@@ -150,14 +180,16 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	if (Ret != 0) {
 		SC_ERR("failed the xsdb operation");
 		if (!BIT_p->Manual) {
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 		}
 
 		return -1;
 	}
 
 	if (!BIT_p->Manual) {
-		SC_PRINT("%s: %s", BIT_p->Name, strtok(Output, "\n"));
+		(void) sprintf(Result, "%s: %s", BIT_p->Name, strtok(Output, "\n"));
+		Record_BIT_Log(Result);
 	}
 
 	return 0;
@@ -173,8 +205,9 @@ EBM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	Daughter_Card_t *Daughter_Card;
 	int FD;
 	char Buffer[1];
+	char Result[STRLEN_MAX];
 
-	Remove_BIT_Log();
+	Title_BIT_Log(BIT_p);
 
 	Daughter_Card = Plat_Devs->Daughter_Card;
 	if (Daughter_Card == NULL) {
@@ -185,14 +218,16 @@ EBM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	FD = open(Daughter_Card->I2C_Bus, O_RDWR);
 	if (FD < 0) {
 		SC_ERR("unable to open I2C bus %s: %m", Daughter_Card->I2C_Bus);
-		SC_PRINT("%s: FAIL", BIT_p->Name);
+		(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+		Record_BIT_Log(Result);
 		return -1;
 	}
 
 	if (ioctl(FD, I2C_SLAVE_FORCE, Daughter_Card->I2C_Address) < 0) {
 		SC_ERR("failed to configure I2C bus for access to "
 		       "device address %#x: %m", Daughter_Card->I2C_Address);
-		SC_PRINT("%s: FAIL", BIT_p->Name);
+		(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+		Record_BIT_Log(Result);
 		(void) close(FD);
 		return -1;
 	}
@@ -200,13 +235,15 @@ EBM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	if (read(FD, Buffer, 1) != 1) {
 		SC_ERR("unable to access EEPROM device %#x",
 		       Daughter_Card->I2C_Address);
-		SC_PRINT("%s: FAIL", BIT_p->Name);
+		(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+		Record_BIT_Log(Result);
 		(void) close(FD);
 		return -1;
 	}
 
 	(void) close(FD);
-	SC_PRINT("%s: PASS", BIT_p->Name);
+	(void) sprintf(Result, "%s: PASS", BIT_p->Name);
+	Record_BIT_Log(Result);
 	return 0;
 }
 
@@ -223,9 +260,10 @@ DIMM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	DIMM_t *DIMM;
 	char In_Buffer[STRLEN_MAX];
 	char Out_Buffer[STRLEN_MAX];
+	char Result[STRLEN_MAX];
 	int Ret = 0;
 
-	Remove_BIT_Log();
+	Title_BIT_Log(BIT_p);
 
 	DIMMs = Plat_Devs->DIMMs;
 	if (DIMMs == NULL) {
@@ -239,7 +277,8 @@ DIMM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 		FD = open(DIMM->I2C_Bus, O_RDWR);
 		if (FD < 0) {
 			SC_ERR("unable to open I2C bus %s: %m", DIMM->I2C_Bus);
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 			return -1;
 		}
 
@@ -248,14 +287,16 @@ DIMM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 		Out_Buffer[0] = 0x2;	// Byte 2: DRAM Device Type
 		I2C_READ(FD, DIMM->I2C_Address_SPD, 1, Out_Buffer, In_Buffer, Ret);
 		if (Ret != 0) {
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 			(void) close(FD);
 			return Ret;
 		}
 
 		if (In_Buffer[0] != 0xC) {
 			SC_ERR("DIMM is not DDR4");
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 			(void) close(FD);
 			return -1;
 		}
@@ -263,7 +304,8 @@ DIMM_EEPROM_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 		(void) close(FD);
 	}
 
-	SC_PRINT("%s: PASS", BIT_p->Name);
+	(void) sprintf(Result, "%s: PASS", BIT_p->Name);
+	Record_BIT_Log(Result);
 	return 0;
 }
 
@@ -278,8 +320,9 @@ Voltages_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 	Voltages_t *Voltages;
 	Voltage_t *Regulator;
 	float Voltage;
+	char Result[STRLEN_MAX];
 
-	Remove_BIT_Log();
+	Title_BIT_Log(BIT_p);
 
 	Voltages = Plat_Devs->Voltages;
 	if (Voltages == NULL) {
@@ -293,7 +336,8 @@ Voltages_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 		if (Access_Regulator(Regulator, &Voltage, 0) != 0) {
 			SC_ERR("failed to get voltage for %s",
 			    Regulator->Name);
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 			return -1;
 		}
 
@@ -303,12 +347,14 @@ Voltages_Check(void *Arg1, __attribute__((unused)) void *Arg2)
 		     (Voltage > Regulator->Maximum_Volt))) {
 			SC_ERR("voltage for %s is out-of-range",
 			   Regulator->Name);
-			SC_PRINT("%s: FAIL", BIT_p->Name);
+			(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+			Record_BIT_Log(Result);
 			return -1;
 		}
 	}
 
-	SC_PRINT("%s: PASS", BIT_p->Name);
+	(void) sprintf(Result, "%s: PASS", BIT_p->Name);
+	Record_BIT_Log(Result);
 	return 0;
 }
 
@@ -322,8 +368,6 @@ Display_Instruction(void *Arg1, void *Arg2)
 	BIT_t *BIT_p = Arg1;
 	int Level = *(int *)Arg2;
 
-	Remove_BIT_Log();
-
 	if (!BIT_p->Manual) {
 		SC_ERR("BIT is not a manual test");
 		return -1;
@@ -332,6 +376,13 @@ Display_Instruction(void *Arg1, void *Arg2)
 	if (Level > BIT_p->Levels) {
 		SC_ERR("invalid level invocation for a multi-level manual BIT");
 		return -1;
+	}
+
+	/* Log the test title once for multi-level manual BITs */
+	if (Level == 0) {
+		Title_BIT_Log(BIT_p);
+	} else {
+		Clear_BIT_Log();
 	}
 
 	SC_PRINT("%s", BIT_p->Level[Level].Instruction);
@@ -381,12 +432,13 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 	FILE *FP;
 	char System_Cmd[SYSCMD_MAX];
 	char Buffer[STRLEN_MAX];
+	char Result[STRLEN_MAX];
 	int DDRMC;
 	Default_PDI_t *Default_PDI;
 	char *ImageID, *UniqueID;
 	int Ret = 0;
 
-	Remove_BIT_Log();
+	Title_BIT_Log(BIT_p);
 
 	(void) sprintf(Buffer, "%s", BIT_PATH);
 	(void) sprintf(System_Cmd, "%sddrmc_check.py", Buffer);
@@ -415,7 +467,7 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 	}
 
 	(void) JTAG_Op(1);
-	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s %s %s 2>&1 | tee %s",
+	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s %s %s 2>&1 | tee -a %s",
 		       Buffer, DDRMC, Board_Name, ImageID, UniqueID, BITLOGFILE);
 	SC_INFO("Command: %s", System_Cmd);
 	FP = popen(System_Cmd, "r");
@@ -440,9 +492,11 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 	}
 
 	if ((strstr(Buffer, "PASS") != NULL)) {
-		SC_PRINT("%s: PASS", BIT_p->Name);
+		(void) sprintf(Result, "%s: PASS", BIT_p->Name);
+		Record_BIT_Log(Result);
 	} else {
-		SC_PRINT("%s: FAIL", BIT_p->Name);
+		(void) sprintf(Result, "%s: FAIL", BIT_p->Name);
+		Record_BIT_Log(Result);
 		Ret = -1;
 	}
 

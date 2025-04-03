@@ -2114,10 +2114,10 @@ XSDB_Op(const char *TCL_File, const char *TCL_Args, char *Output, int Length)
 	Filename = strdup(TCL_File);
 	/* System_Cmd: cd TCL_FILE directory; XSDB_ENV; XSDB_CMD TCL_FILE TCL_Args */
 	if (TCL_Args == NULL) {
-		(void) sprintf(System_Cmd, "cd %s; %s; %s %s 2>&1 | tee %s",
+		(void) sprintf(System_Cmd, "cd %s; %s; %s %s 2>&1 | tee -a %s",
 			       dirname(Directory), XSDB_ENV, XSDB_CMD, Filename, BITLOGFILE);
 	} else {
-		(void) sprintf(System_Cmd, "cd %s; %s; %s %s %s 2>&1 | tee %s",
+		(void) sprintf(System_Cmd, "cd %s; %s; %s %s %s 2>&1 | tee -a %s",
 			       dirname(Directory), XSDB_ENV, XSDB_CMD, Filename, TCL_Args, BITLOGFILE);
 	}
 

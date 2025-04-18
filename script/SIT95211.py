@@ -9,6 +9,8 @@
 import os
 import sys
 import time
+import glob
+import subprocess
 from smbus2 import SMBus, i2c_msg
 
 Runtime_Ext = ".csv"
@@ -18,6 +20,7 @@ Clock_Dir = "/usr/share/system-controller-app/.sc_app/vendor_clock/"
 Default_CF_Dir = "/usr/share/system-controller-app/BIT/clock_files/"
 Custom_CF_Dir = "/data/clock_files/"
 
+global EEPROM_Size, EEPROM_Device_ID, EEPROM_Config_Word, EEPROM_Page_ID
 
 #
 # This function reads in a file with 'Runtime_Ext' format into a list
@@ -191,7 +194,43 @@ def Find_Clock_File(Chip, Design, Extension):
         File = Custom_CF_Dir + Design + Extension
         if not (os.path.exists(File)):
             return None
+
+    #
+    # Validate that the design file for programming EEPROM is generated correctly
+    #
+    if (Extension == EEPROM_Ext):
+        Command = ['/bin/head', '-1', File]
+        Result = subprocess.run(Command, capture_output=True, text=True)
+        EEPROM_Identifier = Result.stdout.strip().splitlines()[0]
+
+        #
+        # Strip the leading '0x' and convert the remaining into individual 2-character strings
+        #
+        First_Line = EEPROM_Identifier[2:]
+        First_Four_Bytes = [First_Line[i:i+2] for i in range(0, len(First_Line), 2)]
+        EEPROM_Identifier = [EEPROM_Size, EEPROM_Device_ID, EEPROM_Config_Word, EEPROM_Page_ID]
+        if (First_Four_Bytes != EEPROM_Identifier):
+            print("ERROR: file '" + File + "' is not generated correctly")
+            exit(-1)
+
     return File
+
+
+#
+# Identify board revision
+#
+def Get_Board_Revision(FRU_Path):
+    Arg = "--fru-file=" + FRU_Path
+    Command = ['/usr/sbin/ipmi-fru', Arg]
+    Result = subprocess.run(Command, capture_output=True, text=True)
+    OnBoard_EEPROM = Result.stdout.strip().splitlines()
+    Label = "  FRU Board Custom Info: "
+    Revisions = ['A01', 'A02', 'B1']
+    for Rev in Revisions:
+        if Label + Rev in OnBoard_EEPROM:
+            return Rev
+
+    return "UNKNOWN"
 
 
 #
@@ -210,8 +249,30 @@ Default_Design = sys.argv[4]
 Command = sys.argv[5]
 Clock_Name = sys.argv[6]
 
-# For (Board == VEK385), the I2C address for EEPROM is 0x57
-EEPROM_I2C_Addr = 0x57
+if (Board == "VEK385"):
+    SiTime_EEPROM_Search = "/sys/bus/i2c/devices/*/eeprom_sit95*/nvmem"
+    Bus_Address = glob.glob(SiTime_EEPROM_Search, recursive=True)[0].split('/')[5]
+    EEPROM_I2C_Addr = int(Bus_Address[Bus_Address.find('-') + 1:], 16)
+
+    #
+    # Different revisions of the board have different default clock design
+    #
+    OnBoard_EEPROM_Search = "/sys/bus/i2c/devices/*/eeprom_cc*/nvmem"
+    Board_Revision = "-" + Get_Board_Revision(glob.glob(OnBoard_EEPROM_Search, recursive=True)[0])
+    Default_Design_Search = Default_CF_Dir + Chip + "/" + Board + Board_Revision + "*"
+    if (len(glob.glob(Default_Design_Search)) != 0):
+        Index = Default_Design.find(Board)
+        Default_Design = Default_Design[:Index + len(Board)] + Board_Revision + \
+                         Default_Design[Index + len(Board):]
+
+    #
+    # EEPROM identifier data
+    #
+    EEPROM_Size= "00"
+    EEPROM_Device_ID = "69"
+    EEPROM_Config_Word = "01"
+    EEPROM_Page_ID = "00"
+
 
 if (Command == "setclock" or Command == "setbootclock"):
     if not Num_Args == 7:

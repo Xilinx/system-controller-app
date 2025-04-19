@@ -225,7 +225,7 @@ def Get_Board_Revision(FRU_Path):
     Result = subprocess.run(Command, capture_output=True, text=True)
     OnBoard_EEPROM = Result.stdout.strip().splitlines()
     Label = "  FRU Board Custom Info: "
-    Revisions = ['A01', 'A02', 'B1']
+    Revisions = ['A01']
     for Rev in Revisions:
         if Label + Rev in OnBoard_EEPROM:
             return Rev

@@ -337,17 +337,6 @@
 				"PMBus_VOUT_MODE": 1,
 				"Page_Select": 3
 			},
-			"VOLTAGE_VCCO_502": {
-				"Name": "VCCO_502",
-				"Part_Name": "IRPS5401",
-				"Maximum_Volt": 1.86,
-				"Typical_Volt": 1.8,
-				"Minimum_Volt": 1.74,
-				"I2C_Bus": "/dev/i2c-4",
-				"I2C_Address": "0x47",
-				"PMBus_VOUT_MODE": 1,
-				"Page_Select": 1
-			},
 			"VOLTAGE_VCC_RAM_VCCINT_GT": {
 				"Name": "VCC_RAM_VCCINT_GT",
 				"Part_Name": "IRPS5401",
@@ -374,6 +363,17 @@
 				"Name": "MGTAVCC",
 				"Part_Name": "IRPS5401",
 				"Maximum_Volt": 0.95,
+				"Typical_Volt": 0.92,
+				"Minimum_Volt": 0.89,
+				"I2C_Bus": "/dev/i2c-4",
+				"I2C_Address": "0x4C",
+				"PMBus_VOUT_MODE": 1,
+				"Page_Select": 2
+			},
+			"VOLTAGE_VCCAUX": {
+				"Name": "VCCAUX",
+				"Part_Name": "IRPS5401",
+				"Maximum_Volt": 1.55,
 				"Typical_Volt": 1.5,
 				"Minimum_Volt": 1.45,
 				"I2C_Bus": "/dev/i2c-4",

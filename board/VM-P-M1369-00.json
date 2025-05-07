@@ -592,6 +592,11 @@
 				"Default_Volt": 1.0
 			}
 		},
+		"Boot Config": {
+			"PDI": "system_wrapper.pdi",
+			"ImageID": "0x18700000",
+			"UniqueID_Rev0": "0xe3fa68a3"
+		},
 		"BITs": {
 			"BIT_IDCODE_VERIFY" : {
 				"Name" : "IDCODE Verify",
@@ -622,6 +627,38 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "Voltages_Check"
+					}
+				}
+			},
+			"BIT_DDRMC_4_CAL_TEST" : {
+				"Name" : "DDRMC_4 Cal Test",
+				"Description" : "This test verifies DDR memory controller 4.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_4_Test"
+					}
+				}
+			},
+			"BIT_DRAM_MEM_TEST" : {
+				"Name" : "DRAM Mem Test",
+				"Description" : "This test verifies DRAM read/write.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x08"
+					}
+				}
+			},
+			"BIT_OSPI_TEST" : {
+				"Name" : "OSPI Test",
+				"Description" : "This test verifies OSPI Flash read/write.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x10"
 					}
 				}
 			}

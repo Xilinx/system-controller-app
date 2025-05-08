@@ -216,8 +216,7 @@ typedef enum {
  */
 typedef struct {
 	char	*Name;
-	char	I2C_Bus[STRLEN_MAX];
-	int	I2C_Address;
+	char	*Path;
 } OnBoard_EEPROM_t;
 
 /*

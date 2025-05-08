@@ -814,7 +814,6 @@ EEPROM_Ops(void)
 	OnBoard_EEPROM_t *OnBoard_EEPROM;
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
-	char Out_Buffer[STRLEN_MAX];
 	char Buffer[STRLEN_MAX];
 	struct tm BuildDate = { 0 };
 	time_t Time;
@@ -862,25 +861,9 @@ EEPROM_Ops(void)
 		return -1;
 	}
 
-	FD = open(OnBoard_EEPROM->I2C_Bus, O_RDWR);
+	FD = open(OnBoard_EEPROM->Path, O_RDWR);
 	if (FD < 0) {
-		SC_ERR("unable to access I2C bus %s: %m", OnBoard_EEPROM->I2C_Bus);
-		return -1;
-	}
-
-	if (ioctl(FD, I2C_SLAVE_FORCE, OnBoard_EEPROM->I2C_Address) < 0) {
-		SC_ERR("unable to access onboard EEPROM address %#x",
-		       OnBoard_EEPROM->I2C_Address);
-		(void) close(FD);
-		return -1;
-	}
-
-	Out_Buffer[0] = 0x0;
-	Out_Buffer[1] = 0x0;
-	SC_INFO("Write offset address 0x%.2x%.2x", Out_Buffer[0], Out_Buffer[1]);
-	if (write(FD, Out_Buffer, 2) != 2) {
-		SC_ERR("unable to set the offset address on onboard EEPROM");
-		(void) close(FD);
+		SC_ERR("unable to open EEPROM '%s': %m", OnBoard_EEPROM->Path);
 		return -1;
 	}
 

@@ -65,24 +65,9 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 		return 0;
 	}
 
-	FD = open(EEPROM->I2C_Bus, O_RDWR);
+	FD = open(EEPROM->Path, O_RDWR);
 	if (FD < 0) {
-		SC_INFO("unable to access I2C bus %s: %m", EEPROM->I2C_Bus);
-		return -1;
-	}
-
-	if (ioctl(FD, I2C_SLAVE_FORCE, EEPROM->I2C_Address) < 0) {
-		SC_INFO("unable to access onboard EEPROM address %#x",
-			EEPROM->I2C_Address);
-		(void) close(FD);
-		return -1;
-	}
-
-	Out_Buffer[0] = 0x0;
-	Out_Buffer[1] = 0x0;
-	if (write(FD, Out_Buffer, 2) != 2) {
-		SC_INFO("unable to set the offset address on onboard EEPROM");
-		(void) close(FD);
+		SC_INFO("unable to open EEPROM '%s': %m", EEPROM->Path);
 		return -1;
 	}
 
@@ -107,7 +92,7 @@ int
 Find_OnBoard_EEPROM(OnBoard_EEPROM_t *OnBoard)
 {
 	glob_t Glob_Buffer;
-	char *Path, *Node, *CP;
+	char *Path;
 
 	if (glob(ONBOARD_EEPROM_PATH, 0, NULL, &Glob_Buffer) != 0) {
 		SC_ERR("failed to find onboard EEPROM");
@@ -121,21 +106,10 @@ Find_OnBoard_EEPROM(OnBoard_EEPROM_t *OnBoard)
 
 	SC_INFO("EEPROM Path: %s", Glob_Buffer.gl_pathv[0]);
 	Path = strdup(Glob_Buffer.gl_pathv[0]);
-	Node = strrchr(Path, '/');
-	*Node = '\0';
-	Node = strrchr(Path, '/');
-	Node++;
-	SC_INFO("Find EEPROM 1: %s", Node);
-	CP = strtok(Node, "-");
-	SC_INFO("Find EEPROM 2: %s", CP);
-	(void) sprintf(OnBoard->I2C_Bus, "/dev/i2c-%d", (int)strtoul(CP, NULL, 10));
-	CP = strtok(NULL, "-");
-	SC_INFO("Find EEPROM 3: %s", CP);
-	OnBoard->I2C_Address = strtoul(CP, NULL, 16);
-
-	SC_INFO("OnBoard_EEPROM->Name = %s", OnBoard->Name);
-	SC_INFO("OnBoard_EEPROM->I2C_Bus = %s", OnBoard->I2C_Bus);
-	SC_INFO("OnBoard_EEPROM->I2C_Address = 0x%x", OnBoard->I2C_Address);
+	OnBoard->Path = calloc(1, (strlen(Path) + strlen("/nvmem") + 1));
+	OnBoard->Path = strcat(OnBoard->Path, Path);
+	OnBoard->Path = strcat(OnBoard->Path, "/nvmem");
+	SC_INFO("OnBoard_EEPROM->Path = %s", OnBoard->Path);
 
 	free(Path);
 	globfree(&Glob_Buffer);

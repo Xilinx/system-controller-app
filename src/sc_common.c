@@ -261,9 +261,11 @@ Get_Silicon_Revision(char *Revision)
 				return -1;
 			}
 
-			if (strstr(Revision, "ERROR:") != NULL) {
+			if ((strstr(Revision, "ES1") == NULL) &&
+			    (strstr(Revision, "PROD") == NULL)) {
+				SC_INFO("failed to get an expected silicon revision");
 				Revision[0] = 0;
-				return -1;
+				return 0;
 			}
 
 			(void) strtok(Revision, "\n");
@@ -1958,10 +1960,6 @@ Reset_Op(void)
 	char Buffer[SYSCMD_MAX] = { 0 };
 	BootModes_t *BootModes;
 	BootMode_t *BootMode;
-
-	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
-		return -1;
-	}
 
 	if (((strcmp(Board_Name, "VCK190") == 0) || (strcmp(Board_Name, "VMK180") == 0)) &&
 	    (strcmp(Silicon_Revision, "ES1") == 0)) {

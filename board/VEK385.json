@@ -415,7 +415,7 @@
 		"Boot Config": {
 			"PDI": "system_wrapper.pdi",
 			"ImageID": "0x18700000",
-			"UniqueID_Rev0": "0xf4319796"
+			"UniqueID_Rev0": "0x94b29979"
 		},
 		"BITs": {
 			"BIT_CLOCKS_OUTPUT_TEST" : {

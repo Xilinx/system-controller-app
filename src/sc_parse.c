@@ -1289,11 +1289,7 @@ Parse_Workaround(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		Check_Attribute("Plat_Workaround_Op", "WORKAROUND");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		if (strcmp(Value_Str, "VCK190_ES1_Vccaux_Workaround") == 0) {
-			(*WAs)->Workaround[Item].Plat_Workaround_Op =
-				VCK190_ES1_Vccaux_Workaround;
-			SC_INFO("Plat_Workaround_Op: %s", Value_Str);
-		}
+		SC_INFO("Plat_Workaround_Op: %s", Value_Str);
 
 		Item++;
 	}

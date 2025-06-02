@@ -1956,20 +1956,9 @@ int
 Reset_Op(void)
 {
 	FILE *FP;
-	int State;
 	char Buffer[SYSCMD_MAX] = { 0 };
 	BootModes_t *BootModes;
 	BootMode_t *BootMode;
-
-	if (((strcmp(Board_Name, "VCK190") == 0) || (strcmp(Board_Name, "VMK180") == 0)) &&
-	    (strcmp(Silicon_Revision, "ES1") == 0)) {
-		// Turn VCCINT_RAM off
-		State = 0;
-		if (VCK190_ES1_Vccaux_Workaround(&State) != 0) {
-			SC_ERR("failed to turn VCCINT_RAM off");
-			return -1;
-		}
-	}
 
 	/* Assert POR */
 	if (Set_GPIO("SYSCTLR_POR_B_LS", 0) != 0) {
@@ -2169,18 +2158,11 @@ int
 Get_BootMode_Switch(unsigned int *Value)
 {
 	char Buffer[SYSCMD_MAX];
-	char Chip_Name[STRLEN_MAX];
-	unsigned int Line_Offset;
 	int State;
 
 	*Value = 0;
 	for (int i = 0; i < 4; i++) {
 		sprintf(Buffer, "SYSCTLR_VERSAL_MODE%d_READBACK", i);
-		if (gpiod_ctxless_find_line(Buffer, Chip_Name, STRLEN_MAX,
-					    &Line_Offset) != 1) {
-			return -1;
-		}
-
 		if (Get_GPIO(Buffer, &State) != 0) {
 			return -1;
 		}

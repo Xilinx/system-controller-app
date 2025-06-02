@@ -528,7 +528,6 @@ int Set_GPIO(char *, int);
 int Set_IDT_8A34001(Clock_t *, char *, int);
 int Shell_Execute(char *);
 int Silicon_Identification(char *, int);
-int VCK190_ES1_Vccaux_Workaround(void *);
 int VCK190_QSFP_ModuleSelect(SFP_t *, int);
 int Vendor_Utility_Clock(Clock_t *, char *, char *, char *);
 int Voltages_Check(void *, void *);

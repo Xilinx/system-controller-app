@@ -14,46 +14,7 @@
 #include "sc_app.h"
 
 extern Plat_Devs_t *Plat_Devs;
-extern char Board_Name[];
 extern char Silicon_Revision[];
-
-int
-VCK190_ES1_Vccaux_Workaround(void *Arg)
-{
-	int *State;
-	int Target_Index = -1;
-	Voltages_t *Voltages;
-	Voltage_t *Regulator;
-	float Voltage;
-
-	State = (int *)Arg;
-	Voltages = Plat_Devs->Voltages;
-	if (Voltages == NULL) {
-		SC_ERR("voltage operation is not suppoprted");
-		return -1;
-	}
-
-	for (int i = 0; i < Voltages->Numbers; i++) {
-		if (strcmp("VCC_RAM", (char *)Voltages->Voltage[i].Name) == 0) {
-			Target_Index = i;
-			Regulator = &Voltages->Voltage[Target_Index];
-			break;
-		}
-	}
-
-	if (Target_Index == -1) {
-		SC_ERR("failed to locate VCC_RAM regulator");
-		return -1;
-	}
-
-	Voltage = (*State == 1) ? Regulator->Typical_Volt : 0;
-	if (Access_Regulator(Regulator, &Voltage, 1) != 0) {
-		SC_ERR("failed to set VCC_RAM regulator to %0.3f v", Voltage);
-		return -1;
-	}
-
-	return 0;
-}
 
 /*
  * The QSFP must be selected and not held in Reset (High) in order to be

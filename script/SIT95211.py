@@ -249,29 +249,28 @@ Default_Design = sys.argv[4]
 Command = sys.argv[5]
 Clock_Name = sys.argv[6]
 
-if (Board == "VEK385"):
-    SiTime_EEPROM_Search = "/sys/bus/i2c/devices/*/eeprom_sit95*/nvmem"
-    Bus_Address = glob.glob(SiTime_EEPROM_Search, recursive=True)[0].split('/')[5]
-    EEPROM_I2C_Addr = int(Bus_Address[Bus_Address.find('-') + 1:], 16)
+SiTime_EEPROM_Search = "/sys/bus/i2c/devices/*/eeprom_sit95*/nvmem"
+Bus_Address = glob.glob(SiTime_EEPROM_Search, recursive=True)[0].split('/')[5]
+EEPROM_I2C_Addr = int(Bus_Address[Bus_Address.find('-') + 1:], 16)
 
-    #
-    # Different revisions of the board have different default clock design
-    #
-    OnBoard_EEPROM_Search = "/sys/bus/i2c/devices/*/eeprom_cc*/nvmem"
-    Board_Revision = "-" + Get_Board_Revision(glob.glob(OnBoard_EEPROM_Search, recursive=True)[0])
-    Default_Design_Search = Default_CF_Dir + Chip + "/" + Board + Board_Revision + "*"
-    if (len(glob.glob(Default_Design_Search)) != 0):
-        Index = Default_Design.find(Board)
-        Default_Design = Default_Design[:Index + len(Board)] + Board_Revision + \
-                         Default_Design[Index + len(Board):]
+#
+# Different revisions of the board have different default clock design
+#
+OnBoard_EEPROM_Search = "/sys/bus/i2c/devices/*/eeprom_cc*/nvmem"
+Board_Revision = "-" + Get_Board_Revision(glob.glob(OnBoard_EEPROM_Search, recursive=True)[0])
+Default_Design_Search = Default_CF_Dir + Chip + "/" + Board + Board_Revision + "*"
+if (len(glob.glob(Default_Design_Search)) != 0):
+    Index = Default_Design.find(Board)
+    Default_Design = Default_Design[:Index + len(Board)] + Board_Revision + \
+                     Default_Design[Index + len(Board):]
 
-    #
-    # EEPROM identifier data
-    #
-    EEPROM_Size= "00"
-    EEPROM_Device_ID = "69"
-    EEPROM_Config_Word = "01"
-    EEPROM_Page_ID = "00"
+#
+# EEPROM identifier data
+#
+EEPROM_Size= "00"
+EEPROM_Device_ID = "69"
+EEPROM_Config_Word = "01"
+EEPROM_Page_ID = "00"
 
 
 if (Command == "setclock" or Command == "setbootclock"):

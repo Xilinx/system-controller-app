@@ -57,8 +57,9 @@
 			 'spd' or 'temp'
 
 		listgpio - list the supported gpio line targets
-		getgpio - get the state of <target> gpio
-		setgpio - set the state of <target> gpio to <value>
+		getgpio - get the state of <target> gpio, no direction change
+		setgpio - set the state of <target> gpio to <value>, direction is changed to output
+		setinputgpio - set the direction of <target> gpio to input
 
 		listioexp - list the supported IO expander targets
 		getioexp - get the state of <target> IO expander for either <value>:

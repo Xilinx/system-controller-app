@@ -15,6 +15,7 @@
 #include <sys/un.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#include <gpiod.h>
 
 #define LEVELS_MAX	12
 #define ITEMS_MAX	24
@@ -509,7 +510,7 @@ int EEPROM_MultiRecord(char *, int);
 void FMC_Access(FMC_t *, bool);
 int FMCAutoVadj_Op(void);
 int Get_BootMode(int);
-int Get_GPIO(char *, int *);
+int Get_GPIO(char *, int *, enum gpiod_line_direction);
 int Get_IDCODE(char *, int);
 int Get_IDT_8A34001(Clock_t *);
 int Get_Measured_Clock(char *, char *);

@@ -14,7 +14,6 @@
 #include <math.h>
 #include <errno.h>
 #include <signal.h>
-#include <gpiod.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
 #include "sc_app.h"
@@ -46,9 +45,10 @@
  * 1.21 - Added support for BIT description.
  * 1.22 - Added 'get measuredclock' command to get frequency measured by a counter.
  * 1.23 - Added 'listFMCvoltage' command to list rail info providing power to FMCs.
+ * 1.24 - Added 'setinputgpio' command to set the direction of a gpio line to input.
  */
 #define MAJOR	1
-#define MINOR	23
+#define MINOR	24
 
 int Client_FD;
 char Sock_OutBuffer[SOCKBUF_MAX];
@@ -142,8 +142,9 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 		 'spd' or 'temp'\n\
 \n\
 	listgpio - list the supported gpio line targets\n\
-	getgpio - get the state of <target> gpio\n\
-	setgpio - set the state of <target> gpio to <value>\n\
+	getgpio - get the state of <target> gpio, no direction change\n\
+	setgpio - set the state of <target> gpio to <value>, direction is changed to output\n\
+	setinputgpio - set the direction of <target> gpio to input\n\
 \n\
 	listioexp - list the supported IO expander targets\n\
 	getioexp - get the state of <target> IO expander for either <value>:\n\
@@ -209,6 +210,7 @@ typedef enum {
 	LISTGPIO,
 	GETGPIO,
 	SETGPIO,
+	SETINPUTGPIO,
 	LISTIOEXP,
 	GETIOEXP,
 	SETDIRIOEXP,
@@ -273,6 +275,7 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTGPIO, .CmdStr = "listgpio", .CmdOps = GPIO_Ops, },
 	{ .CmdId = GETGPIO, .CmdStr = "getgpio", .CmdOps = GPIO_Ops, },
 	{ .CmdId = SETGPIO, .CmdStr = "setgpio", .CmdOps = GPIO_Ops, },
+	{ .CmdId = SETINPUTGPIO, .CmdStr = "setinputgpio", .CmdOps = GPIO_Ops, },
 	{ .CmdId = LISTIOEXP, .CmdStr = "listioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = GETIOEXP, .CmdStr = "getioexp", .CmdOps = IO_Exp_Ops, },
 	{ .CmdId = SETDIRIOEXP, .CmdStr = "setdirioexp", .CmdOps = IO_Exp_Ops, },
@@ -2567,7 +2570,7 @@ static int GPIO_Get_All(void)
 			continue;
 		}
 
-		if (Get_GPIO(Label, &State) != 0) {
+		if (Get_GPIO(Label, &State, GPIOD_LINE_DIRECTION_AS_IS) != 0) {
 			SC_ERR("failed to get GPIO line %s", Label);
 			(void) pclose(FP);
 			return -1;
@@ -2660,7 +2663,7 @@ int GPIO_Ops(void)
 		if (GPIO_Group != NULL) {
 			for (int i = 0; i < GPIO_Group->Numbers; i++) {
 				if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
-					     (int *)&State) != 0) {
+					     (int *)&State, GPIOD_LINE_DIRECTION_AS_IS) != 0) {
 					SC_ERR("failed to get GPIO line %s",
 					       GPIO_Group->GPIO_Lines[i]);
 					return -1;
@@ -2674,7 +2677,7 @@ int GPIO_Ops(void)
 			break;
 		}
 
-		if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State) != 0) {
+		if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State, GPIOD_LINE_DIRECTION_AS_IS) != 0) {
 			SC_ERR("failed to get GPIO line %s", GPIO->Display_Name);
 			return -1;
 		}
@@ -2718,7 +2721,7 @@ int GPIO_Ops(void)
 						}
 					} else {
 						if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
-									(int *)&Value) != 0) {
+									(int *)&Value, GPIOD_LINE_DIRECTION_INPUT) != 0) {
 							SC_ERR("failed to set GPIO line %s",
 									GPIO_Group->GPIO_Lines[i]);
 							return -1;
@@ -2749,11 +2752,32 @@ int GPIO_Ops(void)
 				}
 			} else {
 				// Get will set the IO to an inputer when user sets to 1
-				if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State) != 0) {
+				if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
 					SC_ERR("failed to get GPIO line %s", GPIO->Display_Name);
 					return -1;
 				}
 			}
+		}
+
+		break;
+
+	case SETINPUTGPIO:
+		if (GPIO_Group != NULL) {
+			for (int i = 0; i < GPIO_Group->Numbers; i++) {
+				if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+					     (int *)&State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+					SC_ERR("failed to set the direction of GPIO line %s to input",
+					       GPIO_Group->GPIO_Lines[i]);
+					return -1;
+				}
+			}
+
+			break;
+		}
+
+		if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+			SC_ERR("failed to set the direction of GPIO line %s to input", GPIO->Display_Name);
+			return -1;
 		}
 
 		break;

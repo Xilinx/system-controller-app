@@ -1200,19 +1200,18 @@ EEPROM_Board(char *Buffer, int PCIe)
 	SC_PRINT("0x%.2x - Part Number:\t%s", (Offset + 1), Buf);
 	Offset = Offset + Length + 1;
 	Length = (Buffer[Offset] & 0x3F);
-	if (Length == 1) {
-		SC_PRINT("0x%.2x - FRU ID:\t%.2x", (Offset + 1), Buffer[Offset + 1]);
+	/* Based on which length type is used, print the FRU ID */
+	if ((Buffer[Offset] & 0xC0) == 0) {
+		if (Length == 1) {
+			SC_PRINT("0x%.2x - FRU ID:\t%.2x", (Offset + 1), Buffer[Offset + 1]);
+		} else {
+			SC_ERR("unexpected length of %d for FRU ID", Length);
+			return -1;
+		}
+
 	} else {
 		snprintf(Buf, Length + 1, "%s", &Buffer[Offset + 1]);
 		SC_PRINT("0x%.2x - FRU ID:\t%s", (Offset + 1), Buf);
-		Offset = Offset + Length + 1;
-		if (Buffer[Offset] != 0xC1) {
-			SC_ERR("End-of-Record was not found");
-			return -1;
-		} else {
-			SC_PRINT("0x%.2x - EoR:\t%.2x", Offset, Buffer[Offset]);
-			return 0;
-		}
 	}
 
 	Offset = Offset + Length + 1;

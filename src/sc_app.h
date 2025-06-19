@@ -510,7 +510,11 @@ int EEPROM_MultiRecord(char *, int);
 void FMC_Access(FMC_t *, bool);
 int FMCAutoVadj_Op(void);
 int Get_BootMode(int);
+#if !defined (LIBGPIOD_V1)
 int Get_GPIO(char *, int *, enum gpiod_line_direction);
+#else
+int Get_GPIO(char *, int *);
+#endif
 int Get_IDCODE(char *, int);
 int Get_IDT_8A34001(Clock_t *);
 int Get_Measured_Clock(char *, char *);

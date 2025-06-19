@@ -2570,7 +2570,11 @@ static int GPIO_Get_All(void)
 			continue;
 		}
 
+#if !defined (LIBGPIOD_V1)
 		if (Get_GPIO(Label, &State, GPIOD_LINE_DIRECTION_AS_IS) != 0) {
+#else
+		if (Get_GPIO(Label, &State) != 0) {
+#endif
 			SC_ERR("failed to get GPIO line %s", Label);
 			(void) pclose(FP);
 			return -1;
@@ -2662,8 +2666,13 @@ int GPIO_Ops(void)
 	case GETGPIO:
 		if (GPIO_Group != NULL) {
 			for (int i = 0; i < GPIO_Group->Numbers; i++) {
+#if !defined (LIBGPIOD_V1)
 				if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
 					     (int *)&State, GPIOD_LINE_DIRECTION_AS_IS) != 0) {
+#else
+				if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+					     (int *)&State) != 0) {
+#endif
 					SC_ERR("failed to get GPIO line %s",
 					       GPIO_Group->GPIO_Lines[i]);
 					return -1;
@@ -2677,7 +2686,11 @@ int GPIO_Ops(void)
 			break;
 		}
 
+#if !defined (LIBGPIOD_V1)
 		if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State, GPIOD_LINE_DIRECTION_AS_IS) != 0) {
+#else
+		if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State) != 0) {
+#endif
 			SC_ERR("failed to get GPIO line %s", GPIO->Display_Name);
 			return -1;
 		}
@@ -2720,8 +2733,13 @@ int GPIO_Ops(void)
 							return -1;
 						}
 					} else {
+#if !defined (LIBGPIOD_V1)
 						if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
 									(int *)&Value, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+						if (Get_GPIO((char *)GPIO_Group->GPIO_Lines[i],
+									(int *)&Value) != 0) {
+#endif
 							SC_ERR("failed to set GPIO line %s",
 									GPIO_Group->GPIO_Lines[i]);
 							return -1;
@@ -2752,7 +2770,11 @@ int GPIO_Ops(void)
 				}
 			} else {
 				// Get will set the IO to an inputer when user sets to 1
+#if !defined (LIBGPIOD_V1)
 				if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+				if (Get_GPIO((char *)GPIO->Internal_Name, (int *)&State) != 0) {
+#endif
 					SC_ERR("failed to get GPIO line %s", GPIO->Display_Name);
 					return -1;
 				}
@@ -2761,6 +2783,7 @@ int GPIO_Ops(void)
 
 		break;
 
+#if !defined (LIBGPIOD_V1)
 	case SETINPUTGPIO:
 		if (GPIO_Group != NULL) {
 			for (int i = 0; i < GPIO_Group->Numbers; i++) {
@@ -2781,6 +2804,7 @@ int GPIO_Ops(void)
 		}
 
 		break;
+#endif
 
 	default:
 		SC_ERR("invalid gpio command");

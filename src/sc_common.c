@@ -716,6 +716,7 @@ FMC_Access(FMC_t *FMC, bool State) {
 		return;
 	}
 
+#if !defined (LIBGPIOD_V1)
 	SC_INFO("%s access to FMC", (State == true) ? "enable" : "disable");
 	if (State) {
 		Level = FMC->Access_Level;
@@ -727,6 +728,18 @@ FMC_Access(FMC_t *FMC, bool State) {
 			SC_ERR("failed to reset '%s'", FMC->Access_Label);
 		}
 	}
+#else
+	if (State) {
+		Level = FMC->Access_Level;
+	} else {
+		Level = (~FMC->Access_Level & 0x1);
+	}
+
+	SC_INFO("%s access to FMC", (State == true) ? "enable" : "disable");
+	if (Set_GPIO(FMC->Access_Label, Level) != 0) {
+		SC_ERR("failed to set '%s' to %d", FMC->Access_Label, Level);
+	}
+#endif
 }
 
 int
@@ -844,7 +857,11 @@ FMCAutoVadj_Op(void)
 	for (int i = 0; i < FMCs->Numbers; i++) {
 		FMC = &FMCs->FMC[i];
 		for (int j = 0; j < FMC->Label_Numbers; j++) {
+#if !defined (LIBGPIOD_V1)
 			if (Get_GPIO(FMC->Presence_Labels[j], &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+			if (Get_GPIO(FMC->Presence_Labels[j], &State) != 0) {
+#endif
 				Legacy_Approach = 1;
 				break;
 			}
@@ -880,7 +897,11 @@ FMCAutoVadj_Op(void)
 		SC_INFO("Read GPIO line to determine FMC presence");
 		for (int i = 0; i < FMCs->Numbers; i++) {
 			FMC = &FMCs->FMC[i];
+#if !defined (LIBGPIOD_V1)
 			if (Get_GPIO(FMC->Presence_Labels[0], &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+			if (Get_GPIO(FMC->Presence_Labels[0], &State) != 0) {
+#endif
 				SC_ERR("failed to determine presence of FMC %d", i);
 				return -1;
 			}
@@ -985,6 +1006,7 @@ FMCAutoVadj_Op(void)
 	return 0;
 }
 
+#if !defined (LIBGPIOD_V1)
 static int
 Find_GPIO_Line(const char *Label, unsigned int *Offset, struct gpiod_chip **Chip)
 {
@@ -1091,7 +1113,9 @@ Request_Free:
 
 	return Ret;
 }
+#endif
 
+#if !defined (LIBGPIOD_V1)
 int
 Get_GPIO(char *Label, int *State, enum gpiod_line_direction Direction)
 {
@@ -1117,10 +1141,56 @@ Get_GPIO(char *Label, int *State, enum gpiod_line_direction Direction)
 	gpiod_chip_close(Chip);
 	return 0;
 }
+#else
+int
+Get_GPIO(char *Label, int *State)
+{
+	FILE *FP;
+	char Chip_Name[STRLEN_MAX];
+	char Buffer[SYSCMD_MAX];
+	char Output[STRLEN_MAX] = {'\0'};
+	unsigned int Line_Offset;
+
+	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
+	    &Line_Offset) != 1) {
+		SC_INFO("failed to find GPIO line %s", Label);
+		return -1;
+	}
+
+	(void) sprintf(Buffer, "gpioget %s %u 2>&1", Chip_Name, Line_Offset);
+	SC_INFO("Command: %s", Buffer);
+	FP = popen(Buffer, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to start process '%s': %m", Buffer);
+		return -1;
+	}
+
+	if (fgets(Output, sizeof(Output), FP) == NULL) {
+		SC_ERR("failed to get the state of GPIO line '%s'", Label);
+		(void) pclose(FP);
+		return -1;
+	}
+
+	if (pclose(FP) != 0) {
+		SC_ERR("failed to get the state of GPIO line '%s'", Label);
+		return -1;
+	}
+
+	SC_INFO("Output: %s", Output);
+	if ((strcmp(Output, "0\n") != 0) && (strcmp(Output, "1\n") != 0)) {
+		SC_ERR("invalid output %s", Output);
+		return -1;
+	}
+
+	*State = atoi(Output);
+	return 0;
+}
+#endif
 
 int
 Set_GPIO(char *Label, int State)
 {
+#if !defined (LIBGPIOD_V1)
 	struct gpiod_chip *Chip;
 	struct gpiod_line_request *Request;
 	enum gpiod_line_value Value;
@@ -1141,6 +1211,24 @@ Set_GPIO(char *Label, int State)
 
 	gpiod_line_request_release(Request);
 	gpiod_chip_close(Chip);
+#else
+	char Chip_Name[STRLEN_MAX];
+	char Buffer[SYSCMD_MAX];
+	unsigned int Line_Offset;
+
+	if (gpiod_ctxless_find_line(Label, Chip_Name, STRLEN_MAX,
+	    &Line_Offset) != 1) {
+		SC_ERR("failed to find GPIO line");
+		return -1;
+	}
+
+	(void) sprintf(Buffer, "gpioset %s %u=%d 2>&1", Chip_Name, Line_Offset,
+		       State);
+	if (Shell_Execute(Buffer) != 0) {
+		SC_ERR("failed to set GPIO line '%s': %m", Label);
+		return -1;
+	}
+#endif
 	return 0;
 }
 
@@ -2050,7 +2138,9 @@ Reset_Op(void)
 	char Buffer[SYSCMD_MAX] = { 0 };
 	BootModes_t *BootModes;
 	BootMode_t *BootMode;
+#if !defined (LIBGPIOD_V1)
 	int State;
+#endif
 
 	/* Assert POR */
 	if (Set_GPIO("SYSCTLR_POR_B_LS", 0) != 0) {
@@ -2061,7 +2151,11 @@ Reset_Op(void)
 	sleep(1);
 
 	/* De-assert POR */
+#if !defined (LIBGPIOD_V1)
 	if (Get_GPIO("SYSCTLR_POR_B_LS", &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+	if (Set_GPIO("SYSCTLR_POR_B_LS", 1) != 0) {
+#endif
 		SC_ERR("failed to de-assert power-on-reset");
 		return -1;
 	}
@@ -2120,12 +2214,20 @@ JTAG_Op(int Select)
 		break;
 	case 0:
 		/* Remove the JTAG mux setting */
+#if !defined (LIBGPIOD_V1)
 		if (Get_GPIO("SYSCTLR_JTAG_S0", &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+		if (Get_GPIO("SYSCTLR_JTAG_S0", &State) != 0) {
+#endif
 			SC_ERR("failed to release JTAG 0");
 			return -1;
 		}
 
+#if !defined (LIBGPIOD_V1)
 		if (Get_GPIO("SYSCTLR_JTAG_S1", &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+		if (Get_GPIO("SYSCTLR_JTAG_S1", &State) != 0) {
+#endif
 			SC_ERR("failed to release JTAG 1");
 			return -1;
 		}
@@ -2251,7 +2353,11 @@ Get_BootMode_Switch(unsigned int *Value)
 	*Value = 0;
 	for (int i = 0; i < 4; i++) {
 		sprintf(Buffer, "SYSCTLR_VERSAL_MODE%d_READBACK", i);
+#if !defined (LIBGPIOD_V1)
 		if (Get_GPIO(Buffer, &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+#else
+		if (Get_GPIO(Buffer, &State) != 0) {
+#endif
 			return -1;
 		}
 

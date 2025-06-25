@@ -46,9 +46,10 @@
  * 1.22 - Added 'get measuredclock' command to get frequency measured by a counter.
  * 1.23 - Added 'listFMCvoltage' command to list rail info providing power to FMCs.
  * 1.24 - Added 'setinputgpio' command to set the direction of a gpio line to input.
+ * 1.25 - Added JTAG select commands to select different JTAG controllers.
  */
 #define MAJOR	1
-#define MINOR	24
+#define MINOR	25
 
 int Client_FD;
 char Sock_OutBuffer[SOCKBUF_MAX];
@@ -61,6 +62,7 @@ int Constraint_Pre_Ops(void);
 int Version_Ops(void);
 int Board_Ops(void);
 int BootMode_Ops(void);
+int JTAGSelect_Ops(void);
 int Feature_Ops(void);
 int EEPROM_Ops(void);
 int Temperature_Ops(void);
@@ -106,6 +108,9 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	listbootmode - list the supported boot mode targets\n\
 	getbootmode - get boot mode, with optional <value> of 'alternate'\n\
 	setbootmode - set boot mode to <target>, with optional <value> of 'alternate'\n\
+\n\
+	listJTAGselect - list the supported JTAG select targets\n\
+	setJTAGselect - set JTAG mux to select <target> as the JTAG controller\n\
 \n\
 	listclock - list the supported clock targets\n\
 	getclock - get the frequency of <target>\n\
@@ -182,6 +187,8 @@ typedef enum {
 	LISTBOOTMODE,
 	GETBOOTMODE,
 	SETBOOTMODE,
+	LISTJTAGSELECT,
+	SETJTAGSELECT,
 	LISTCLOCK,
 	GETCLOCK,
 	GETMEASUREDCLOCK,
@@ -247,6 +254,8 @@ static Command_t Commands[] = {
 	{ .CmdId = LISTBOOTMODE, .CmdStr = "listbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = GETBOOTMODE, .CmdStr = "getbootmode", .CmdOps = BootMode_Ops, },
 	{ .CmdId = SETBOOTMODE, .CmdStr = "setbootmode", .CmdOps = BootMode_Ops, },
+	{ .CmdId = LISTJTAGSELECT, .CmdStr = "listJTAGselect", .CmdOps = JTAGSelect_Ops, },
+	{ .CmdId = SETJTAGSELECT, .CmdStr = "setJTAGselect", .CmdOps = JTAGSelect_Ops, },
 	{ .CmdId = LISTCLOCK, .CmdStr = "listclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETCLOCK, .CmdStr = "getclock", .CmdOps = Clock_Ops, },
 	{ .CmdId = GETMEASUREDCLOCK, .CmdStr = "getmeasuredclock", .CmdOps = Clock_Ops, },
@@ -762,6 +771,63 @@ BootMode_Ops(void)
 	}
 
 	return Set_BootMode(BootMode, 1);
+}
+
+int
+JTAGSelect_Ops(void)
+{
+	int Target_Index = -1;
+	JTAGSelects_t *JTAGSelects;
+	JTAGSelect_t *JTAGSelect;
+
+	JTAGSelects = Plat_Devs->JTAGSelects;
+	if (JTAGSelects == NULL) {
+		SC_ERR("JTAG select operation is not supported");
+		return -1;
+	}
+
+	if (Command.CmdId == LISTJTAGSELECT) {
+		for (int i = 0; i < JTAGSelects->Numbers; i++) {
+			SC_PRINT("%s\t0x%x", JTAGSelects->JTAGSelect[i].Name,
+				 JTAGSelects->JTAGSelect[i].Value);
+		}
+
+		return 0;
+	}
+
+	if (Command.CmdId != SETJTAGSELECT) {
+		SC_ERR("invalid JTAG select command");
+		return -1;
+	}
+
+	/* Validate the JTAG select target */
+	if (T_Flag == 0) {
+		SC_ERR("no set JTAG select target");
+		return -1;
+	}
+
+	for (int i = 0; i < JTAGSelects->Numbers; i++) {
+		if (strcmp(Target_Arg, (char *)JTAGSelects->JTAGSelect[i].Name) == 0) {
+			Target_Index = i;
+			JTAGSelect = &JTAGSelects->JTAGSelect[Target_Index];
+			break;
+		}
+	}
+
+	if (Target_Index == -1) {
+		SC_ERR("invalid set JTAG select target");
+		return -1;
+	}
+
+	if (Set_JTAGSelect(JTAGSelect->Name) != 0) {
+		SC_ERR("failed to select JTAG '%s'", JTAGSelect->Name);
+		return -1;
+	}
+
+	JTAGSelects->Current = JTAGSelect->Value;
+	SC_INFO("Current JTAG select is set to 0x%x", JTAGSelects->Current);
+
+	return 0;
 }
 
 int

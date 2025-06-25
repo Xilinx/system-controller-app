@@ -17,6 +17,14 @@
 				"SD" : "0xe"
 			}
 		},
+		"JTAGSELECTS" : {
+			"Select_Lines" : ["SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S1"],
+			"Selects" : {
+				"SC" : "0x0",
+				"FTDI" : "0x1",
+				"EXT" : "0x2"
+			}
+		},
 		"CLOCK" : {
 			"SI570_ZSFP" : {
 				"Name" : "zSFP Si570",
@@ -491,17 +499,17 @@
 				"I2C_Address_Thermal" : "0x18"
 			}
 		},
-		"GPIO_Group": {
-			"SW1": {
-				"Name": "SW1",
-				"Type": "RW",
-				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+		"GPIO_Group" : {
+			"SW1" : {
+				"Name" : "SW1",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
 						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
 			},
-			"SW3": {
-				"Name": "SW3",
-				"Type": "RW",
-				"GPIO_Lines": ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			"SW3" : {
+				"Name" : "SW3",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
 			}
 		},
 		"GPIO" : {
@@ -586,19 +594,19 @@
 				"Name" : "FMC1",
 				"I2C_Bus" : "/dev/i2c-12",
 				"I2C_Address" : "0x50",
-				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
-				"Supported_Volts": [1.2, 1.5],
-				"Voltage_Regulator": "VADJ_FMC",
-				"Default_Volt": 1.5
+				"Presence_Labels" : ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2, 1.5],
+				"Voltage_Regulator" : "VADJ_FMC",
+				"Default_Volt" : 1.5
 			},
 			"FMC_2" : {
 				"Name" : "FMC2",
 				"I2C_Bus" : "/dev/i2c-13",
 				"I2C_Address" : "0x50",
-				"Presence_Labels": ["FMCP2_FMC_PRSNT_M2C_B", "FMCP2_FMCP_PRSNT_M2C_B"],
-				"Supported_Volts": [1.2, 1.5],
-				"Voltage_Regulator": "VADJ_FMC",
-				"Default_Volt": 1.5
+				"Presence_Labels" : ["FMCP2_FMC_PRSNT_M2C_B", "FMCP2_FMCP_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2, 1.5],
+				"Voltage_Regulator" : "VADJ_FMC",
+				"Default_Volt" : 1.5
 			}
 		},
 		"WORKAROUND" : {
@@ -608,13 +616,13 @@
 				"Plat_Workaround_Op" : "VCK190_ES1_Vccaux_Workaround"
 			}
 		},
-		"Boot Config": {
-			"PDI": "system_wrapper.pdi",
-			"ImageID": "0x18700000",
-			"UniqueID_Rev0": "0x0",
-			"UniqueID_Rev1": "0xcf9e881c"
+		"Boot Config" : {
+			"PDI" : "system_wrapper.pdi",
+			"ImageID" : "0x18700000",
+			"UniqueID_Rev0" : "0x0",
+			"UniqueID_Rev1" : "0xcf9e881c"
 		},
-		"BITs": {
+		"BITs" : {
 			"BIT_IDCODE_VERIFY" : {
 				"Name" : "IDCODE Verify",
 				"Description" : "This test verifies Versal silicon device ID code. The test failure means it is not a compatible device.",

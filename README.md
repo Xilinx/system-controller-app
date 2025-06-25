@@ -22,6 +22,9 @@
 		getbootmode - get boot mode, with optional <value> of 'alternate'
 		setbootmode - set boot mode to <target>, with optional <value> of 'alternate'
 
+		listJTAGselect - list the supported JTAG select targets
+		setJTAGselect - set JTAG mux to select <target> as the JTAG controller
+
 		listclock - list the supported clock targets
 		getclock - get the frequency of <target>
 		getmeasuredclock - get the measured frequency of <target>

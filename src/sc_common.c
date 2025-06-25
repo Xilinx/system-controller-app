@@ -2194,48 +2194,77 @@ Reset_Op(void)
 }
 
 int
-JTAG_Op(int Select)
+Set_JTAGSelect(char *Select)
 {
+	JTAGSelects_t *JTAGSelects;
 	int State;
+	int Value = -1;
+	bool Current = false;
 
-	switch (Select) {
-	case 1:
-		/* Override the current JTAG mux setting for SC access */
-		if (Set_GPIO("SYSCTLR_JTAG_S0", 0) != 0) {
+	JTAGSelects = Plat_Devs->JTAGSelects;
+	if (JTAGSelects == NULL) {
+		SC_ERR("JTAG select operation is not supported");
+		return -1;
+	}
+
+	for (int i = 0; i < JTAGSelects->Numbers; i++) {
+		if (strcmp(JTAGSelects->JTAGSelect[i].Name, Select) == 0) {
+			Value = JTAGSelects->JTAGSelect[i].Value;
+		}
+	}
+
+	if (Value == -1) {
+		Value = JTAGSelects->Current;
+		Current = true;
+	}
+
+	if (!Current) {
+		if (Set_GPIO(JTAGSelects->Select_Lines[0], (Value & 0x1)) != 0) {
 			SC_ERR("failed to set JTAG 0");
 			return -1;
 		}
 
-		if (Set_GPIO("SYSCTLR_JTAG_S1", 0) != 0) {
+		if (Set_GPIO(JTAGSelects->Select_Lines[1], ((Value >> 1) & 0x1)) != 0) {
 			SC_ERR("failed to set JTAG 1");
 			return -1;
 		}
-
-		break;
-	case 0:
-		/* Remove the JTAG mux setting */
+	} else {
+		/* If the current setting is FTDI, just read the state of JTAG mux */
+		if (Value == 0x1) {
 #if !defined (LIBGPIOD_V1)
-		if (Get_GPIO("SYSCTLR_JTAG_S0", &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
-#else
-		if (Get_GPIO("SYSCTLR_JTAG_S0", &State) != 0) {
-#endif
-			SC_ERR("failed to release JTAG 0");
-			return -1;
-		}
+			if (Get_GPIO(JTAGSelects->Select_Lines[0], &State,
+				     GPIOD_LINE_DIRECTION_INPUT) != 0) {
+				SC_ERR("failed to release JTAG 0");
+				return -1;
+			}
 
-#if !defined (LIBGPIOD_V1)
-		if (Get_GPIO("SYSCTLR_JTAG_S1", &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+			if (Get_GPIO(JTAGSelects->Select_Lines[1], &State,
+				     GPIOD_LINE_DIRECTION_INPUT) != 0) {
+				SC_ERR("failed to release JTAG 1");
+				return -1;
+			}
 #else
-		if (Get_GPIO("SYSCTLR_JTAG_S1", &State) != 0) {
-#endif
-			SC_ERR("failed to release JTAG 1");
-			return -1;
-		}
+			if (Get_GPIO(JTAGSelects->Select_Lines[0], &State) != 0) {
+				SC_ERR("failed to release JTAG 0");
+				return -1;
+			}
 
-		break;
-	default:
-		SC_ERR("invalid JTAG select option");
-		return -1;
+			if (Get_GPIO(JTAGSelects->Select_Lines[1], &State) != 0) {
+				SC_ERR("failed to release JTAG 1");
+				return -1;
+			}
+#endif
+		} else {
+			if (Set_GPIO(JTAGSelects->Select_Lines[0], (Value & 0x1)) != 0) {
+				SC_ERR("failed to set JTAG 0");
+				return -1;
+			}
+
+			if (Set_GPIO(JTAGSelects->Select_Lines[1], ((Value >> 1) & 0x1)) != 0) {
+				SC_ERR("failed to set JTAG 1");
+				return -1;
+			}
+		}
 	}
 
 	return 0;
@@ -2260,7 +2289,7 @@ XSDB_Op(const char *TCL_File, const char *TCL_Args, char *Output, int Length)
 		return -1;
 	}
 
-	(void) JTAG_Op(1);
+	(void) Set_JTAGSelect("SC");
 	Directory = strdup(TCL_File);
 	Filename = strdup(TCL_File);
 	/* System_Cmd: cd TCL_FILE directory; XSDB_ENV; XSDB_CMD TCL_FILE TCL_Args */
@@ -2291,7 +2320,7 @@ XSDB_Op(const char *TCL_File, const char *TCL_Args, char *Output, int Length)
 	}
 
 Out:
-	(void) JTAG_Op(0);
+	(void) Set_JTAGSelect("Current");
 	free(Directory);
 	free(Filename);
 	return Ret;

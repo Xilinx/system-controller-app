@@ -466,7 +466,7 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 		UniqueID = Default_PDI->UniqueID_Rev1;
 	}
 
-	(void) JTAG_Op(1);
+	(void) Set_JTAGSelect("SC");
 	(void) sprintf(System_Cmd, "cd %s; python3 ddrmc_check.py %d %s %s %s 2>&1 | tee -a %s",
 		       Buffer, DDRMC, Board_Name, ImageID, UniqueID, BITLOGFILE);
 	SC_INFO("Command: %s", System_Cmd);
@@ -503,6 +503,6 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 	(void) pclose(FP);
 
 Out:
-	(void) JTAG_Op(0);
+	(void) Set_JTAGSelect("Current");
 	return Ret;
 }

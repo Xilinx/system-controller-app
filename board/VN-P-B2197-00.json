@@ -1,5 +1,5 @@
 {
-	"License" : "Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VN-P-B2197-00" : {
 		"FEATURE" : {
@@ -22,76 +22,84 @@
 				"sd1_ls" : "0xe"
 			}
 		},
-		"CLOCK": {
-			"QSFP56G_0_CLK": {
-				"Name": "QSFP56G_0_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_0/set_rate",
-				"Default_Freq": 161.132,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x5D"
+		"JTAGSELECTS" : {
+			"Select_Lines" : ["SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S1"],
+			"Selects" : {
+				"SC" : "0x0",
+				"FTDI" : "0x1",
+				"EXT" : "0x2"
+			}
+		},
+		"CLOCK" : {
+			"QSFP56G_0_CLK" : {
+				"Name" : "QSFP56G_0_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys_clk_0/set_rate",
+				"Default_Freq" : 161.132,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x5D"
 			},
-			"QSFP56G_1_CLK": {
-				"Name": "QSFP56G_1_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_1/set_rate",
-				"Default_Freq": 322.265,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x5F"
+			"QSFP56G_1_CLK" : {
+				"Name" : "QSFP56G_1_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys_clk_1/set_rate",
+				"Default_Freq" : 322.265,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x5F"
 			},
-			"LPDDR5_C0_CLK": {
-				"Name": "LPDDR5_C0_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_2/set_rate",
-				"Default_Freq": 320.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x58"
+			"LPDDR5_C0_CLK" : {
+				"Name" : "LPDDR5_C0_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys_clk_2/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x58"
 			},
-			"LPDDR5_C2_CLK": {
-				"Name": "LPDDR5_C2_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_3/set_rate",
-				"Default_Freq": 320.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x59"
+			"LPDDR5_C2_CLK" : {
+				"Name" : "LPDDR5_C2_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys_clk_3/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x59"
 			},
-			"DDR5_UDIMM_CLK": {
-				"Name": "DDR5_UDIMM_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_4/set_rate",
-				"Default_Freq": 320.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x56"
+			"DDR5_UDIMM_CLK" : {
+				"Name" : "DDR5_UDIMM_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys_clk_4/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x56"
 			},
-			"PS_REFCLK": {
-				"Name": "PS_REFCLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_5/set_rate",
-				"Default_Freq": 33.333,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x55"
+			"PS_REFCLK" : {
+				"Name" : "PS_REFCLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys_clk_5/set_rate",
+				"Default_Freq" : 33.333,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x55"
 			},
-			"DDR4_CLK": {
-				"Name": "DDR4_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys_clk_6/set_rate",
-				"Default_Freq": 320.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x57"
+			"DDR4_CLK" : {
+				"Name" : "DDR4_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys_clk_6/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x57"
 			}
 		},
 		"INA226" : {
@@ -520,9 +528,9 @@
 				"Page_Select" : -1
 			}
 		},
-		"Temperature": {
-			"Name": "Versal-Net",
-			"Sensor": "versal-isa-0000"
+		"Temperature" : {
+			"Name" : "Versal-Net",
+			"Sensor" : "versal-isa-0000"
 		},
 		"GPIO" : {
 			"SYSCTLR_VCCINT_EN_OD" : "43 - SYSCTLR_VCCINT_EN",
@@ -592,22 +600,22 @@
 				"Name" : "FMC1",
 				"I2C_Bus" : "/dev/i2c-1",
 				"I2C_Address" : "0x50",
-				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B"],
-				"Supported_Volts": [1.2],
-				"Voltage_Regulator": "VCCO_706",
-				"Default_Volt": 1.1
+				"Presence_Labels" : ["FMCP1_FMC_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VCCO_706",
+				"Default_Volt" : 1.1
 			},
 			"FMC_2" : {
 				"Name" : "FMC2",
 				"I2C_Bus" : "/dev/i2c-1",
 				"I2C_Address" : "0x51",
-				"Presence_Labels": ["FMCP2_FMC_PRSNT_M2C_B"],
-				"Supported_Volts": [1.2],
-				"Voltage_Regulator": "VCCO_706",
-				"Default_Volt": 1.1
+				"Presence_Labels" : ["FMCP2_FMC_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VCCO_706",
+				"Default_Volt" : 1.1
 			}
 		},
-		"BITs": {
+		"BITs" : {
 			"BIT_CLOCKS_CHECK" : {
 				"Name" : "Verify Clock Settings",
 				"Description" : "This test verifies clock synthesizer settings are set to default values. The test will fail if the default settings of clock synthesizer are modified.",

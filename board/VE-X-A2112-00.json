@@ -24,56 +24,56 @@
 				"SD_LS_SE10" : "0xe"
 			}
 		},
-		"CLOCK": {
-			"USB3_PHY_REF_PAD_CLK": {
-				"Name": "USB3_PHY_REF_PAD_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys-clk-1/set_rate",
-				"Default_Freq": 24.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x63"
+		"CLOCK" : {
+			"USB3_PHY_REF_PAD_CLK" : {
+				"Name" : "USB3_PHY_REF_PAD_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-1/set_rate",
+				"Default_Freq" : 24.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x63"
 			},
-			"LPDDR5_C0_C1_OSC_CLK": {
-				"Name": "LPDDR5_C0_C1_OSC_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys-clk-2/set_rate",
-				"Default_Freq": 320.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x57"
+			"LPDDR5_C0_C1_OSC_CLK" : {
+				"Name" : "LPDDR5_C0_C1_OSC_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-2/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x57"
 			},
-			"XPL7_PS_REFCLK": {
-				"Name": "XPL7_PS_REFCLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys-clk-3/set_rate",
-				"Default_Freq": 50.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x55"
+			"XPL7_PS_REFCLK" : {
+				"Name" : "XPL7_PS_REFCLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-3/set_rate",
+				"Default_Freq" : 50.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x55"
 			},
-			"LPDDR5_C2_OSC_CLK": {
-				"Name": "LPDDR5_C2_OSC_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys-clk-4/set_rate",
-				"Default_Freq": 320.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x59"
+			"LPDDR5_C2_OSC_CLK" : {
+				"Name" : "LPDDR5_C2_OSC_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-4/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x59"
 			},
-			"LPDDR5_C3_C4_OSC_CLK": {
-				"Name": "LPDDR5_C3_C4_OSC_CLK",
-				"Type": "ProXO-XP",
-				"Sysfs_Path": "/sys/devices/platform/sys-clk-5/set_rate",
-				"Default_Freq": 320.0,
-				"Upper_Freq": 2100.0,
-				"Lower_Freq": 15.0,
-				"I2C_Bus": "/dev/i2c-1",
-				"I2C_Address": "0x56"
+			"LPDDR5_C3_C4_OSC_CLK" : {
+				"Name" : "LPDDR5_C3_C4_OSC_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-5/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x56"
 			}
 		},
 		"INA226" : {
@@ -161,7 +161,7 @@
 				"PMBus_VOUT_MODE" : 1,
 				"Page_Select" : -1
 			},
-			"VR_LPD_0V8": {
+			"VR_LPD_0V8" : {
 				"Name" : "VR_LPD_0V8",
 				"Part_Name" : "TPS546B24A",
 				"Maximum_Volt" : -1,
@@ -382,29 +382,29 @@
 				"Page_Select" : -1
 			}
 		},
-		"Temperature": {
-			"Name": "Versal-AIEPG2",
-			"Sensor": "versal-isa-0000"
+		"Temperature" : {
+			"Name" : "Versal-AIEPG2",
+			"Sensor" : "versal-isa-0000"
 		},
-		"GPIO_Group": {
-			"SW10": {
-				"Name": "SW9",
-				"Type": "RW",
-				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+		"GPIO_Group" : {
+			"SW10" : {
+				"Name" : "SW9",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
 						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
 			},
-			"SW10 Readback": {
-				"Name": "SW9 Readback",
-				"Type": "RO",
-				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3_READBACK",
+			"SW10 Readback" : {
+				"Name" : "SW9 Readback",
+				"Type" : "RO",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3_READBACK",
 						"SYSCTLR_VERSAL_MODE2_READBACK",
 						"SYSCTLR_VERSAL_MODE1_READBACK",
 						"SYSCTLR_VERSAL_MODE0_READBACK"]
 			},
-			"SW3": {
-				"Name": "SW11",
-				"Type": "RW",
-				"GPIO_Lines": ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			"SW3" : {
+				"Name" : "SW11",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
 			}
 		},
 		"GPIO" : {

@@ -102,6 +102,21 @@ typedef struct BootModes {
 } BootModes_t;
 
 /*
+ * JTAG Selects
+ */
+typedef struct {
+	char	*Name;
+	int	Value;
+} JTAGSelect_t;
+
+typedef struct JTAGSelects {
+	int	Numbers;
+	int	Current;
+	char	**Select_Lines;
+	JTAGSelect_t	JTAGSelect[ITEMS_MAX];
+} JTAGSelects_t;
+
+/*
  * Clocks
  */
 typedef struct {
@@ -405,6 +420,7 @@ typedef struct Constraints {
 typedef struct {
 	FeatureList_t	*FeatureList;
 	BootModes_t	*BootModes;
+	JTAGSelects_t	*JTAGSelects;
 	Clocks_t	*Clocks;
 	INA226s_t	*INA226s;
 	Power_Domains_t	*Power_Domains;
@@ -521,7 +537,7 @@ int Get_Measured_Clock(char *, char *);
 int Get_Measured_Clock_Vendor(Clock_t *);
 int Get_Silicon_Revision(char *);
 int Get_Temperature(Temperature_t *);
-int JTAG_Op(int);
+int Set_JTAGSelect(char *);
 int Parse_JSON(const char *, Plat_Devs_t *);
 int QSFP_ModuleSelect(SFP_t *, int);
 int Reset_IDT_8A34001(void);

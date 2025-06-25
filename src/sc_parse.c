@@ -16,6 +16,7 @@
 int jsoneq(const char *, jsmntok_t *, const char *);
 int Parse_Feature(const char *, jsmntok_t *, int *, FeatureList_t **);
 int Parse_BootMode(const char *, jsmntok_t *, int *, BootModes_t **);
+int Parse_JTAGSelect(const char *, jsmntok_t *, int *, JTAGSelects_t **);
 int Parse_Clock(const char *, jsmntok_t *, int *, Clocks_t **);
 int Parse_INA226(const char *, jsmntok_t *, int *, INA226s_t **);
 int Parse_PowerDomain(const char *, jsmntok_t *, int *, Power_Domains_t **,
@@ -123,6 +124,11 @@ Parse_JSON(const char *Board_File, Plat_Devs_t *Dev_Parse) {
 		} else if (jsoneq(Json_File, &Tokens[i], "BOOTMODES") == 0) {
 			if (Parse_BootMode(Json_File, Tokens, &i,
 					   &Dev_Parse->BootModes) != 0) {
+				return -1;
+			}
+		} else if (jsoneq(Json_File, &Tokens[i], "JTAGSELECTS") == 0) {
+			if (Parse_JTAGSelect(Json_File, Tokens, &i,
+					   &Dev_Parse->JTAGSelects) != 0) {
 				return -1;
 			}
 		} else if (jsoneq(Json_File, &Tokens[i], "CLOCK") == 0) {
@@ -290,9 +296,68 @@ Parse_BootMode(const char *Json_File, jsmntok_t *Tokens, int *Index,
 				    Tokens[*Index + 1].end - Tokens[*Index + 1].start);
 		(*Boots)->BootMode[Boot_Items].Value = (int)strtol(Value_Str, NULL, 0);
 		free(Value_Str);
-		SC_INFO("Value: %i\n", (*Boots)->BootMode[Boot_Items].Value);
+		SC_INFO("Value: 0x%x\n", (*Boots)->BootMode[Boot_Items].Value);
 
 		Boot_Items++;
+	}
+
+	return 0;
+}
+
+int
+Parse_JTAGSelect(const char *Json_File, jsmntok_t *Tokens, int *Index,
+		 JTAGSelects_t **JTAGs)
+{
+	char *Value_Str;
+	int JTAG_Items = 0;
+
+	SC_INFO("********************* JTAGSELECTS *********************");
+	*JTAGs = (JTAGSelects_t *)malloc(sizeof(JTAGSelects_t));
+
+	*Index += 2;
+	Check_Attribute("Select_Lines", "JTAGSELECTS");
+	int Select_Lines_Qty = Tokens[*Index].size;
+	(*Index)++;
+	SC_INFO("Select Lines:");
+	char **JTAG_Select_Lines = (char **)malloc(Select_Lines_Qty * sizeof(char *));
+	for (int i = 0; i < Select_Lines_Qty; i++) {
+		Value_Str = strndup(Json_File + Tokens[*Index + i].start,
+				    Tokens[*Index + i].end - Tokens[*Index + i].start);
+		Validate_Str_Size(Value_Str, "JTAGSELECTS", "Select_Lines", SYSCMD_MAX);
+		JTAG_Select_Lines[i] = Value_Str;
+		SC_INFO("%s", JTAG_Select_Lines[i]);
+	}
+	(*JTAGs)->Select_Lines = JTAG_Select_Lines;
+
+	*Index += Select_Lines_Qty;
+	Check_Attribute("Selects", "JTAGSELECTS");
+	(*JTAGs)->Numbers = Tokens[*Index].size;
+	Validate_Item_Size((*JTAGs)->Numbers, "JTAGSELECTS", "Selects", ITEMS_MAX);
+	(*Index)--;
+	SC_INFO("Selects:");
+	while (JTAG_Items < (*JTAGs)->Numbers) {
+		*Index += 2;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		Validate_Str_Size(Value_Str, "JTAGSELECTS", "Selects", STRLEN_MAX);
+		(*JTAGs)->JTAGSelect[JTAG_Items].Name = Value_Str;
+		SC_INFO("Name: %s", (*JTAGs)->JTAGSelect[JTAG_Items].Name);
+		Value_Str = strndup(Json_File + Tokens[*Index + 1].start,
+				    Tokens[*Index + 1].end - Tokens[*Index + 1].start);
+		(*JTAGs)->JTAGSelect[JTAG_Items].Value = (int)strtol(Value_Str, NULL, 0);
+		free(Value_Str);
+		SC_INFO("Value: 0x%x\n", (*JTAGs)->JTAGSelect[JTAG_Items].Value);
+		if (strcmp((*JTAGs)->JTAGSelect[JTAG_Items].Name, "FTDI") == 0) {
+			(*JTAGs)->Current = (*JTAGs)->JTAGSelect[JTAG_Items].Value;
+			if ((*JTAGs)->Current != 0x1) {
+				SC_ERR("unexpected JTAG select value for FTDI");
+				return -1;
+			}
+
+			SC_INFO("Default: 0x%x\n", (*JTAGs)->Current);
+		}
+
+		JTAG_Items++;
 	}
 
 	return 0;

@@ -1,128 +1,136 @@
 {
 	"License" : "Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
-	"VRK160": {
-		"FEATURE": {
+	"VRK160" : {
+		"FEATURE" : {
 			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC"]
 		},
-		"BOOTMODES": {
-			"Mode_Lines": ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+		"BOOTMODES" : {
+			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
 				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
-			"Modes": {
-				"JTAG": "0x0",
-				"OSPI": "0x8",
-				"SD": "0xe"
+			"Modes" : {
+				"JTAG" : "0x0",
+				"OSPI" : "0x8",
+				"SD" : "0xe"
 			}
 		},
-		"CLOCK": {
-			"SiT95314_1_CLK": {
-				"Name": "SiT95314_1_CLK",
-				"Type": "SIT95314",
-				"Vendor_Managed": 1,
-				"Default_Design": "VRK160_SiT95314_1",
-				"I2C_Bus": "/dev/i2c-8",
-				"I2C_Address": "0x69",
-				"FPGA_Counter_Reg": ["0x0", "0x0", "0x0", "0x0"]
+		"JTAGSELECTS" : {
+			"Select_Lines" : ["SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S1"],
+			"Selects" : {
+				"SC" : "0x0",
+				"FTDI" : "0x1",
+				"EXT" : "0x2"
+			}
+		},
+		"CLOCK" : {
+			"SiT95314_1_CLK" : {
+				"Name" : "SiT95314_1_CLK",
+				"Type" : "SIT95314",
+				"Vendor_Managed" : 1,
+				"Default_Design" : "VRK160_SiT95314_1",
+				"I2C_Bus" : "/dev/i2c-8",
+				"I2C_Address" : "0x69",
+				"FPGA_Counter_Reg" : ["0x0", "0x0", "0x0", "0x0"]
 			},
-			"SiT95314_2_CLK": {
-				"Name": "SiT95314_2_CLK",
-				"Type": "SIT95314",
-				"Vendor_Managed": 1,
-				"Default_Design": "VRK160_SiT95314_2",
-				"I2C_Bus": "/dev/i2c-7",
-				"I2C_Address": "0x69",
-				"FPGA_Counter_Reg": ["0x0", "0x0", "0x0", "0x0"]
+			"SiT95314_2_CLK" : {
+				"Name" : "SiT95314_2_CLK",
+				"Type" : "SIT95314",
+				"Vendor_Managed" : 1,
+				"Default_Design" : "VRK160_SiT95314_2",
+				"I2C_Bus" : "/dev/i2c-7",
+				"I2C_Address" : "0x69",
+				"FPGA_Counter_Reg" : ["0x0", "0x0", "0x0", "0x0"]
 			}
 		},
-		"Temperature": {
-			"Name": "Versal",
-			"Sensor": "versal-isa-0000"
+		"Temperature" : {
+			"Name" : "Versal",
+			"Sensor" : "versal-isa-0000"
 		},
-		"GPIO_Group": {
-			"SW3": {
-				"Name": "SW3",
-				"Type": "RW",
-				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+		"GPIO_Group" : {
+			"SW3" : {
+				"Name" : "SW3",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
 						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
 			},
-			"SW3 Readback": {
-				"Name": "SW3 Readback",
-				"Type": "RO",
-				"GPIO_Lines": ["SYSCTLR_VERSAL_MODE3_READBACK",
+			"SW3 Readback" : {
+				"Name" : "SW3 Readback",
+				"Type" : "RO",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3_READBACK",
 						"SYSCTLR_VERSAL_MODE2_READBACK",
 						"SYSCTLR_VERSAL_MODE1_READBACK",
 						"SYSCTLR_VERSAL_MODE0_READBACK"]
 			},
-			"SW8": {
-				"Name": "SW8",
-				"Type": "RW",
-				"GPIO_Lines": ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			"SW8" : {
+				"Name" : "SW8",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
 			}
 		},
-		"GPIO": {
-			"SFP_04_TX_FAULT": "SFP_04_TX_FAULT",
-			"SFP_04_RX_LOS": "SFP_04_RX_LOS",
-			"SFP_04_MOD_ABS": "SFP_04_MOD_ABS",
-			"SFP_04_TX_DISABLE": "SFP_04_TX_DISABLE",
-			"SFP_04_RS0": "SFP_04_RS0",
-			"SFP_04_RS1": "SFP_04_RS1",
-			"FMCP1_FMC_PRSNT_M2C_B": "FMCP1_FMC_PRSNT_M2C_B",
-			"FMCP1_FMCP_PRSNT_M2C_B": "FMCP1_FMCP_PRSNT_M2C_B",
-			"PMBUS4_INA_ALERT": "PMBUS4_INA_ALERT",
-			"PMBUS3_INA_ALERT": "PMBUS3_INA_ALERT",
-			"PMBUS2_INA_ALERT": "PMBUS2_INA_ALERT",
-			"PMBUS1_INA_ALERT": "PMBUS1_INA_ALERT",
-			"PMBUS1_NIRQ": "PMBUS_SEQ_NIRQ",
-			"PMBUS1_ALERT": "PMBUS1_ALERT",
-			"QSFP1_MODSELL": "QSFP1_MODSELL",
-			"QSFP1_RESETL": "QSFP1_RESETL",
-			"QSFP1_MODPRSL": "QSFP1_MODPRSL",
-			"QSFP1_INTL": "QSFP1_INTL",
-			"QSFP1_LPMODE": "QSFP1_LPMODE",
-			"SFP_01_TX_FAULT": "SFP_01_TX_FAULT",
-			"SFP_01_RX_LOS": "SFP_01_RX_LOS",
-			"SFP_01_MOD_ABS": "SFP_01_MOD_ABS",
-			"SFP_01_TX_DISABLE": "SFP_01_TX_DISABLE",
-			"SFP_01_RS0": "SFP_01_RS0",
-			"SFP_01_RS1": "SFP_01_RS1",
-			"SFP_02_TX_FAULT": "SFP_02_TX_FAULT",
-			"SFP_02_RX_LOS": "SFP_02_RX_LOS",
-			"SFP_02_MOD_ABS": "SFP_02_MOD_ABS",
-			"SFP_02_TX_DISABLE": "SFP_02_TX_DISABLE",
-			"SFP_02_RS0": "SFP_02_RS0",
-			"SFP_02_RS1": "SFP_02_RS1",
-			"SFP_03_TX_FAULT": "SFP_03_TX_FAULT",
-			"SFP_03_RX_LOS": "SFP_03_RX_LOS",
-			"SFP_03_MOD_ABS": "SFP_03_MOD_ABS",
-			"SFP_03_TX_DISABLE": "SFP_03_TX_DISABLE",
-			"SFP_03_RS0": "SFP_03_RS0",
-			"SFP_03_RS1": "SFP_03_RS1",
-			"SYSCTLR_JTAG_S1": "SYSCTRL_MIO27_JTAG_S1",
-			"SYSCTLR_JTAG_S0": "SYSCTRL_MIO26_JTAG_S0",
-			"SYSCTLR_VERSAL_MODE3": "SYSCTRL_MIO41_DUT_MODE3",
-			"SYSCTLR_VERSAL_MODE2": "SYSCTRL_MIO40_DUT_MODE2",
-			"SYSCTLR_VERSAL_MODE1": "SYSCTRL_MIO39_DUT_MODE1",
-			"SYSCTLR_VERSAL_MODE0": "SYSCTRL_MIO38_DUT_MODE0",
-			"SYSCTLR_VERSAL_MODE3_READBACK_RO": "SYSCTRL_MIO45_MODE3_Rdbk",
-			"SYSCTLR_VERSAL_MODE2_READBACK_RO": "SYSCTRL_MIO44_MODE2_Rdbk",
-			"SYSCTLR_VERSAL_MODE1_READBACK_RO": "SYSCTRL_MIO43_MODE1_Rdbk",
-			"SYSCTLR_VERSAL_MODE0_READBACK_RO": "SYSCTRL_MIO42_MODE0_Rdbk",
-			"SYSCTLR_POR_B_LS": "SYSCTRL_MIO30_DUT_POR",
-			"SYSCTLR_VERSAL_POR_B_READBACK_RO": "SYSCTRL_MIO46_DUT_POR_Rd",
-			"VERSAL_ERROR_OUT_LS_RO": "SYSCTRL_MIO28_DUT_ERR_Rd",
-			"VERSAL_DONE_RO": "SYSCTRL_MIO29_DUT_DONE"
+		"GPIO" : {
+			"SFP_04_TX_FAULT" : "SFP_04_TX_FAULT",
+			"SFP_04_RX_LOS" : "SFP_04_RX_LOS",
+			"SFP_04_MOD_ABS" : "SFP_04_MOD_ABS",
+			"SFP_04_TX_DISABLE" : "SFP_04_TX_DISABLE",
+			"SFP_04_RS0" : "SFP_04_RS0",
+			"SFP_04_RS1" : "SFP_04_RS1",
+			"FMCP1_FMC_PRSNT_M2C_B" : "FMCP1_FMC_PRSNT_M2C_B",
+			"FMCP1_FMCP_PRSNT_M2C_B" : "FMCP1_FMCP_PRSNT_M2C_B",
+			"PMBUS4_INA_ALERT" : "PMBUS4_INA_ALERT",
+			"PMBUS3_INA_ALERT" : "PMBUS3_INA_ALERT",
+			"PMBUS2_INA_ALERT" : "PMBUS2_INA_ALERT",
+			"PMBUS1_INA_ALERT" : "PMBUS1_INA_ALERT",
+			"PMBUS1_NIRQ" : "PMBUS_SEQ_NIRQ",
+			"PMBUS1_ALERT" : "PMBUS1_ALERT",
+			"QSFP1_MODSELL" : "QSFP1_MODSELL",
+			"QSFP1_RESETL" : "QSFP1_RESETL",
+			"QSFP1_MODPRSL" : "QSFP1_MODPRSL",
+			"QSFP1_INTL" : "QSFP1_INTL",
+			"QSFP1_LPMODE" : "QSFP1_LPMODE",
+			"SFP_01_TX_FAULT" : "SFP_01_TX_FAULT",
+			"SFP_01_RX_LOS" : "SFP_01_RX_LOS",
+			"SFP_01_MOD_ABS" : "SFP_01_MOD_ABS",
+			"SFP_01_TX_DISABLE" : "SFP_01_TX_DISABLE",
+			"SFP_01_RS0" : "SFP_01_RS0",
+			"SFP_01_RS1" : "SFP_01_RS1",
+			"SFP_02_TX_FAULT" : "SFP_02_TX_FAULT",
+			"SFP_02_RX_LOS" : "SFP_02_RX_LOS",
+			"SFP_02_MOD_ABS" : "SFP_02_MOD_ABS",
+			"SFP_02_TX_DISABLE" : "SFP_02_TX_DISABLE",
+			"SFP_02_RS0" : "SFP_02_RS0",
+			"SFP_02_RS1" : "SFP_02_RS1",
+			"SFP_03_TX_FAULT" : "SFP_03_TX_FAULT",
+			"SFP_03_RX_LOS" : "SFP_03_RX_LOS",
+			"SFP_03_MOD_ABS" : "SFP_03_MOD_ABS",
+			"SFP_03_TX_DISABLE" : "SFP_03_TX_DISABLE",
+			"SFP_03_RS0" : "SFP_03_RS0",
+			"SFP_03_RS1" : "SFP_03_RS1",
+			"SYSCTLR_JTAG_S1" : "SYSCTRL_MIO27_JTAG_S1",
+			"SYSCTLR_JTAG_S0" : "SYSCTRL_MIO26_JTAG_S0",
+			"SYSCTLR_VERSAL_MODE3" : "SYSCTRL_MIO41_DUT_MODE3",
+			"SYSCTLR_VERSAL_MODE2" : "SYSCTRL_MIO40_DUT_MODE2",
+			"SYSCTLR_VERSAL_MODE1" : "SYSCTRL_MIO39_DUT_MODE1",
+			"SYSCTLR_VERSAL_MODE0" : "SYSCTRL_MIO38_DUT_MODE0",
+			"SYSCTLR_VERSAL_MODE3_READBACK_RO" : "SYSCTRL_MIO45_MODE3_Rdbk",
+			"SYSCTLR_VERSAL_MODE2_READBACK_RO" : "SYSCTRL_MIO44_MODE2_Rdbk",
+			"SYSCTLR_VERSAL_MODE1_READBACK_RO" : "SYSCTRL_MIO43_MODE1_Rdbk",
+			"SYSCTLR_VERSAL_MODE0_READBACK_RO" : "SYSCTRL_MIO42_MODE0_Rdbk",
+			"SYSCTLR_POR_B_LS" : "SYSCTRL_MIO30_DUT_POR",
+			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTRL_MIO46_DUT_POR_Rd",
+			"VERSAL_ERROR_OUT_LS_RO" : "SYSCTRL_MIO28_DUT_ERR_Rd",
+			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE"
 		},
-		"FMCs": {
-			"FMC": {
-				"Name": "FMC",
-				"I2C_Bus": "/dev/i2c-0",
-				"I2C_Address": "0x50",
-				"Presence_Labels": ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
-				"Supported_Volts": [1.2],
-				"Voltage_Regulator": "VADJ_FMC",
-				"Default_Volt": 1.2,
-				"Access_Label": "I2C0_SW_SEL",
-				"Access_Level": 0
+		"FMCs" : {
+			"FMC" : {
+				"Name" : "FMC",
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x50",
+				"Presence_Labels" : ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VADJ_FMC",
+				"Default_Volt" : 1.2,
+				"Access_Label" : "I2C0_SW_SEL",
+				"Access_Level" : 0
 			}
 		}
 	}

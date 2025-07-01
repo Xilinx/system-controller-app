@@ -30,7 +30,7 @@
 				"Default_Design" : "VEK385_SiT95211",
 				"I2C_Bus" : "/dev/i2c-7",
 				"I2C_Address" : "0x69",
-				"FPGA_Counter_Reg" : ["0xB0030000", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0xB0080000", "0x0", "0x0"]
+				"FPGA_Counter_Reg" : ["0xB0000000", "0xB0010000", "0xB0020000", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0xB0030000", "0x0", "0x0"]
 			},
 			"SiT95314_CLK" : {
 				"Name" : "SiT95314_CLK",
@@ -39,7 +39,7 @@
 				"Default_Design" : "VEK385_SiT95314",
 				"I2C_Bus" : "/dev/i2c-8",
 				"I2C_Address" : "0x69",
-				"FPGA_Counter_Reg" : ["0x0", "0x0", "0xB0090000", "0x0"]
+				"FPGA_Counter_Reg" : ["0x0", "0x0", "0xB0040000", "0x0"]
 			}
 		},
 		"VOLTAGE" : {
@@ -422,8 +422,8 @@
 		},
 		"Boot Config" : {
 			"PDI" : "system_wrapper.pdi",
-			"ImageID" : "0x18700000",
-			"UniqueID_Rev0" : "0x94b29979"
+			"ImageID" : "0x18700001",
+			"UniqueID_Rev0" : "0x45398243"
 		},
 		"BITs" : {
 			"BIT_CLOCKS_OUTPUT_TEST" : {

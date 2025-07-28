@@ -655,7 +655,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "versal_bit_download.tcl 0x08"
+						"TCL_File" : "versal_bit_download.tcl 0x4"
 					}
 				}
 			},
@@ -666,7 +666,7 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "versal_bit_download.tcl 0x10"
+						"TCL_File" : "versal_bit_download.tcl 0x5"
 					}
 				}
 			}

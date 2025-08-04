@@ -2501,7 +2501,7 @@ Set_BootMode(BootMode_t *BootMode, int Method)
 
 		if ((BootMode->Value & Value) != BootMode->Value) {
 			SC_ERR("unable to set boot mode to '%s' because "
-			       "SW1 is set to '%s %s %s %s' position",
+			       "boot mode switch is set to '%s %s %s %s' position",
 			       BootMode->Name,
 			       ((Value & 0x8) ? "OFF" : "ON"),
 			       ((Value & 0x4) ? "OFF" : "ON"),

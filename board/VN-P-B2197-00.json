@@ -532,6 +532,27 @@
 			"Name" : "Versal-Net",
 			"Sensor" : "versal-isa-0000"
 		},
+		"GPIO_Group" : {
+			"SW10" : {
+				"Name" : "SW10",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW10 Readback" : {
+				"Name" : "SW10 Readback",
+				"Type" : "RO",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3_READBACK",
+						"SYSCTLR_VERSAL_MODE2_READBACK",
+						"SYSCTLR_VERSAL_MODE1_READBACK",
+						"SYSCTLR_VERSAL_MODE0_READBACK"]
+			},
+			"SW3" : {
+				"Name" : "SW3",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
 		"GPIO" : {
 			"SYSCTLR_VCCINT_EN_OD" : "43 - SYSCTLR_VCCINT_EN",
 			"SYSCTLR_VCC_IO_SOC_EN_OD" : "43 - SYSCTLR_VCC_IO_SOC_EN",

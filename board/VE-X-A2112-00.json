@@ -387,13 +387,13 @@
 			"Sensor" : "versal-isa-0000"
 		},
 		"GPIO_Group" : {
-			"SW10" : {
+			"SW9" : {
 				"Name" : "SW9",
 				"Type" : "RW",
 				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
 						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
 			},
-			"SW10 Readback" : {
+			"SW9 Readback" : {
 				"Name" : "SW9 Readback",
 				"Type" : "RO",
 				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3_READBACK",
@@ -401,7 +401,7 @@
 						"SYSCTLR_VERSAL_MODE1_READBACK",
 						"SYSCTLR_VERSAL_MODE0_READBACK"]
 			},
-			"SW3" : {
+			"SW11" : {
 				"Name" : "SW11",
 				"Type" : "RW",
 				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]

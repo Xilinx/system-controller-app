@@ -1,0 +1,71 @@
+{
+	"License" : "Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
+	"SCU200" : {
+		"FEATURE" : {
+			"List" : ["eeprom", "bootmode", "clock", "gpio"]
+		},
+		"BOOTMODES" : {
+			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+				"SYSCTLR_VERSAL_MODE2"],
+			"Modes" : {
+				"JTAG" : "0x5",
+				"OSPI" : "0x3"
+			}
+		},
+		"JTAGSELECTS" : {
+			"Select_Lines" : ["SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S1"],
+			"Selects" : {
+				"SC" : "0x0",
+				"FTDI" : "0x1",
+				"EXT" : "0x2"
+			}
+		},
+		"CLOCK" : {
+			"SiT95211_CLK" : {
+				"Name" : "SiT95211_CLK",
+				"Type" : "SIT95211",
+				"Vendor_Managed" : 1,
+				"Default_Design" : "SCU200_SiT95211",
+				"I2C_Bus" : "/dev/i2c-3",
+				"I2C_Address" : "0x69"
+			}
+		},
+		"GPIO_Group" : {
+			"SW1" : {
+				"Name" : "SW1",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1",
+						"SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW1 Readback" : {
+				"Name" : "SW1 Readback",
+				"Type" : "RO",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE2_READBACK",
+						"SYSCTLR_VERSAL_MODE1_READBACK",
+						"SYSCTLR_VERSAL_MODE0_READBACK"]
+			},
+			"SW2" : {
+				"Name" : "SW2",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
+		"GPIO" : {
+			"I2C0_SW_SEL" : "SYSCTRL_MIO65_I2C0_SW_SEL",
+			"SYSCTLR_JTAG_S1" : "SYSCTRL_MIO27_JTAG_S1",
+			"SYSCTLR_JTAG_S0" : "SYSCTRL_MIO26_JTAG_S0",
+			"SYSCTLR_VERSAL_MODE2" : "SYSCTRL_MIO40_DUT_MODE2",
+			"SYSCTLR_VERSAL_MODE1" : "SYSCTRL_MIO39_DUT_MODE1",
+			"SYSCTLR_VERSAL_MODE0" : "SYSCTRL_MIO38_DUT_MODE0",
+			"SYSCTLR_VERSAL_MODE2_READBACK_RO" : "SYSCTRL_MIO44_MODE2_RB",
+			"SYSCTLR_VERSAL_MODE1_READBACK_RO" : "SYSCTRL_MIO43_MODE1_RB",
+			"SYSCTLR_VERSAL_MODE0_READBACK_RO" : "SYSCTRL_MIO42_MODE0_RB",
+			"SYSCTLR_POR_B_LS" : "SYSCTRL_MIO30_DUT_PROG_B",
+			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTRL_MIO46_DUT_PROG_RB",
+			"VERSAL_ERROR_OUT_LS_RO" : "SYSCTRL_MIO28_DUT_INIT_RB",
+			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE"
+		}
+	}
+}

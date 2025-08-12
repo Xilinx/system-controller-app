@@ -54,6 +54,7 @@
 int Client_FD;
 char Sock_OutBuffer[SOCKBUF_MAX];
 char Board_Name[LSTRLEN_MAX];
+char Board_Revision[LSTRLEN_MAX];
 char Silicon_Revision[STRLEN_MAX];
 extern Plat_Devs_t *Plat_Devs;
 
@@ -332,7 +333,7 @@ main()
 	SC_INFO("Commit:    %s", GIT_COMMIT);
 #endif
 	/* Identify the board */
-	if (Board_Identification(Board_Name) != 0) {
+	if (Board_Identification(Board_Name, Board_Revision) != 0) {
 		goto Out;
 	}
 
@@ -689,7 +690,7 @@ int
 Board_Ops(void)
 {
 	if (Board_Name[0] == 0) {
-		if (Board_Identification(Board_Name) != 0) {
+		if (Board_Identification(Board_Name, Board_Revision) != 0) {
 			return -1;
 		}
 	}

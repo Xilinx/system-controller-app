@@ -513,7 +513,7 @@ char *Appfile(char *);
 int Access_IO_Exp(IO_Exp_t *, int, int, unsigned int *);
 int Access_Regulator(Voltage_t *, float *, int);
 int Assert_Reset(void *, void *);
-int Board_Identification(char *);
+int Board_Identification(char *, char *);
 int Check_Config_File(char *, char *, int *);
 int Clocks_Check(void *, void *);
 int DDRMC_Test(void *, void *);

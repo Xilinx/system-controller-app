@@ -23,6 +23,7 @@ Plat_Devs_t *Plat_Devs;
 
 char SC_APP_File[SYSCMD_MAX];
 extern char Board_Name[];
+extern char Board_Revision[];
 extern char Silicon_Revision[];
 
 char *
@@ -43,7 +44,7 @@ Appfile(char *Filename)
 }
 
 static int
-Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
+Get_Product_Info(OnBoard_EEPROM_t *EEPROM, char *Product_Name, char *Product_Revision)
 {
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
@@ -59,6 +60,11 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 		return -1;
 	}
 
+	/*
+	 * NOTE - if we define 'Board' variable in CONFIGFILE, we are skipping access
+	 * to EEPROM.  Therefore, there is no board revision information available in
+	 * such an invocation.
+	 */
 	if (Found) {
 		(void) strcpy(Product_Name, Out_Buffer);
 		return 0;
@@ -83,6 +89,11 @@ Get_Product_Name(OnBoard_EEPROM_t *EEPROM, char *Product_Name)
 	Length = (In_Buffer[Offset] & 0x3F);
 	snprintf(Product_Name, Length + 1, "%s", &In_Buffer[Offset + 1]);
 	SC_INFO("Product Name: %s", Product_Name);
+
+	Offset = 0x43;
+	Length = (In_Buffer[Offset] & 0x3F);
+	snprintf(Product_Revision, Length + 1, "%s", &In_Buffer[Offset + 1]);
+	SC_INFO("Product Revision: %s", Product_Revision);
 
 	return 0;
 }
@@ -121,7 +132,7 @@ OnBoard_EEPROM_t OnBoard_EEPROM = {
 };
 
 int
-Board_Identification(char *Board_Name)
+Board_Identification(char *Board_Name, char *Board_Revision)
 {
 	char Board_File[SYSCMD_MAX];
 	char Board_Path[LSTRLEN_MAX];
@@ -134,7 +145,7 @@ Board_Identification(char *Board_Name)
 		return -1;
 	}
 
-	if (Get_Product_Name(&OnBoard_EEPROM, Board_Name) != 0) {
+	if (Get_Product_Info(&OnBoard_EEPROM, Board_Name, Board_Revision) != 0) {
 		SC_ERR("failed to identify the board");
 		return -1;
 	}
@@ -180,20 +191,29 @@ Identify_PDI(char *Revision)
 		return 0;
 	}
 
-	/* Create a symbolic link to default PDI based on silicon revision */
+	/* First, check if there is a unique PDI for the current revision of the board */
 	if (strcmp(Revision, "ES1") == 0) {
-		(void) sprintf(PDI_File, "%s%s/es1_%s", BIT_PATH, Board_Name, DEFAULT_PDI);
+		(void) sprintf(PDI_File, "%s%s/%s_es1_%s", BIT_PATH, Board_Name, Board_Revision, DEFAULT_PDI);
 	} else if (strcmp(Revision, "PROD") == 0) {
-		(void) sprintf(PDI_File, "%s%s/%s", BIT_PATH, Board_Name, DEFAULT_PDI);
+		(void) sprintf(PDI_File, "%s%s/%s_%s", BIT_PATH, Board_Name, Board_Revision, DEFAULT_PDI);
 	} else {
 		SC_ERR("unsupported silicon revision");
 		return -1;
 	}
 
-	/* If there is no default PDI file for this board, return */
+	/* If there is no revision-based PDI found, try to locate the common default PDI */
 	if (access(PDI_File, F_OK) == -1) {
-		SC_INFO("PDI file '%s' does not exist", PDI_File);
-		return 0;
+		if (strcmp(Revision, "ES1") == 0) {
+			(void) sprintf(PDI_File, "%s%s/es1_%s", BIT_PATH, Board_Name, DEFAULT_PDI);
+		} else {
+			(void) sprintf(PDI_File, "%s%s/%s", BIT_PATH, Board_Name, DEFAULT_PDI);
+		}
+
+		/* If there is no common default PDI found for this board, return */
+		if (access(PDI_File, F_OK) == -1) {
+			SC_INFO("PDI file '%s' does not exist", PDI_File);
+			return 0;
+		}
 	}
 
 	/* If '/data' directory doesn't exist, create it */

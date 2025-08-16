@@ -2331,7 +2331,7 @@ XSDB_Op(const char *TCL_File, const char *TCL_Args, char *Output, int Length)
 
 	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
 		SC_INFO("XSDB Output: %s", Buffer);
-		(void) strncpy(Output, Buffer, Length);
+		(void) strncpy(Output, Buffer, (Length -1));
 	}
 
 	if (pclose(FP) != 0) {

@@ -116,7 +116,7 @@ XSDB_BIT(void *Arg1, void *Arg2)
 {
 	BIT_t *BIT_p = Arg1;
 	int Level = *(int *)Arg2;
-	char Output[STRLEN_MAX] = { 0 };
+	char Output[LSTRLEN_MAX] = { 0 };
 	char TCL_File[STRLEN_MAX];
 	char TCL_Args[STRLEN_MAX] = { 0 };
 	char TclCmd[STRLEN_MAX]; /* TCL file and or argument with space delimter */
@@ -188,7 +188,7 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	}
 
 	if (!BIT_p->Manual) {
-		(void) sprintf(Result, "%s: %s", BIT_p->Name, strtok(Output, "\n"));
+		(void) snprintf(Result, sizeof(Result), "%s: %s", BIT_p->Name, strtok(Output, "\n"));
 		Record_BIT_Log(Result);
 	}
 

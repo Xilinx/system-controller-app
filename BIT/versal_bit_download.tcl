@@ -71,6 +71,7 @@ if {$action == 0 || $action == 2} {
 	}
 
 	# Check test passed or failed
+	puts ""
 	if {$::stat == 0x80000000} {
 		puts "PASS"
 	} else {

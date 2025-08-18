@@ -680,6 +680,11 @@ Access_IO_Exp(IO_Exp_t *IO_Exp, int Op, int Offset, unsigned int *Data)
 	char Out_Buffer[STRLEN_MAX];
 	int Ret = 0;
 
+	if (IO_Exp == NULL) {
+		SC_ERR("IO expander is not defined");
+		return -1;
+	}
+
 	if (Op == 1 && *Data > ((1 << IO_Exp->Numbers) - 1)) {
 		SC_ERR("invalid data, valid value is between 0 and %#x",
 		       ((1 << IO_Exp->Numbers) - 1));

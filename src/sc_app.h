@@ -23,6 +23,7 @@
 #define STRLEN_MAX	64
 #define LSTRLEN_MAX	128
 #define XLSTRLEN_MAX	256
+#define XLITEMS_MAX	256
 #define XXLSTRLEN_MAX	512
 #define SYSCMD_MAX	1024
 #define SOCKBUF_MAX	(4 * SYSCMD_MAX)
@@ -368,7 +369,7 @@ typedef struct {
 
 typedef struct GPIOs {
 	int		Numbers;
-	GPIO_t		GPIO[LITEMS_MAX];
+	GPIO_t		GPIO[XLITEMS_MAX];
 } GPIOs_t;
 
 /*

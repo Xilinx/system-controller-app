@@ -901,7 +901,7 @@ Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs
 
 	(*Index)++;
 	(*GPIOs)->Numbers = Tokens[*Index].size;
-	Validate_Item_Size((*GPIOs)->Numbers, "GPIO", "GPIO", LITEMS_MAX);
+	Validate_Item_Size((*GPIOs)->Numbers, "GPIO", "GPIO", XLITEMS_MAX);
 	SC_INFO("Number of GPIO: %i", (*GPIOs)->Numbers);
 	while (Items < (*GPIOs)->Numbers) {
 		(*Index)++;

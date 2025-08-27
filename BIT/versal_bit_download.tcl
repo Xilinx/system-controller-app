@@ -13,16 +13,17 @@ set PGG3 0xf111005C
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
 versal_connect
-# XXX- need to revisit this workaround when full labtools support is available for T50.
-if {[string length [targets -nocase -filter {name =~ "*A78*"}]] != 0} {
-    rst -system
-}
 
 set board [lindex $argv 0]
 set testBitIdx [lindex $argv 3]
 set action [expr {$testBitIdx >> 8} & 0xFF]
 
 if {$action == 0 || $action == 1} {
+	# XXX- need to revisit this workaround when full labtools support is available for T50.
+	if {[string length [targets -nocase -filter {name =~ "*A78*"}]] != 0} {
+		rst -system
+	}
+
 	# Download the default PDI
 	load_default_pdi [lindex $argv 1] [lindex $argv 2]
 

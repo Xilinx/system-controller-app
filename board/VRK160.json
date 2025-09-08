@@ -30,7 +30,7 @@
 				"Default_Design" : "VRK160_SiT95314_1",
 				"I2C_Bus" : "/dev/i2c-8",
 				"I2C_Address" : "0x69",
-				"FPGA_Counter_Reg" : ["0x0", "0x0", "0x0", "0x0"]
+				"FPGA_Counter_Reg" : ["0x0", "0x0", "0xA4010000", "0xA40A0000"]
 			},
 			"SiT95314_2_CLK" : {
 				"Name" : "SiT95314_2_CLK",
@@ -39,7 +39,7 @@
 				"Default_Design" : "VRK160_SiT95314_2",
 				"I2C_Bus" : "/dev/i2c-7",
 				"I2C_Address" : "0x69",
-				"FPGA_Counter_Reg" : ["0x0", "0x0", "0x0", "0x0"]
+				"FPGA_Counter_Reg" : ["0xA4080000", "0x0", "0xA4090000", "0xA4050000"]
 			}
 		},
 		"Temperature" : {
@@ -131,6 +131,114 @@
 				"Default_Volt" : 1.2,
 				"Access_Label" : "I2C0_SW_SEL",
 				"Access_Level" : 0
+			}
+		},
+		"Boot Config" : {
+			"PDI" : "system_wrapper.pdi",
+			"ImageID" : "0x18700000",
+			"UniqueID_Rev0" : "0x584c4e58"
+		},
+		"BITs" : {
+			"BIT_IDCODE_VERIFY" : {
+				"Name" : "IDCODE Verify",
+				"Description" : "This test verifies Versal silicon device ID code. The test failure means it is not a compatible device.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "idcode_verify.tcl 0x01"
+					}
+				}
+			},
+			"BIT_EFUSE_VERIFY" : {
+				"Name" : "EFUSE Verify",
+				"Description" : "This test verifies the eFuse data matches the factory defaults. The test failure might be due to a non-compatible device or some eFuses have been set.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "read_efuse.tcl"
+					}
+				}
+			},
+			"BIT_CLOCKS_OUTPUT_TEST" : {
+				"Name" : "Clocks Output Test",
+				"Description" : "This test verifies the clock output frequencies by measuring the clocks at the Versal with clock counters. The test will fail in case the clock settings are different than default values.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x1"
+					}
+				}
+			},
+			"BIT_DDRMC_1_CAL_TEST" : {
+				"Name" : "DDRMC_1 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 1 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_1_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_2_CAL_TEST" : {
+				"Name" : "DDRMC_2 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 2 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_2_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_5_CAL_TEST" : {
+				"Name" : "DDRMC_5 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 5 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_5_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_6_CAL_TEST" : {
+				"Name" : "DDRMC_6 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 6 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_6_Test"
+					}
+				}
+			},
+			"BIT_OSPI_TEST" : {
+				"Name" : "OSPI Test",
+				"Description" : "This test verifies OSPI Flash read/write (non-destructive). The test operation consists of save first sector (4K byte) data, erase, write random data, read, compare and restore the original data. Warning!! This might corrupt OSPI memory in case the test fails.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x5"
+					}
+				}
+			},
+			"BIT_PL_UART_TEST" : {
+				"Name" : "PL UART Test",
+				"Description" : "This test verifies PL UART and requires manual verification. The test performs by printing Hello world to PL UART port. It requires USB/jtag connection connected to a terminal application.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x106",
+						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200-8N1\n2- Click 'OK' when this is done.\n3- Image location=264,526, size=43,35.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x206",
+						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' on the console.\n3- Image location=264,526, size=43,35.\n"
+					}
+				}
 			}
 		}
 	}

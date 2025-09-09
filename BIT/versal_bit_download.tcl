@@ -12,13 +12,14 @@ set PGG3 0xf111005C
 
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
-versal_connect
-
 set board [lindex $argv 0]
 set testBitIdx [lindex $argv 3]
 set action [expr {$testBitIdx >> 8} & 0xFF]
 
 if {$action == 0 || $action == 1} {
+	# Select 'Versal' target to load the default PDI
+	versal_connect
+
 	# XXX- need to revisit this workaround when full labtools support is available for T50.
 	if {[string length [targets -nocase -filter {name =~ "*A78*"}]] != 0} {
 		rst -system
@@ -27,6 +28,7 @@ if {$action == 0 || $action == 1} {
 	# Download the default PDI
 	load_default_pdi [lindex $argv 1] [lindex $argv 2]
 
+	# Select APU target to reset it, and set jtagterminal
 	apu_connect
 
 	# Download the ELF file to run it on APU
@@ -41,10 +43,14 @@ if {$action == 0 || $action == 1} {
 }
 
 if {$action == 0 || $action == 2} {
+	# Select APU target to set jtagterminal
 	apu_connect
 
 	set sock [jtagterminal -start -socket]
 	exec nc localhost $sock &
+
+	# Select 'Versal' target to access PGG1 and PPG3
+	versal_connect
 
 	# Set BIT test index
 	mwr $PGG1 [expr {1 << (($testBitIdx & 0xff) - 1)}]

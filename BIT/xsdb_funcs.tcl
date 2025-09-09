@@ -222,9 +222,10 @@ proc versal_connect {} {
 
 # Connect to APU target
 proc apu_connect {} {
-	if {[catch {targets -set -nocase -filter {name =~ "*A72*0"}} err]} {
-		if {[catch {targets -set -nocase -filter {name =~ "*A78*#0.0"}} err]} {
-			puts "Failed to set target"
-		}
-	}
+    jtag_ready
+    if {[catch {targets -set -nocase -filter {name =~ "*A72*0"}} err]} {
+        if {[catch {targets -set -nocase -filter {name =~ "*A78*#0.0"}} err]} {
+            puts "Failed to set target"
+        }
+    }
 }

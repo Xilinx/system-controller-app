@@ -212,6 +212,17 @@
 					}
 				}
 			},
+			"BIT_DRAM_MEM_TEST" : {
+				"Name" : "DRAM Mem Test",
+				"Description" : "This test verifies DRAM access by 8MB write, read and compare with cache on/off. The patterns used are 0s, 1's, 0xAAAA5555, row, col, bank.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x4"
+					}
+				}
+			},
 			"BIT_OSPI_TEST" : {
 				"Name" : "OSPI Test",
 				"Description" : "This test verifies OSPI Flash read/write (non-destructive). The test operation consists of save first sector (4K byte) data, erase, write random data, read, compare and restore the original data. Warning!! This might corrupt OSPI memory in case the test fails.",

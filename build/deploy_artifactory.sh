@@ -22,7 +22,6 @@ RELEASE="2024.2"
 BASE_URL="system-controller/sc_app_bsp/$RELEASE"
 
 INTERNAL=( \
-	"VE-P-A1225-00" \
 	"VE-P-A2112-00" \
 	"VE-X-A2112-00" \
 	"VN-P-B2197-00" \

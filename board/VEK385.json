@@ -423,9 +423,31 @@
 		"Boot Config" : {
 			"PDI" : "system_wrapper.pdi",
 			"ImageID" : "0x18700001",
-			"UniqueID_Rev0" : "0x45398243"
+			"UniqueID_Rev0" : "0x1389d215"
 		},
 		"BITs" : {
+			"BIT_IDCODE_VERIFY" : {
+				"Name" : "IDCODE Verify",
+				"Description" : "This test verifies Versal silicon device ID code. The test failure means it is not a compatible device.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "idcode_verify.tcl 0x01"
+					}
+				}
+			},
+			"BIT_EFUSE_VERIFY" : {
+				"Name" : "EFUSE Verify",
+				"Description" : "This test verifies the eFuse data matches the factory defaults. The test failure might be due to a non-compatible device or some eFuses have been set.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "read_efuse.tcl"
+					}
+				}
+			},
 			"BIT_CLOCKS_OUTPUT_TEST" : {
 				"Name" : "Clocks Output Test",
 				"Description" : "This test verifies the clock output frequencies by measuring the clocks at the Versal with clock counters. The test will fail in case the clock settings are different than default values.",
@@ -495,6 +517,17 @@
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "DDRMC_5_Test"
+					}
+				}
+			},
+			"BIT_DRAM_MEM_TEST" : {
+				"Name" : "DRAM Mem Test",
+				"Description" : "This test verifies DRAM access by 8MB write, read and compare with cache on/off. The patterns used are 0s, 1's, 0xAAAA5555, row, col, bank.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x4"
 					}
 				}
 			},

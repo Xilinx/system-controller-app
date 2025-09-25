@@ -2384,7 +2384,8 @@ Get_Temperature(Temperature_t *Temperature)
 			return -1;
 		}
 
-		if (strstr(Buffer, "temp1") == NULL) {
+		if ((strstr(Buffer, "temp:") == NULL) &&
+		    (strstr(Buffer, "temp1:") == NULL)) {
 			continue;
 		}
 

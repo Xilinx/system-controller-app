@@ -3,7 +3,7 @@
 
 	"VRK160" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC"]
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC", "BIT"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",

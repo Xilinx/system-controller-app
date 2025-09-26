@@ -20,10 +20,10 @@
 #define LEVELS_MAX	12
 #define ITEMS_MAX	24
 #define LITEMS_MAX	128
+#define XLITEMS_MAX	256
 #define STRLEN_MAX	64
 #define LSTRLEN_MAX	128
 #define XLSTRLEN_MAX	256
-#define XLITEMS_MAX	256
 #define XXLSTRLEN_MAX	512
 #define SYSCMD_MAX	1024
 #define SOCKBUF_MAX	(4 * SYSCMD_MAX)
@@ -313,6 +313,7 @@ typedef struct {
 	char	*ImageID;
 	char	*UniqueID_Rev0;
 	char	*UniqueID_Rev1;
+	char	UniqueID_InEffect[ITEMS_MAX];
 } Default_PDI_t;
 
 /*

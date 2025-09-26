@@ -179,6 +179,54 @@ Board_Identification(char *Board_Name, char *Board_Revision)
 }
 
 static int
+Identify_UniqueID(char *Silicon_Rev, char *Board_Rev)
+{
+	Default_PDI_t *Default_PDI;
+	char *UniqueID, *SP;
+	char Delimiter[STRLEN_MAX];
+
+	Default_PDI = Plat_Devs->Default_PDI;
+	if (Default_PDI == NULL) {
+		SC_ERR("no default PDI is defined");
+		return -1;
+	}
+
+	if (strcmp(Silicon_Rev, "ES1") == 0) {
+		UniqueID = Default_PDI->UniqueID_Rev0;
+	} else {
+		UniqueID = Default_PDI->UniqueID_Rev1;
+	}
+
+	/*
+	 * If unique id data read from JSON file is not of '<board revision>:<unique id>'
+	 * format, then there is only one unique id and no further processing is needed.
+	 */
+	if (strstr(UniqueID, ":") == NULL) {
+		(void) strncpy(Default_PDI->UniqueID_InEffect, UniqueID, (ITEMS_MAX - 1));
+		SC_INFO("UniqueID_InEffect: %s", Default_PDI->UniqueID_InEffect);
+		return 0;
+	}
+
+	(void) sprintf(Delimiter, "%s:", Board_Rev);
+	if ((SP = strstr(UniqueID, Delimiter)) != NULL) {
+		(void) strtok(SP, ":");
+		(void) strncpy(Default_PDI->UniqueID_InEffect, strtok(NULL, " "), (ITEMS_MAX - 1));
+		SC_INFO("UniqueID_InEffect: %s", Default_PDI->UniqueID_InEffect);
+		return 0;
+	}
+
+	/*
+	 * If the unique id data is of '<board revision>:<unique id>' format but none
+	 * of them matches the revision of running board, therefore, reference the last
+	 * one that does not have '<board revision>:' prefix.
+	 */
+	SP = strrchr(UniqueID, ' ');
+	(void) strncpy(Default_PDI->UniqueID_InEffect, SP, (ITEMS_MAX - 1));
+	SC_INFO("UniqueID_InEffect: %s", Default_PDI->UniqueID_InEffect);
+	return 0;
+}
+
+static int
 Identify_PDI(char *Revision)
 {
 	char Buffer[XLSTRLEN_MAX];
@@ -236,6 +284,11 @@ Identify_PDI(char *Revision)
 	(void) sprintf(Buffer, "%s%s", CUSTOM_PDIS_PATH, "default.pdi");
 	if (symlink(PDI_File, Buffer) == -1) {
 		SC_ERR("failed to create symbolic link to default PDI");
+		return -1;
+	}
+
+	if (Identify_UniqueID(Revision, Board_Revision) != 0) {
+		SC_ERR("failed to identify PDI's unique id");
 		return -1;
 	}
 
@@ -1606,15 +1659,16 @@ Get_Measured_Clock(char *Counter_Reg, char *Label)
 		return -1;
 	}
 
-	ImageID = Default_PDI->ImageID;
+	/* Silicon revision is needed to identify PDI's unique id */
 	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
 		return -1;
 	}
 
-	if (strcmp(Silicon_Revision, "ES1") == 0) {
-		UniqueID = Default_PDI->UniqueID_Rev0;
-	} else {
-		UniqueID = Default_PDI->UniqueID_Rev1;
+	ImageID = Default_PDI->ImageID;
+	UniqueID = Default_PDI->UniqueID_InEffect;
+	if (strcmp(UniqueID, "") == 0) {
+		SC_ERR("failed to identify PDI's unique id");
+		return -1;
 	}
 
 	(void) sprintf(TCL_Path, "%s%s", SCRIPT_PATH, TCL_CMD_TCL);

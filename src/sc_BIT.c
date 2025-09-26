@@ -147,6 +147,11 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	(void) sprintf(TCL_File, "%s%s", BIT_PATH, TclFile);
 	TestBitIndex = strtok(NULL, " ");
 
+	/* Silicon revision is needed to identify PDI's unique id */
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
+
 	Default_PDI = Plat_Devs->Default_PDI;
 	if (Default_PDI == NULL) {
 		SC_ERR("no default PDI is defined");
@@ -154,14 +159,10 @@ XSDB_BIT(void *Arg1, void *Arg2)
 	}
 
 	ImageID = Default_PDI->ImageID;
-	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+	UniqueID = Default_PDI->UniqueID_InEffect;
+	if (strcmp(UniqueID, "") == 0) {
+		SC_ERR("failed to identify PDI's unique id");
 		return -1;
-	}
-
-	if (strcmp(Silicon_Revision, "ES1") == 0) {
-		UniqueID = Default_PDI->UniqueID_Rev0;
-	} else {
-		UniqueID = Default_PDI->UniqueID_Rev1;
 	}
 
 	if (strcmp(TclFile, BIT_LOAD_TCL) == 0) {

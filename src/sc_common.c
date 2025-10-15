@@ -232,6 +232,11 @@ Identify_PDI(char *Revision)
 	char Buffer[XLSTRLEN_MAX];
 	char PDI_File[LSTRLEN_MAX];
 
+	if (Identify_UniqueID(Revision, Board_Revision) != 0) {
+		SC_ERR("failed to identify PDI's unique id");
+		return -1;
+	}
+
 	/* If a symbolic link already exists to default PDI, return */
 	(void) sprintf(Buffer, "%s%s", CUSTOM_PDIS_PATH, "default.pdi");
 	if (access(Buffer, F_OK) == 0) {
@@ -284,11 +289,6 @@ Identify_PDI(char *Revision)
 	(void) sprintf(Buffer, "%s%s", CUSTOM_PDIS_PATH, "default.pdi");
 	if (symlink(PDI_File, Buffer) == -1) {
 		SC_ERR("failed to create symbolic link to default PDI");
-		return -1;
-	}
-
-	if (Identify_UniqueID(Revision, Board_Revision) != 0) {
-		SC_ERR("failed to identify PDI's unique id");
 		return -1;
 	}
 

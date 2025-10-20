@@ -423,7 +423,7 @@
 		"Boot Config" : {
 			"PDI" : "system_wrapper.pdi",
 			"ImageID" : "0x18700001",
-			"UniqueID_Rev0" : "A01:0x45398243 A02:0x45398243 0x1389d215"
+			"UniqueID_Rev0" : "A01:0xe37d7196 A02:0xe37d7196 0x1389d215"
 		},
 		"BITs" : {
 			"BIT_IDCODE_VERIFY" : {
@@ -542,6 +542,23 @@
 					}
 				}
 			},
+			"BIT_PL_UART_TEST" : {
+				"Name" : "PL UART Test",
+				"Description" : "This test verifies PL UART and requires manual verification. The test performs by printing Hello world to PL UART port. It requires USB/jtag connection connected to a terminal application.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x106",
+						"Instruction" : "\n1- Click on 'HOME >> VERSAL DEVICE CONTROL >> Versal UART Connection >> PL UART 0: Connect' and another browser tab will open connecting to PL UART 0 console.\n2- After clicking 'OK' go to other tab to view console output.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x206",
+						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' on the console.\n"
+					}
+				}
+			},
 			"BIT_LEDS_TEST" : {
 				"Name" : "LEDs Test",
 				"Description" : "This test verifies board LEDs (DS4-DS7). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",
@@ -550,7 +567,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x107",
-						"Instruction" : "\n1- Look for LEDs (DS4-DS7) on the board.\n2- After clicking 'Ok' observe LEDs blinking, then turn on/off in sequence.\n3- Click 'OK' when you are ready.\n4- Image location=1972,909, size=63,32.\n"
+						"Instruction" : "\n1- Look for LEDs (DS4-DS7) on the board.\n2- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n3- Click 'OK' when you are ready.\n4- Image location=1972,909, size=63,32.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -567,7 +584,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x108",
-						"Instruction" : "\n1- Look for Push Buttons SW6 and SW7 on the board \n2- After clicking 'Ok' press Push Buttons SW7, followed by SW6, and followed by any button (SW6 or SW7). \n3- Click 'OK' when ready.\n4- Image location=1940,1169, size=77,60.\n5- Image location=1616,1728, size=58,81.\n"
+						"Instruction" : "\n1- Look for Push Buttons SW6 and SW7 on the board \n2- After clicking 'OK' press Push Buttons SW7, followed by SW6, and followed by any button (SW6 or SW7). \n3- Click 'OK' when ready.\n4- Image location=1940,1169, size=77,60.\n5- Image location=1616,1728, size=58,81.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -584,7 +601,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x109",
-						"Instruction" : "\n1- Look for DIP switches (SW5) on the board\n2- After clicking 'Ok' turn On and then turn Off DIP Switches (SW6) \n3- Click 'OK' when you are ready.\n4- Image location=2047,1510, size=99,113.\n"
+						"Instruction" : "\n1- Look for DIP switches (SW5) on the board\n2- After clicking 'OK' turn On and then turn Off DIP Switches (SW6) \n3- Click 'OK' when you are ready.\n4- Image location=2047,1510, size=99,113.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",

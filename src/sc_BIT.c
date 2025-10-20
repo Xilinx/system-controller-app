@@ -450,6 +450,11 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 
 	DDRMC = atoi(BIT_p->Level[0].Arg);
 
+	/* Silicon revision is needed to identify PDI's unique id */
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
+
 	Default_PDI = Plat_Devs->Default_PDI;
 	if (Default_PDI == NULL) {
 		SC_ERR("no default PDI is defined");
@@ -457,14 +462,10 @@ DDRMC_Test(void *Arg1, __attribute__((unused)) void *Arg2)
 	}
 
 	ImageID = Default_PDI->ImageID;
-        if (Get_Silicon_Revision(Silicon_Revision) != 0) {
-                return -1;
-        }
-
-	if (strcmp(Silicon_Revision, "ES1") == 0) {
-		UniqueID = Default_PDI->UniqueID_Rev0;
-	} else {
-		UniqueID = Default_PDI->UniqueID_Rev1;
+	UniqueID = Default_PDI->UniqueID_InEffect;
+	if (strcmp(UniqueID, "") == 0) {
+		SC_ERR("failed to identify PDI's unique id");
+		return -1;
 	}
 
 	(void) Set_JTAGSelect("SC");

@@ -182,8 +182,8 @@ static int
 Identify_UniqueID(char *Silicon_Rev, char *Board_Rev)
 {
 	Default_PDI_t *Default_PDI;
-	char *UniqueID, *SP;
-	char Delimiter[STRLEN_MAX];
+	char *SP;
+	char UniqueID[STRLEN_MAX], Delimiter[STRLEN_MAX];
 
 	Default_PDI = Plat_Devs->Default_PDI;
 	if (Default_PDI == NULL) {
@@ -192,9 +192,9 @@ Identify_UniqueID(char *Silicon_Rev, char *Board_Rev)
 	}
 
 	if (strcmp(Silicon_Rev, "ES1") == 0) {
-		UniqueID = Default_PDI->UniqueID_Rev0;
+		(void) snprintf(UniqueID, STRLEN_MAX, "%s", Default_PDI->UniqueID_Rev0);
 	} else {
-		UniqueID = Default_PDI->UniqueID_Rev1;
+		(void) snprintf(UniqueID, STRLEN_MAX, "%s", Default_PDI->UniqueID_Rev1);
 	}
 
 	/*
@@ -202,7 +202,8 @@ Identify_UniqueID(char *Silicon_Rev, char *Board_Rev)
 	 * format, then there is only one unique id and no further processing is needed.
 	 */
 	if (strstr(UniqueID, ":") == NULL) {
-		(void) strncpy(Default_PDI->UniqueID_InEffect, UniqueID, (ITEMS_MAX - 1));
+		(void) strncpy(Default_PDI->UniqueID_InEffect, UniqueID, (ITEMS_MAX - 2));
+		Default_PDI->UniqueID_InEffect[ITEMS_MAX - 1] = '\0';
 		SC_INFO("UniqueID_InEffect: %s", Default_PDI->UniqueID_InEffect);
 		return 0;
 	}
@@ -210,7 +211,7 @@ Identify_UniqueID(char *Silicon_Rev, char *Board_Rev)
 	(void) sprintf(Delimiter, "%s:", Board_Rev);
 	if ((SP = strstr(UniqueID, Delimiter)) != NULL) {
 		(void) strtok(SP, ":");
-		(void) strncpy(Default_PDI->UniqueID_InEffect, strtok(NULL, " "), (ITEMS_MAX - 1));
+		(void) snprintf(Default_PDI->UniqueID_InEffect, ITEMS_MAX, "%s", strtok(NULL, " "));
 		SC_INFO("UniqueID_InEffect: %s", Default_PDI->UniqueID_InEffect);
 		return 0;
 	}
@@ -221,7 +222,7 @@ Identify_UniqueID(char *Silicon_Rev, char *Board_Rev)
 	 * one that does not have '<board revision>:' prefix.
 	 */
 	SP = strrchr(UniqueID, ' ');
-	(void) strncpy(Default_PDI->UniqueID_InEffect, SP, (ITEMS_MAX - 1));
+	(void) snprintf(Default_PDI->UniqueID_InEffect, ITEMS_MAX, "%s", SP);
 	SC_INFO("UniqueID_InEffect: %s", Default_PDI->UniqueID_InEffect);
 	return 0;
 }

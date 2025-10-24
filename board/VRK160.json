@@ -242,12 +242,12 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x106",
-						"Instruction" : "\n1- Connect to the 2nd com port (PL console), baud rate 115200-8N1\n2- Click 'OK' when this is done.\n3- Image location=264,526, size=43,35.\n"
+						"Instruction" : "\n1- Click on 'HOME >> VERSAL DEVICE CONTROL >> Versal UART Connection >> PL UART 0: Connect' and another browser tab will open connecting to PL UART 0 console.\n2- After clicking 'OK', go to other tab to view console output.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x206",
-						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' on the console.\n3- Image location=264,526, size=43,35.\n"
+						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' on the console.\n"
 					}
 				}
 			}

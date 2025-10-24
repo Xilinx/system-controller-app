@@ -32,85 +32,35 @@
 			}
 		},
 		"CLOCK" : {
-			"SFP_HSDP_REF_CLK" : {
-				"Name" : "SFP_HSDP_REF_CLK",
+			"QSFP_0_REFCLK" : {
+				"Name" : "QSFP_0_REFCLK",
 				"Type" : "ProXO-XP",
 				"Sysfs_Path" : "/sys/devices/platform/sys-clk-0/set_rate",
-				"Default_Freq" : 156.25,
-				"Upper_Freq" : 2100.0,
-				"Lower_Freq" : 15.0,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x64"
-			},
-			"USB3_PHY_REF_PAD_CLK" : {
-				"Name" : "USB3_PHY_REF_PAD_CLK",
-				"Type" : "ProXO-XP",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-1/set_rate",
-				"Default_Freq" : 24.0,
+				"Default_Freq" : 40.0,
 				"Upper_Freq" : 2100.0,
 				"Lower_Freq" : 15.0,
 				"I2C_Bus" : "/dev/i2c-1",
 				"I2C_Address" : "0x63"
 			},
-			"QSFP_0_REFCLK" : {
-				"Name" : "QSFP_0_REFCLK",
+			"CCIO_OSC_CLK" : {
+				"Name" : "CCIO_OSC_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-1/set_rate",
+				"Default_Freq" : 200.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x62"
+			},
+			"XPN7_REF_CLK" : {
+				"Name" : "XPN7_REF_CLK",
 				"Type" : "ProXO-XP",
 				"Sysfs_Path" : "/sys/devices/platform/sys-clk-2/set_rate",
-				"Default_Freq" : 156.25,
+				"Default_Freq" : 40.0,
 				"Upper_Freq" : 2100.0,
 				"Lower_Freq" : 15.0,
 				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x66"
-			},
-			"LPDDR5_C0_OSC_CLK" : {
-				"Name" : "LPDDR5_C0_OSC_CLK",
-				"Type" : "ProXO-XP",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-3/set_rate",
-				"Default_Freq" : 320.0,
-				"Upper_Freq" : 2100.0,
-				"Lower_Freq" : 15.0,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x40"
-			},
-			"DDR5_UDIMM_OSC_CLK" : {
-				"Name" : "DDR5_UDIMM_OSC_CLK",
-				"Type" : "ProXO-XP",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-4/set_rate",
-				"Default_Freq" : 320.0,
-				"Upper_Freq" : 2100.0,
-				"Lower_Freq" : 15.0,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x56"
-			},
-			"XPL7_PS_REFCLK" : {
-				"Name" : "XPL7_PS_REFCLK",
-				"Type" : "ProXO-XP",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-5/set_rate",
-				"Default_Freq" : 33.333,
-				"Upper_Freq" : 2100.0,
-				"Lower_Freq" : 15.0,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x55"
-			},
-			"LPDDR5_C1_OSC_CLK" : {
-				"Name" : "LPDDR5_C1_OSC_CLK",
-				"Type" : "ProXO-XP",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-6/set_rate",
-				"Default_Freq" : 320.0,
-				"Upper_Freq" : 2100.0,
-				"Lower_Freq" : 15.0,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x59"
-			},
-			"HDMI_FRL_CLK" : {
-				"Name" : "HDMI_FRL_CLK",
-				"Type" : "ProXO-XP",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-7/set_rate",
-				"Default_Freq" : 400.0,
-				"Upper_Freq" : 2100.0,
-				"Lower_Freq" : 15.0,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x5A"
+				"I2C_Address" : "0x61"
 			}
 		},
 		"Temperature" : {

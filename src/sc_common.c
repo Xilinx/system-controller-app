@@ -1431,12 +1431,43 @@ int Print_Filter;
 	}
 
 int
+Determine_SC_MAC(void)
+{
+	FILE *FP;
+	char Buffer[STRLEN_MAX];
+
+	(void) sprintf(Buffer, "cat /sys/class/net/end0/address");
+	SC_INFO("Command: %s", Buffer);
+	FP = popen(Buffer, "r");
+	if (FP == NULL) {
+		SC_INFO("failed to start process '%s': %m", Buffer);
+		return -1;
+	}
+
+	if (fgets(Buffer, sizeof(Buffer), FP) == NULL) {
+		SC_INFO("failed to get MAC address");
+		(void) pclose(FP);
+		return -1;
+	}
+
+	if (pclose(FP) != 0) {
+		SC_INFO("failed to execute MAC address read");
+		return -1;
+	}
+
+	SC_PRINT_N("SC MAC: %s", Buffer);
+
+	return 0;
+}
+
+int
 EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 {
 	int Offset;
 	int Type;
 	int Last_Record;
 	int Length;
+	bool SC_MAC_Found = false;
 
 	Print_Filter = (MAC_Address) ? 1 : 0;
 
@@ -1561,6 +1592,7 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 						 Buffer[Offset + 9], Buffer[Offset + 10],
 						 Buffer[Offset + 11], Buffer[Offset + 12],
 						 Buffer[Offset + 13], Buffer[Offset + 14]);
+					SC_MAC_Found = true;
 				}
 
 			} else if (Buffer[Offset + 8] == 0x31) {
@@ -1596,6 +1628,13 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 			} else {
 				SC_ERR("unsupported D2 version number");
 				return -1;
+			}
+
+			if (MAC_Address && !SC_MAC_Found) {
+				if (Determine_SC_MAC() != 0) {
+					SC_ERR("failed to determine SC MAC address");
+					return -1;
+				}
 			}
 
 			break;

@@ -40,7 +40,7 @@
 				"Upper_Freq" : 2100.0,
 				"Lower_Freq" : 15.0,
 				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x63"
+				"I2C_Address" : "0x72"
 			},
 			"CCIO_OSC_CLK" : {
 				"Name" : "CCIO_OSC_CLK",

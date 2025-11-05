@@ -187,8 +187,8 @@ Identify_UniqueID(char *Silicon_Rev, char *Board_Rev)
 
 	Default_PDI = Plat_Devs->Default_PDI;
 	if (Default_PDI == NULL) {
-		SC_ERR("no default PDI is defined");
-		return -1;
+		SC_INFO("no default PDI is defined");
+		return 0;
 	}
 
 	if (strcmp(Silicon_Rev, "ES1") == 0) {

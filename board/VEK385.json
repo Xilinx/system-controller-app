@@ -601,7 +601,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x109",
-						"Instruction" : "\n1- Look for DIP switches (SW5) on the board\n2- After clicking 'OK' turn On and then turn Off DIP Switches (SW6) \n3- Click 'OK' when you are ready.\n4- Image location=2047,1510, size=99,113.\n"
+						"Instruction" : "\n1- Look for DIP switches (SW5) on the board\n2- After clicking 'OK' turn On and then turn Off DIP Switches (SW5) \n3- Click 'OK' when you are ready.\n4- Image location=2047,1510, size=99,113.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",

@@ -2672,6 +2672,7 @@ QSFP_ModuleSelect(SFP_t *SFP, int State)
 	unsigned char Lower_Mask = -1;
 	unsigned int Mask;
 	unsigned int Value;
+	int Level;
 
 	if (State != 0 && State != 1) {
 		SC_ERR("invalid SFP module select state");
@@ -2684,6 +2685,38 @@ QSFP_ModuleSelect(SFP_t *SFP, int State)
 	 * accessed.
 	 */
 	if (SFP->Type == sfp || SFP->Type == osfp) {
+		return 0;
+	}
+
+	/*
+	 * If 'Access_Label' is defined for a SFP module, enable/disable it
+	 * through libgpiod interface.
+	 */
+	if (SFP->Access_Label != NULL) {
+#if !defined (LIBGPIOD_V1)
+		SC_INFO("%s access to '%s' SFP", ((State == 1) ? "enable" : "disable"), SFP->Name);
+		Level = SFP->Access_Level;
+		if (State == 1) {
+			if (Set_GPIO(SFP->Access_Label, Level) != 0) {
+				SC_ERR("failed to set '%s' to %d", SFP->Access_Label, Level);
+			}
+		} else {
+			if (Get_GPIO(SFP->Access_Label, &Level, GPIOD_LINE_DIRECTION_INPUT) != 0) {
+				SC_ERR("failed to set '%s' to %d", SFP->Access_Label, Level);
+			}
+		}
+#else
+		if (State == 1) {
+			Level = SFP->Access_Level;
+		} else {
+			Level = (~SFP->Access_Level & 0x1);
+		}
+
+		SC_INFO("%s access to '%s' SFP", ((State == 1) ? "enable" : "disable"), SFP->Name);
+		if (Set_GPIO(SFP->Access_Label, Level) != 0) {
+			SC_ERR("failed to set '%s' to %d", SFP->Access_Label, Level);
+		}
+#endif
 		return 0;
 	}
 

@@ -262,6 +262,8 @@ typedef struct {
 	char	*I2C_Bus;
 	int	I2C_Address;
 	int	Presence_Boundary_Scan;
+	char	*Access_Label;
+	int	Access_Level;
 } SFP_t;
 
 typedef struct SFPs {

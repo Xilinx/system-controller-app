@@ -1184,6 +1184,22 @@ Parse_SFP(const char *Json_File, jsmntok_t *Tokens, int *Index, SFPs_t **SFPs)
 			free(Value_Str);
 			SC_INFO("Presence Boundary Scan: %i",
 				(*SFPs)->SFP[Item].Presence_Boundary_Scan);
+		} else if (strcmp(Value_Str, "Access_Label") == 0) {
+			free(Value_Str);
+			(*Index)++;
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "SFPs", "Access_Label", STRLEN_MAX);
+			(*SFPs)->SFP[Item].Access_Label = Value_Str;
+			SC_INFO("Access_Label: %s", (*SFPs)->SFP[Item].Access_Label);
+
+			(*Index)++;
+			Check_Attribute("Access_Level", "SFPs");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*SFPs)->SFP[Item].Access_Level = atoi(Value_Str);
+			SC_INFO("Access_Level: %d", (*SFPs)->SFP[Item].Access_Level);
+			free(Value_Str);
 		} else {
 			free(Value_Str);
 			(*Index)--;

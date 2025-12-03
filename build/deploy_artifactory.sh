@@ -18,7 +18,7 @@ while getopts "d" OPTS; do
 	esac
 done
 
-RELEASE="2024.2"
+RELEASE="2026.1"
 BASE_URL="system-controller/sc_app_bsp/$RELEASE"
 
 INTERNAL=( \

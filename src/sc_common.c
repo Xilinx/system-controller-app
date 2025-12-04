@@ -1634,13 +1634,6 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 				return -1;
 			}
 
-			if (MAC_Address && !SC_MAC_Found) {
-				if (Determine_SC_MAC() != 0) {
-					SC_ERR("failed to determine SC MAC address");
-					return -1;
-				}
-			}
-
 			break;
 		case OEM_D3:
 			SC_PRINT_F("0x%.2x - Memory Type:\t%s", (Offset + 8),
@@ -1685,6 +1678,13 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 		}
 
 	} while (!Last_Record);
+
+	if (MAC_Address && !SC_MAC_Found) {
+		if (Determine_SC_MAC() != 0) {
+			SC_ERR("failed to determine SC MAC address");
+			return -1;
+		}
+	}
 
 	return 0;
 }

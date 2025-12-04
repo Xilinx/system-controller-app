@@ -27,7 +27,7 @@
 				"Type" : "SIT95211",
 				"Vendor_Managed" : 1,
 				"Default_Design" : "SCU200_SiT95211",
-				"I2C_Bus" : "/dev/i2c-3",
+				"I2C_Bus" : "/dev/i2c-2",
 				"I2C_Address" : "0x69"
 			}
 		},

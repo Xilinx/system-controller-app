@@ -161,20 +161,24 @@ Board_Identification(char *Board_Name, char *Board_Revision)
 	(void) strcpy(Board_Path, ((Found) ? Value : BOARD_PATH));
 	SC_INFO("Board Path: %s", Board_Path);
 
-	snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, Board_Name);
-	SC_INFO("Board File: %s", Board_File);
-	if (access(Board_File, F_OK) == 0) {
-		if (Parse_JSON(Board_File, Plat_Devs) != 0) {
-			SC_ERR("failed to parse JSON file for board '%s'",
-			       Board_Name);
-			return -1;
+	snprintf(Board_File, SYSCMD_MAX, "%s%s-%s.json", Board_Path, Board_Name, Board_Revision);
+	SC_INFO("Board File-Board Revision: %s", Board_File);
+	if (access(Board_File, F_OK) != 0) {
+		snprintf(Board_File, SYSCMD_MAX, "%s%s.json", Board_Path, Board_Name);
+		SC_INFO("Board File: %s", Board_File);
+		if (access(Board_File, F_OK) != 0) {
+			(void) strcpy(Board_Name, "Unknown");
+			return 0;
 		}
-
-		Plat_Devs->OnBoard_EEPROM = &OnBoard_EEPROM;
-	} else {
-		(void) strcpy(Board_Name, "Unknown");
 	}
 
+	if (Parse_JSON(Board_File, Plat_Devs) != 0) {
+		SC_ERR("failed to parse JSON file for board '%s'",
+		       Board_Name);
+		return -1;
+	}
+
+	Plat_Devs->OnBoard_EEPROM = &OnBoard_EEPROM;
 	return 0;
 }
 

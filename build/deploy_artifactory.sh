@@ -18,7 +18,7 @@ while getopts "d" OPTS; do
 	esac
 done
 
-RELEASE="2024.2"
+RELEASE="2026.1"
 BASE_URL="system-controller/sc_app_bsp/$RELEASE"
 
 INTERNAL=( \
@@ -26,6 +26,11 @@ INTERNAL=( \
 	"VE-X-A2112-00" \
 	"VN-P-B2197-00" \
 	"VR-R-A2488-01" \
+)
+
+MULTI_JSON=( \
+	"VEK385-A01" \
+	"VEK385-A02" \
 )
 
 get_latest() {
@@ -53,6 +58,14 @@ COPY_DIR=$(get_latest)
 cd ../board || exit
 
 for J in $(ls *.json | sed 's/\.json//'); do 
+	MULTI=0
+	for M in "${MULTI_JSON[@]}"; do
+		if [ "$J" == "$M" ]; then
+			M=$(echo "${M}" | sed -E 's/-[A-Z0-9]+$//')
+			MULTI=1
+			break
+		fi
+	done
 	DIR="external"
 	for I in "${INTERNAL[@]}"; do
 		if [ "$J" == "$I" ]; then
@@ -60,6 +73,11 @@ for J in $(ls *.json | sed 's/\.json//'); do
 		fi
 	done
 
-	echo ">>> jf rt upload ${DRY_RUN} ${J}.json ${COPY_DIR}/${DIR}/${J}/${J}.json"
-	jf rt upload ${DRY_RUN} "${J}.json" "${COPY_DIR}"/"${DIR}"/"${J}"/"${J}.json"
+	if [ ${MULTI} -eq 1 ]; then
+		echo ">>> jf rt upload ${DRY_RUN} ${J}.json ${COPY_DIR}/${DIR}/${M}/${J}.json"
+		jf rt upload ${DRY_RUN} "${J}.json" "${COPY_DIR}"/"${DIR}"/"${M}"/"${J}.json"
+	else
+		echo ">>> jf rt upload ${DRY_RUN} ${J}.json ${COPY_DIR}/${DIR}/${J}/${J}.json"
+		jf rt upload ${DRY_RUN} "${J}.json" "${COPY_DIR}"/"${DIR}"/"${J}"/"${J}.json"
+	fi
 done

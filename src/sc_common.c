@@ -953,7 +953,13 @@ FMCAutoVadj_Op(void)
 
 	if (Legacy_Approach == 1) {
 		SC_INFO("Read IO Expander to determine FMC presence");
+
 		IO_Exp = Plat_Devs->IO_Exp;
+		if (IO_Exp == NULL) {
+			SC_ERR("FMC voltage can not be adjusted");
+			return 0;
+		}
+
 		if (Access_IO_Exp(IO_Exp, 0, 0x0, &Value) != 0) {
 			SC_ERR("failed to read input of IO Expander");
 			return -1;
@@ -2209,6 +2215,23 @@ Reset_IDT_8A34001(void)
 
 	IO_Exp = Plat_Devs->IO_Exp;
 
+	/* If IO Expander is not present, reset via GPIO APIs */
+	if (IO_Exp == NULL) {
+		if (Set_GPIO("8A34001_EXP_RST_B", 0) != 0) {  // Assert reset (active low)
+			SC_ERR("failed to assert reset on 8A34001_EXP_RST_B");
+			return -1;
+		}
+
+		sleep(1);
+
+		if (Set_GPIO("8A34001_EXP_RST_B", 1) != 0) {  // De-assert reset
+			SC_ERR("failed to de-assert reset on 8A34001_EXP_RST_B");
+			return -1;
+		}
+
+		return 0;
+	}
+
 	/*
 	 * The '8A34001_EXP_RST_B' line is controlled by bit 5 of register
 	 * offset 3.  The output register pair (offsets 2 & 3) are written
@@ -2684,11 +2707,11 @@ QSFP_ModuleSelect(SFP_t *SFP, int State)
 	}
 
 	/*
-	 * In current board designs, the SFP modules of type 'sfp' and
+	 * In current board designs, the SFP modules of type 'sfp', 'sfpdd' and
 	 * 'osfp' don't require the module to be selected before it is
 	 * accessed.
 	 */
-	if (SFP->Type == sfp || SFP->Type == osfp) {
+	if (SFP->Type == sfp || SFP->Type == osfp || SFP->Type == sfpdd) {
 		return 0;
 	}
 

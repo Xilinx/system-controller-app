@@ -2525,9 +2525,10 @@ Get_BootMode_Switch(unsigned int *Value)
 {
 	char Buffer[SYSCMD_MAX];
 	int State;
+	BootModes_t *BootModes = Plat_Devs->BootModes;
 
 	*Value = 0;
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < BootModes->Mode_Line_Numbers; i++) {
 		sprintf(Buffer, "SYSCTLR_VERSAL_MODE%d_READBACK", i);
 #if !defined (LIBGPIOD_V1)
 		if (Get_GPIO(Buffer, &State, GPIOD_LINE_DIRECTION_INPUT) != 0) {
@@ -2549,7 +2550,7 @@ Get_BootMode(int Method)
 	FILE *FP;
 	char Buffer[SYSCMD_MAX];
 	unsigned int Value;
-	BootModes_t *BootModes;
+	BootModes_t *BootModes = Plat_Devs->BootModes;
 
 	/*
 	 * Supported methods to get the boot mode:
@@ -2563,7 +2564,6 @@ Get_BootMode(int Method)
 		}
 
 		SC_INFO("Value 0x%x is read from boot mode switch", Value);
-		BootModes = Plat_Devs->BootModes;
 		for (int i = 0; i < BootModes->Numbers; i++) {
 			if (Value == BootModes->BootMode[i].Value) {
 				SC_PRINT("%s", BootModes->BootMode[i].Name);
@@ -2620,6 +2620,7 @@ Set_BootMode(BootMode_t *BootMode, int Method)
 	FILE *FP;
 	char Buffer[SYSCMD_MAX];
 	unsigned int Value;
+	BootModes_t *BootModes = Plat_Devs->BootModes;
 
 	/*
 	 * Supported methods to set the boot mode:
@@ -2628,11 +2629,10 @@ Set_BootMode(BootMode_t *BootMode, int Method)
 	 */
 	if (Method == 0) {
 		/* Clear previous boot mode setting first, if any */
-		for (int i = 0; i < 4; i++) {
-			if (Set_GPIO(Plat_Devs->BootModes->Mode_Lines[i],
-			    0x1) != 0) {
+		for (int i = 0; i < BootModes->Mode_Line_Numbers; i++) {
+			if (Set_GPIO(BootModes->Mode_Lines[i], 0x1) != 0) {
 				SC_ERR("failed to set GPIO line %s",
-				       Plat_Devs->BootModes->Mode_Lines[i]);
+				       BootModes->Mode_Lines[i]);
 				return -1;
 			}
 		}
@@ -2647,21 +2647,31 @@ Set_BootMode(BootMode_t *BootMode, int Method)
 		}
 
 		if ((BootMode->Value & Value) != BootMode->Value) {
-			SC_ERR("unable to set boot mode to '%s' because "
-			       "boot mode switch is set to '%s %s %s %s' position",
-			       BootMode->Name,
-			       ((Value & 0x8) ? "OFF" : "ON"),
-			       ((Value & 0x4) ? "OFF" : "ON"),
-			       ((Value & 0x2) ? "OFF" : "ON"),
-			       ((Value & 0x1) ? "OFF" : "ON"));
+			if (BootModes->Mode_Line_Numbers == 3) {
+				SC_ERR("unable to set boot mode to '%s' because "
+				       "boot mode switch is set to '%s %s %s' position",
+				       BootMode->Name,
+				       ((Value & 0x4) ? "OFF" : "ON"),
+				       ((Value & 0x2) ? "OFF" : "ON"),
+				       ((Value & 0x1) ? "OFF" : "ON"));
+			} else {
+				SC_ERR("unable to set boot mode to '%s' because "
+				       "boot mode switch is set to '%s %s %s %s' position",
+				       BootMode->Name,
+				       ((Value & 0x8) ? "OFF" : "ON"),
+				       ((Value & 0x4) ? "OFF" : "ON"),
+				       ((Value & 0x2) ? "OFF" : "ON"),
+				       ((Value & 0x1) ? "OFF" : "ON"));
+			}
+
 			return -1;
 		}
 
-		for (int i = 0; i < 4; i++) {
-			if (Set_GPIO(Plat_Devs->BootModes->Mode_Lines[i],
+		for (int i = 0; i < BootModes->Mode_Line_Numbers; i++) {
+			if (Set_GPIO(BootModes->Mode_Lines[i],
 			    ((BootMode->Value >> i) & 0x1)) != 0) {
 				SC_ERR("failed to set GPIO line %s",
-				       Plat_Devs->BootModes->Mode_Lines[i]);
+				       BootModes->Mode_Lines[i]);
 				return -1;
 			}
 		}

@@ -267,6 +267,8 @@ Parse_BootMode(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	*Index += 2;
 	Check_Attribute("Mode_Lines", "BOOTMODES");
 	int Mode_Lines_Qty = Tokens[*Index].size;
+	(*Boots)->Mode_Line_Numbers = Mode_Lines_Qty;
+	SC_INFO("Mode_Line_Numbers: %d", (*Boots)->Mode_Line_Numbers);
 	(*Index)++;
 	SC_INFO("Mode Lines:");
 	char **Boot_Mode_Lines = (char **)malloc(Mode_Lines_Qty * sizeof(char *));

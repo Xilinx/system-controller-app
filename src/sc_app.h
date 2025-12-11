@@ -98,6 +98,7 @@ typedef struct {
 
 typedef struct BootModes {
 	int	Numbers;
+	int	Mode_Line_Numbers;
 	char	**Mode_Lines;
 	BootMode_t	BootMode[ITEMS_MAX];
 } BootModes_t;

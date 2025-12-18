@@ -3,7 +3,7 @@
 
 	"SCU200" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "gpio"]
+			"List" : ["eeprom", "bootmode", "clock", "gpio", "FMC"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -77,6 +77,19 @@
 			"SYSCTLR_GPI5" : "SYSCTLR_HPA08P_GPI5",
 			"SYSCTLR_GPI6" : "SYSCTLR_HPA09N_GPI6",
 			"SYSCTLR_GPI7" : "SYSCTLR_HPA09P_GPI7"
+		},
+		"FMCs" : {
+			"FMC" : {
+				"Name" : "FMC",
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x50",
+				"Presence_Labels" : ["FMC_PRSNT_M2C_LT"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VR_VCCO_86_ADJ",
+				"Default_Volt" : 1.2,
+				"Access_Label" : "I2C0_SW_SEL",
+				"Access_Level" : 0
+			}
 		}
 	}
 }

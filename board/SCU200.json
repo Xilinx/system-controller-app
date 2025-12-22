@@ -3,7 +3,7 @@
 
 	"SCU200" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "gpio"]
+			"List" : ["eeprom", "bootmode", "clock", "gpio", "FMC"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -65,7 +65,31 @@
 			"SYSCTLR_POR_B_LS" : "SYSCTRL_MIO30_DUT_PROG_B",
 			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTRL_MIO46_DUT_PROG_RB",
 			"VERSAL_ERROR_OUT_LS_RO" : "SYSCTRL_MIO28_DUT_INIT_RB",
-			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE"
+			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE",
+			"SYS_PGOOD_RO" : "SYS_PGOOD",
+			"FMC_PRSNT_M2C_LT_RO" : "FMC_PRSNT_M2C_LT",
+			"DUT_PWR_EN" : "SC_HDA11_DUT_PWR_EN",
+			"SYSCTLR_GPO0" : "SYSCTLR_HPA00_CCN_GPO0",
+			"SYSCTLR_CLK_GPO1" : "SYSCTLR_HPA00_CCP_CLK_GPO1",
+			"SYSCTLR_GPO2" : "SYSCTLR_HPA04N_GPO2",
+			"SYSCTLR_GPO3" : "SYSCTLR_HPA04P_GPO3",
+			"SYSCTLR_GPI4" : "SYSCTLR_HPA08N_GPI4",
+			"SYSCTLR_GPI5" : "SYSCTLR_HPA08P_GPI5",
+			"SYSCTLR_GPI6" : "SYSCTLR_HPA09N_GPI6",
+			"SYSCTLR_GPI7" : "SYSCTLR_HPA09P_GPI7"
+		},
+		"FMCs" : {
+			"FMC" : {
+				"Name" : "FMC",
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x50",
+				"Presence_Labels" : ["FMC_PRSNT_M2C_LT"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VR_VCCO_86_ADJ",
+				"Default_Volt" : 1.2,
+				"Access_Label" : "I2C0_SW_SEL",
+				"Access_Level" : 0
+			}
 		}
 	}
 }

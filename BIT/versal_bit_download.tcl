@@ -2,7 +2,7 @@
 
 #
 # Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
-# Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -80,7 +80,14 @@ if {$action == 0 || $action == 2} {
 	# Check test passed or failed
 	puts ""
 	if {$::stat == 0x80000000} {
-		puts "PASS"
+		# BIT index 6 is 'PL UART Test' and index 7 is 'LEDs Test'; The PASS
+		# status for these tests can not be determined by the code itself
+		# and it requires visual inspection by the user.
+		if {($testBitIdx & 0xff) == 6 || ($testBitIdx & 0xff) == 7} {
+			puts "COMPLETE"
+		} else {
+			puts "PASS"
+		}
 	} else {
 		puts "FAIL"
 	}

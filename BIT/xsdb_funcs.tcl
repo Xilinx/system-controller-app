@@ -1,7 +1,7 @@
 #!/opt/labtools/xilinx_vitis/xsdb
 
 #
-# Copyright (c) 2023 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -106,23 +106,37 @@ proc unique_id {image_id} {
   return 0xdeadbeef
 }
 
-proc switch_to_jtag {} {
-   # Enable ISO
-   mwr -force 0xf1120000 0xffbff
+proc switch_bootmode {dut alt_boot_mode} {
+   set boot_mode_user 0x${alt_boot_mode}100
+   if { $dut == "versal" } {
+       # Enable ISO
+       mwr -force 0xf1120000 0xffbff
 
-   # Switch to JTAG boot mode
-   mwr -force 0xf1260200 0x0100
+       # Switch to JTAG boot mode
+       mwr -force 0xf1260200 $boot_mode_user
 
-   # Set Multi-boot address to 0
-   mwr -force 0xF1110004 0x0
+       # Set Multi-boot address to 0
+       mwr -force 0xF1110004 0x0
 
-   # SYSMON_REF_CTRL is switched to NPI by user PDI so ensure its
-   # switched back
-   mwr -force 0xF1260138 0
-   mwr -force 0xF1260320 0x77
+       # SYSMON_REF_CTRL is switched to NPI by user PDI so ensure its
+       # switched back
+       mwr -force 0xF1260138 0
+       mwr -force 0xF1260320 0x77
+   } elseif { $dut == "spartanup" } {
+       # Connect to PMC target
+       spartanup_connect "PMC"
+
+       # Switch to JTAG boot mode
+       mwr -force 0x040A007C $boot_mode_user
+
+       # Set Multi-boot address to 0
+       mwr -force 0x040A0130 0x0
+   } else {
+       puts "ERROR: unable to switch_bootmode for $dut device-under-test"
+   }
 
    # Perform reset
-   rst -system
+   srst $dut
 }
 
 # Return silicon revision string based on the IDCODE
@@ -156,14 +170,24 @@ proc silicon_revision {} {
 }
 
 # Load the default PDI
-proc load_default_pdi {image_id image_uid} {
+proc load_default_pdi {dut image_id image_uid} {
     set pdi "/data/PDIs/default.pdi"
-    set uid_reg [unique_id $image_id]
+    if { $dut != "spartanup" } {
+        set uid_reg [unique_id $image_id]
+        set jtag_bootmode 0
+    } else {
+        set uid_reg -1
+        set jtag_bootmode 5
+    }
+
     if {$image_uid != $uid_reg} {
-        switch_to_jtag
+        switch_bootmode $dut $jtag_bootmode
         puts "Loading $pdi"
         device program $pdi
-        print_banner
+        if { $dut != "spartanup" } {
+            print_banner
+	}
+
     } else {
         puts "PDI already loaded"
     }
@@ -199,6 +223,67 @@ proc print_banner {} {
     print_console $uart0 "***********************************************\r\n"
 }
 
+proc is_spartanup {idcode} {
+    if { ($idcode & 0x0ff800ff) == 0x04e80093 } {
+        return 1
+    }
+
+    return 0
+}
+
+# Used by 'spartanup' device-under-test
+proc pmc_tap_id {} {
+    set devices [jtag ta -ta -filter {level==1}]
+    if { [llength $devices] == 0 } {
+        error "scan chain has no devices"
+    }
+
+    set count 0
+    set node {}
+    foreach device $devices {
+        set idcode 0x[xsdb::dict_get_safe $device idcode]
+        set target_ctx [xsdb::dict_get_safe $device target_ctx]
+        if { $target_ctx != "" && [is_spartanup $idcode] } {
+            set node $target_ctx
+            incr count
+            if { [xsdb::dict_get_safe $device is_current] == 1 } {
+                set count 1
+                break
+            }
+        }
+    }
+
+    if { $count > 1 } {
+        error "multiple targets found, please select one"
+    }
+
+    return $node
+}
+
+# System Reset
+proc srst {dut} {
+    if { $dut == "versal" } {
+        rst -system
+    } elseif { $dut == "spartanup" } {
+        set node [pmc_tap_id]
+        jtag targets -set -filter {target_ctx==$node}
+        set s [jtag seq]
+        #    $s state RESET
+        $s irshift -state IDLE -int 6 0x37
+        $s run -node $node
+        after 1000
+        $s clear
+        #    $s state RESET
+        $s irshift -state IDLE -int 6 0x3f
+        $s run -node $node
+        $s delete
+    } else {
+        puts "ERROR: unable to system reset $dut device-under-test"
+    }
+
+    return
+}
+
 # Wait for jtag targets to become accessible
 proc jtag_ready {} {
     connect -xvc-url TCP:127.0.0.1:2542
@@ -214,10 +299,29 @@ proc jtag_ready {} {
     }
 }
 
-# Connect to Versal target
-proc versal_connect {} {
+# Determine which 'device-under-test' is in-use
+proc device_under_test {} {
     jtag_ready
-    targets -set -nocase -filter {name =~ "*Versal*"}
+
+    if {[string length [targets -nocase -filter {name =~ "*versal*"}]] != 0} {
+        return "versal"
+    } elseif {[string length [targets -nocase -filter {name =~ "*xcsu200p*"}]] != 0} {
+        return "spartanup"
+    } else {
+        puts "ERROR: unsupported device-under-test"
+        return ""
+    }
+}
+
+# Connect to 'device-under-test' target
+proc dut_connect {dut} {
+    if { $dut == "versal" } {
+        targets -set -nocase -filter {name =~ "*Versal*"}
+    } elseif { $dut == "spartanup" } {
+        targets -set -nocase -filter {name =~ "*xcsu200p*"}
+    } else {
+        puts "ERROR: failed to connect to $dut device-under-test"
+    }
 }
 
 # Connect to APU target
@@ -228,4 +332,28 @@ proc apu_connect {} {
             puts "Failed to set target"
         }
     }
+}
+
+# Connect to targets on Spartan UltraScale+
+proc spartanup_connect {module} {
+    if { $module == "USER" } {
+        set line [targets -nocase -filter {name =~ "*RISC-V at USER*"}]
+    } elseif { $module == "PMC" } {
+        set line [targets -nocase -filter {name =~ "*RISC-V at PMC*"}]
+    } else {
+        puts "ERROR: invalid target module"
+        return
+    }
+
+    if { $line == "" } {
+        device reset
+        after 1000
+        spartanup_connect $module
+        return
+    }
+
+    set module_index [lindex $line 0]
+    # The 'Hart' target is one after the 'RISC-V' target.
+    set index [expr $module_index + 1]
+    targets -set $index
 }

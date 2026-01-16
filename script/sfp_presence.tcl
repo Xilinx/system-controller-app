@@ -1,14 +1,19 @@
 #!/opt/labtools/xilinx_vitis/xsdb
 
 #
-# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
-versal_connect
+set dut [device_under_test]
+if { $dut != "versal" } {
+    puts "ERROR: unsupported $dut device-under-test"
+    disconnect
+    exit -1
+}
 
 set silicon [lindex [targets -nocase -filter {name =~ "*Versal*"}] 2]
 jtag targets -set -filter {name == $silicon}

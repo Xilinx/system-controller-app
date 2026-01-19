@@ -2,14 +2,21 @@
 
 #
 # Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
-# Copyright (c) 2022 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
-versal_connect
+set dut [device_under_test]
+if { $dut != "versal" } {
+    puts "ERROR: unsupported $dut device-under-test"
+    disconnect
+    exit -1
+}
+
+dut_connect $dut
 
 # The content of DNA registers varies for each part, however, currently
 # 2 MSBs of DNA_3 register and 2 LSBs of DNA_0 register are defined to

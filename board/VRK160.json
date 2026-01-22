@@ -1,5 +1,5 @@
 {
-	"License" : "Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2025 - 2026 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VRK160" : {
 		"FEATURE" : {
@@ -136,7 +136,7 @@
 		"Boot Config" : {
 			"PDI" : "system_wrapper.pdi",
 			"ImageID" : "0x18700000",
-			"UniqueID_Rev0" : "0x584c4e58"
+			"UniqueID_Rev0" : "0x726b0c30"
 		},
 		"BITs" : {
 			"BIT_IDCODE_VERIFY" : {

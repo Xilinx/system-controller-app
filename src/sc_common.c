@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -993,6 +993,12 @@ FMCAutoVadj_Op(void)
 			Present[i] = !State;
 			SC_INFO("FMC %d is %spresent", i, (Present[i] ? "" : "not "));
 		}
+	}
+
+	/* Some boards may not have a software-controllable voltage regulator */
+	if (FMCs->FMC[0].Voltage_Regulator == 0) {
+		SC_PRINT("NOTE: FMC is not powered by a software-controllable voltage regulator");
+		return 0;
 	}
 
 	/*

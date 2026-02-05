@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -1273,40 +1273,49 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 		(*FMCs)->FMC[Item].Presence_Labels = Presence_Labels;
 
 		(*Index)++;
-		Check_Attribute("Supported_Volts", "FMC");
-		(*FMCs)->FMC[Item].Volt_Numbers = Tokens[*Index].size;
-		SC_INFO("Number of Supported Voltages: %i\n", (*FMCs)->FMC[Item].Volt_Numbers);
-		SC_INFO("Supported Voltages:");
-		float *Supported_Volts = (float *)malloc((*FMCs)->FMC[Item].Volt_Numbers *
-							 sizeof(float));
-		Sub_Item = 0;
-		while (Sub_Item < (*FMCs)->FMC[Item].Volt_Numbers) {
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		if (strcmp(Value_Str, "Supported_Volts") == 0) {
+			free(Value_Str);
 			(*Index)++;
+
+			(*FMCs)->FMC[Item].Volt_Numbers = Tokens[*Index].size;
+			SC_INFO("Number of Supported Voltages: %i\n", (*FMCs)->FMC[Item].Volt_Numbers);
+			SC_INFO("Supported Voltages:");
+			float *Supported_Volts = (float *)malloc((*FMCs)->FMC[Item].Volt_Numbers *
+								 sizeof(float));
+			Sub_Item = 0;
+			while (Sub_Item < (*FMCs)->FMC[Item].Volt_Numbers) {
+				(*Index)++;
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Supported_Volts[Sub_Item] = atof(Value_Str);
+				free(Value_Str);
+				SC_INFO("  %f  ", Supported_Volts[Sub_Item]);
+				Sub_Item++;
+			}
+
+			(*FMCs)->FMC[Item].Supported_Volts = Supported_Volts;
+
+			(*Index)++;
+			Check_Attribute("Voltage_Regulator", "FMC");
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
-			Supported_Volts[Sub_Item] = atof(Value_Str);
+			Validate_Str_Size(Value_Str, "FMC", "Voltage_Regulator", STRLEN_MAX);
+			(*FMCs)->FMC[Item].Voltage_Regulator = Value_Str;
+			SC_INFO("Voltage_Regulator: %s", (*FMCs)->FMC[Item].Voltage_Regulator);
+
+			(*Index)++;
+			Check_Attribute("Default_Volt", "FMC");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*FMCs)->FMC[Item].Default_Volt = atof(Value_Str);
 			free(Value_Str);
-			SC_INFO("  %f  ", Supported_Volts[Sub_Item]);
-			Sub_Item++;
+			SC_INFO("Default Voltage: %f", (*FMCs)->FMC[Item].Default_Volt);
+		} else {
+			free(Value_Str);
+			(*Index)--;
 		}
-
-		(*FMCs)->FMC[Item].Supported_Volts = Supported_Volts;
-
-		(*Index)++;
-		Check_Attribute("Voltage_Regulator", "FMC");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		Validate_Str_Size(Value_Str, "FMC", "Voltage_Regulator", STRLEN_MAX);
-		(*FMCs)->FMC[Item].Voltage_Regulator = Value_Str;
-		SC_INFO("Voltage_Regulator: %s", (*FMCs)->FMC[Item].Voltage_Regulator);
-
-		(*Index)++;
-		Check_Attribute("Default_Volt", "FMC");
-		Value_Str = strndup(Json_File + Tokens[*Index].start,
-				    Tokens[*Index].end - Tokens[*Index].start);
-		(*FMCs)->FMC[Item].Default_Volt = atof(Value_Str);
-		free(Value_Str);
-		SC_INFO("Default Voltage: %f", (*FMCs)->FMC[Item].Default_Volt);
 
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,

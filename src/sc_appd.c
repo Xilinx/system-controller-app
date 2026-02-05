@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -3675,6 +3675,10 @@ int FMC_Ops(void)
 	if (Command.CmdId == LISTFMCVOLTAGE) {
 		for (int i = 0; i < FMCs->Numbers; i++) {
 			FMC = &FMCs->FMC[i];
+			if (FMC->Voltage_Regulator == 0) {
+				continue;
+			}
+
 			SC_PRINT_N("%s: %s - (", FMC->Name, FMC->Voltage_Regulator);
 			for (int j = 0; j < FMC->Volt_Numbers; j++) {
 				SC_PRINT_N("%.2f V", FMC->Supported_Volts[j]);

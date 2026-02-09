@@ -1063,7 +1063,17 @@ Clock_Ops(void)
 	if (Command.CmdId == LISTCLOCK) {
 		for (int i = 0; i < Clocks->Numbers; i++) {
 			    if (Clocks->Clock[i].Vendor_Managed) {
-				SC_PRINT("%s - Vendor Utility", Clocks->Clock[i].Name);
+				(void) memset(Output, 0, STRLEN_MAX);
+				for (int j = 0; j < Clocks->Clock[i].Extension_Numbers; j++) {
+					(void) strcat(Output, "\"");
+					(void) strcat(Output, Clocks->Clock[i].Clock_File_Extensions[j]);
+					(void) strcat(Output, "\"");
+					if ((j + 1) < Clocks->Clock[i].Extension_Numbers) {
+						(void) strcat(Output, ", ");
+					}
+				}
+
+				SC_PRINT("%s - Vendor Utility (%s)", Clocks->Clock[i].Name, Output);
 			} else if (Clocks->Clock[i].Lower_Freq == -1 &&
 				   Clocks->Clock[i].Upper_Freq == -1) {
 				SC_PRINT("%s - (%.3f MHz)",

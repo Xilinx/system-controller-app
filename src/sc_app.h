@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 - 2022 Xilinx, Inc.  All rights reserved.
- * Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
+ * Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -125,6 +125,8 @@ typedef struct {
 	char	*Name;
 	char	*Part_Name;
 	bool	Vendor_Managed;
+	char	**Clock_File_Extensions;
+	int	Extension_Numbers;
 	int	Outputs;
 	double	Default_Freq;
 	double	Upper_Freq;

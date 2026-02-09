@@ -410,6 +410,26 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 				Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
 				(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
 				free(Value_Str);
+
+				(*Index)++;
+				Check_Attribute("Clock_File_Extensions", "CLOCK");
+				(*CLKs)->Clock[Clk_Items].Extension_Numbers = Tokens[*Index].size;
+				SC_INFO("Number of Clock File Extensions: %d",
+					(*CLKs)->Clock[Clk_Items].Extension_Numbers);
+				SC_INFO("Extensions:");
+				char **Extension_List = (char **)malloc((*CLKs)->Clock[Clk_Items].Extension_Numbers * sizeof(char *));
+				int Item = 0;
+				while (Item < (*CLKs)->Clock[Clk_Items].Extension_Numbers) {
+					(*Index)++;
+					Value_Str = strndup(Json_File + Tokens[*Index].start,
+							    Tokens[*Index].end - Tokens[*Index].start);
+					Validate_Str_Size(Value_Str, "CLOCK", "Clock_File_Extensions", STRLEN_MAX);
+					Extension_List[Item] = Value_Str;
+					SC_INFO("  %s  ", Extension_List[Item]);
+					Item++;
+				}
+
+				(*CLKs)->Clock[Clk_Items].Clock_File_Extensions = Extension_List;
 			}
 
 			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
@@ -471,7 +491,30 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 				free(Value_Str);
 			}
 
-			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
+			/*
+			 * When support for '8A34001' clock type is converted to be similar to
+			 * other vendor utility supported clocks, parse the extensions from JSON
+			 * file, but for now, hard-code those extensions here.
+			 */
+			(*CLKs)->Clock[Clk_Items].Extension_Numbers = 3;
+			SC_INFO("Number of Clock File Extensions: %d",
+				(*CLKs)->Clock[Clk_Items].Extension_Numbers);
+			char **Extension_List = (char **)malloc((*CLKs)->Clock[Clk_Items].Extension_Numbers * sizeof(char *));
+			for (int i = 0; i < (*CLKs)->Clock[Clk_Items].Extension_Numbers; i++) {
+				Extension_List[i] = (char *)malloc(5);
+			}
+
+			(void) strcpy(Extension_List[0], ".tcs");
+			(void) strcpy(Extension_List[1], ".txt");
+			(void) strcpy(Extension_List[2], ".bin");
+			(*CLKs)->Clock[Clk_Items].Clock_File_Extensions = Extension_List;
+			SC_INFO("Extensions:");
+			for (int i = 0; i < (*CLKs)->Clock[Clk_Items].Extension_Numbers; i++) {
+				SC_INFO("  %s  ", (*CLKs)->Clock[Clk_Items].Clock_File_Extensions[i]);
+			}
+
+			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ?
+				"Vendor" : "Linux"));
 
 			(*Index)++;
 			Check_Attribute("Default_Design", "CLOCK");

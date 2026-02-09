@@ -1,5 +1,5 @@
 {
-	"License" : "Copyright (c) 2024 - 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2024 - 2026 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VEK385" : {
 		"FEATURE" : {
@@ -27,6 +27,7 @@
 				"Name" : "SiT95211_CLK",
 				"Type" : "SIT95211",
 				"Vendor_Managed" : 1,
+				"Clock_File_Extensions" : [".csv", ".eeprom.py"],
 				"Default_Design" : "VEK385_SiT95211",
 				"I2C_Bus" : "/dev/i2c-7",
 				"I2C_Address" : "0x69",
@@ -36,6 +37,7 @@
 				"Name" : "SiT95314_CLK",
 				"Type" : "SIT95314",
 				"Vendor_Managed" : 1,
+				"Clock_File_Extensions" : [".csv", ".eeprom.py"],
 				"Default_Design" : "VEK385_SiT95314",
 				"I2C_Bus" : "/dev/i2c-8",
 				"I2C_Address" : "0x69",

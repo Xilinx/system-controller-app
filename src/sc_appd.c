@@ -1065,9 +1065,7 @@ Clock_Ops(void)
 			    if (Clocks->Clock[i].Vendor_Managed) {
 				(void) memset(Output, 0, STRLEN_MAX);
 				for (int j = 0; j < Clocks->Clock[i].Extension_Numbers; j++) {
-					(void) strcat(Output, "\"");
 					(void) strcat(Output, Clocks->Clock[i].Clock_File_Extensions[j]);
-					(void) strcat(Output, "\"");
 					if ((j + 1) < Clocks->Clock[i].Extension_Numbers) {
 						(void) strcat(Output, ", ");
 					}

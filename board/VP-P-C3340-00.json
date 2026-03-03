@@ -1,0 +1,232 @@
+{
+	"License" : "Copyright (c) 2026 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
+	"VP-P-C3340-00" : {
+		"FEATURE" : {
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio"]
+		},
+		"BOOTMODES" : {
+			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
+			"Modes" : {
+				"JTAG" : "0x0",
+				"QSPI24" : "0x1",
+				"QSPI32" : "0x2",
+				"SD1_LS" : "0xe"
+			}
+		},
+		"JTAGSELECTS" : {
+			"Select_Lines" : ["SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S1"],
+			"Selects" : {
+				"SC" : "0x0",
+				"FTDI" : "0x1",
+				"DC_JTAG" : "0x2"
+			}
+		},
+		"CLOCK" : {
+			"Versal_HSDP_REFCLK" : {
+				"Name" : "Versal_HSDP_REFCLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-0/set_rate",
+				"Default_Freq" : 156.25,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x66"
+			},
+			"LP5_OSC1_CLK" : {
+				"Name" : "LP5_OSC1_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-1/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x57"
+			},
+			"LP5_OSC2_CLK" : {
+				"Name" : "LP5_OSC2_CLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-2/set_rate",
+				"Default_Freq" : 320.0,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x56"
+			},
+			"XPL7_PS_REFCLK" : {
+				"Name" : "XPL7_PS_REFCLK",
+				"Type" : "ProXO-XP",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-3/set_rate",
+				"Default_Freq" : 33.333,
+				"Upper_Freq" : 2100.0,
+				"Lower_Freq" : 15.0,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x59"
+			},
+			"PCIE_GEN_RC0_OUTCLK" : {
+				"Name" : "PCIE_GEN_RC0_OUTCLK",
+				"Type" : "RC21008B",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-4/set_rate",
+				"Default_Freq" : 100.0,
+				"Upper_Freq" : 650.0,
+				"Lower_Freq" : 0.001,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x39"
+			},
+			"PCIE_GEN_RC1_OUTCLK" : {
+				"Name" : "PCIE_GEN_RC1_OUTCLK",
+				"Type" : "RC21008B",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-5/set_rate",
+				"Default_Freq" : 100.0,
+				"Upper_Freq" : 650.0,
+				"Lower_Freq" : 0.001,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x39"
+			},
+			"PCIE_GEN_RC2_OUTCLK" : {
+				"Name" : "PCIE_GEN_RC2_OUTCLK",
+				"Type" : "RC21008B",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-6/set_rate",
+				"Default_Freq" : 100.0,
+				"Upper_Freq" : 650.0,
+				"Lower_Freq" : 0.001,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x39"
+			},
+			"PCIE_CPM6_CLKMUX_INCLK" : {
+				"Name" : "PCIE_CPM6_CLKMUX_INCLK",
+				"Type" : "RC21008B",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-7/set_rate",
+				"Default_Freq" : 100.0,
+				"Upper_Freq" : 650.0,
+				"Lower_Freq" : 0.001,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x39"
+			},
+			"PCIE_PL_CLKMUX_INCLK" : {
+				"Name" : "PCIE_PL_CLKMUX_INCLK",
+				"Type" : "RC21008B",
+				"Sysfs_Path" : "/sys/devices/platform/sys-clk-8/set_rate",
+				"Default_Freq" : 100.0,
+				"Upper_Freq" : 650.0,
+				"Lower_Freq" : 0.001,
+				"I2C_Bus" : "/dev/i2c-1",
+				"I2C_Address" : "0x39"
+			}
+		},
+		"Temperature" : {
+			"Name" : "Versal",
+			"Sensor" : "versal-isa-0000"
+		},
+		"GPIO_Group" : {
+			"SW1" : {
+				"Name" : "SW1",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW1 Readback" : {
+				"Name" : "SW1 Readback",
+				"Type" : "RO",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3_READBACK",
+						"SYSCTLR_VERSAL_MODE2_READBACK",
+						"SYSCTLR_VERSAL_MODE1_READBACK",
+						"SYSCTLR_VERSAL_MODE0_READBACK"]
+			},
+			"SW6" : {
+				"Name" : "SW6",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
+		"GPIO" : {
+			"SYSCTLR_JTAG_S0" : "SCM_JTAG_MUX_SEL0",
+			"SYSCTLR_JTAG_S1" : "SCM_JTAG_MUX_SEL1",
+			"SYSCTLR_VERSAL_MODE0" : "SCM_DUT_MODE_0",
+			"SYSCTLR_VERSAL_MODE1" : "SCM_DUT_MODE_1",
+			"SYSCTLR_VERSAL_MODE2" : "SCM_DUT_MODE_2",
+			"SYSCTLR_VERSAL_MODE3" : "SCM_DUT_MODE_3",
+			"SYSCTLR_VERSAL_MODE0_READBACK_RO" : "SCM_DUT_MODE_RDBK_0",
+			"SYSCTLR_VERSAL_MODE1_READBACK_RO" : "SCM_DUT_MODE_RDBK_1",
+			"SYSCTLR_VERSAL_MODE2_READBACK_RO" : "SCM_DUT_MODE_RDBK_2",
+			"SYSCTLR_VERSAL_MODE3_READBACK_RO" : "SCM_DUT_MODE_RDBK_3",
+			"VERSAL_DONE_RO" : "SCM_DUT_DONE",
+			"VERSAL_ERROR_OUT_LS_RO" : "SCM_DUT_ERR_OUT",
+			"SYSCTLR_POR_B_LS" : "SCM_DUT_POR_B",
+			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SCM_DUT_POR_B_RDBK",
+			"BB_SW_ON_RO" : "SCM_BB_SW_ON_STATUS",
+			"BB_PWR_DIS_B" : "SCM_BB_PWR_DIS_B",
+			"BB_SEQ_DIS_B" : "SCM_BB_SEQ_DIS_B",
+			"BB_PGOOD_RO" : "SCM_BB_PGOOD",
+			"UART_MUXSEL0" : "SCM_UART_MUX_SEL0",
+			"UART_MUXSEL1" : "SCM_UART_MUX_SEL1",
+			"ATX_PWR_OK_RO" : "ATX_PWR_OK",
+			"TI_CABLE_B" : "TI_CABLE_B",
+			"EEPROM_WC_B" : "SCM_EEPROM_WC_B",
+			"DUT_GPIO0" : "SCM_GPIO0",
+			"DUT_GPIO1" : "SCM_GPIO1",
+			"DUT_GPIO2" : "SCM_GPIO2",
+			"DUT_GPIO3" : "SCM_GPIO3",
+			"DC_PRSNT_RO" : "DC_PRSNT",
+			"DC_SYS_CTRL0" : "DC_SYS_CTRL0",
+			"DC_SYS_CTRL1" : "DC_SYS_CTRL1",
+			"DC_SYS_CTRL2" : "DC_SYS_CTRL2",
+			"DC_SYS_CTRL3" : "DC_SYS_CTRL3",
+			"DC_SYS_CTRL4" : "DC_SYS_CTRL4",
+			"DC_SYS_CTRL5_POR_B_SW2" : "DC_SYS_CTRL5_POR_B_SW2",
+			"VCCO_500_EN_OD" : "EN_VCCO_500_SCM",
+			"VCCO_501_EN_OD" : "EN_VCCO_501_SCM",
+			"VCCO_502_EN_OD" : "EN_VCCO_502_SCM",
+			"VCCO_503_EN_OD" : "EN_VCCO_503_SCM",
+			"VCC_PMC_EN_OD" : "EN_VCC_PMC_SCM",
+			"VCCAUX_PMC_EN_OD" : "EN_VCCAUX_PMC_SCM",
+			"VCC_PSLP_EN_OD" : "EN_VCC_PSLP_SCM",
+			"VCC_CPM6_EN_OD" : "EN_VCC_CPM6_SCM",
+			"VCC_PSFP_EN_OD" : "EN_VCC_PSFP_SCM",
+			"CPM6_AVCC_EN_OD" : "EN_CPM6_AVCC_SCM",
+			"CPM6_AVCCAUX_EN_OD" : "EN_CPM6_AVCCAUX_SCM",
+			"CPM6_AVTT_EN_OD" : "EN_CPM6_AVTT_SCM",
+			"VCCO_700_EN_OD" : "EN_1V0_VCCO_SCM",
+			"VADJ_FMC_EN_OD" : "EN_VADJ_FMC_SCM",
+			"VCCAUX_EN_OD" : "EN_VCCAUX_SCM",
+			"VCC_SOC_EN_OD" : "EN_VCC_SOC_SCM",
+			"VCC_RAM_EN_OD" : "EN_VCC_RAM_SCM",
+			"GTM2_AVCC_EN_OD" : "EN_GTM2_AVCC_SCM",
+			"GTM2_AVCCAUX_EN_OD" : "EN_GTM2_AVCCAUX_SCM",
+			"GTM2_AVTT_EN_OD" : "EN_GTM2_AVTT_SCM",
+			"VCCINT_EN_OD" : "EN_VCCINT_SCM",
+			"UTIL_1V8_EN_OD" : "EN_1V8_UTIL_SCM",
+			"UTIL_3V3_EN_OD" : "EN_3V3_UTIL_SCM",
+			"LP5_VDDQ_0V5_EN_OD" : "EN_0V5_VDDQ_LP5_SCM",
+			"LP5_VDD2_1V05_EN_OD" : "EN_1V05_VDD2_LP5_SCM",
+			"LP5_VDD1_1V8_EN_OD" : "EN_1V8_VDD1_LP5_SCM",
+			"VCCO_500_PG_RO" : "PG_VCCO_500",
+			"VCCO_501_PG_RO" : "PG_VCCO_501",
+			"VCCO_502_PG_RO" : "PG_VCCO_502",
+			"VCCO_503_PG_RO" : "PG_VCCO_503",
+			"VCC_PMC_PG_RO" : "PG_VCC_PMC",
+			"VCCAUX_PMC_PG_RO" : "PG_VCCAUX_PMC",
+			"VCC_PSLP_PG_RO" : "PG_VCC_PSLP",
+			"VCC_CPM6_PG_RO" : "PG_VCC_CPM6",
+			"VCC_PSFP_PG_RO" : "PG_VCC_PSFP",
+			"CPM6_AVCC_PG_RO" : "PG_CPM6_AVCC",
+			"CPM6_AVCCAUX_PG_RO" : "PG_CPM6_AVCCAUX",
+			"CPM6_AVTT_PG_RO" : "PG_CPM6_AVTT",
+			"VCCO_700_PG_RO" : "PG_1V0_VCCO",
+			"VADJ_FMC_PG_RO" : "PG_VADJ_FMC",
+			"VCCAUX_PG_RO" : "PG_VCCAUX",
+			"VCC_SOC_PG_RO" : "PG_VCC_SOC",
+			"VCC_RAM_PG_RO" : "PG_VCC_RAM",
+			"GTM2_AVCC_PG_RO" : "PG_GTM2_AVCC",
+			"GTM2_AVCCAUX_PG_RO" : "PG_GTM2_AVCCAUX",
+			"GTM2_AVTT_PG_RO" : "PG_GTM2_AVTT",
+			"VCCINT_PG_RO" : "PG_VCCINT",
+			"UTIL_1V8_PG_RO" : "PG_1V8_UTIL",
+			"UTIL_3V3_PG_RO" : "PG_3V3_UTIL",
+			"LP5_VDDQ_0V5_PG_RO" : "PG_0V5_VDDQ_LP5",
+			"LP5_VDD2_1V05_PG_RO" : "PG_1V05_VDD2_LP5",
+			"LP5_VDD1_1V8_PG_RO" : "PG_1V8_VDD1_LP5"
+		}
+	}
+}

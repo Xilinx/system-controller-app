@@ -2,7 +2,7 @@
 
 #
 # Copyright (c) 2022 Xilinx, Inc.  All rights reserved.
-# Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,27 +66,40 @@ with create_session(cs_server_url=CS_URL, hw_server_url=HW_URL, pre_device_scan_
     start_time = time.time()
     while check_for_device:
         try:
-            versal_device = session.devices.filter_by(family="versal").get()
+            device = session.devices.filter_by(family="versal").get()
+            device_family = "versal"
             check_for_device = False
         except ValueError:
+            device = session.devices.filter_by(family="spartanu").get()
+            device_family = "spartanu"
+            check_for_device = False
+
             if time.time() - start_time > 5:
                 print("ERROR: no device found on the JTAG chain")
                 quit(-1)
 
     PDI_FILE = "/data/PDIs/default.pdi"
 
-    unique_id = get_unique_id(versal_device, image_id)
-    if (image_uid != unique_id):
-        # Program the PDI
-        versal_device.program(PDI_FILE)
+    if (device_family == "versal"):
+        unique_id = get_unique_id(device, image_id)
+        if (image_uid == unique_id):
+            print("PDI already loaded")
+        else:
+            device.program(PDI_FILE)
     else:
-        print("PDI already loaded")
+        device.program(PDI_FILE)
+
+    if (device_family == "spartanu"):
+        # Re-create session for Spartan UltraScale+ to capture the new BSCAN path
+        session = create_session(cs_server_url=CS_URL, hw_server_url=HW_URL)
+        # Discover debug cores
+        device = session.devices.filter_by(family="uplus").get()
 
     # Discover debug cores
-    versal_device.discover_and_setup_cores()
+    device.discover_and_setup_cores()
 
     # Get the target DDRMC
-    DDR = versal_device.ddrs[(DDRMC - 1)]
+    DDR = device.ddrs[(DDRMC - 1)]
     if not DDR.is_enabled:
         print("ERROR: DDRMC " + str(DDRMC) + " is not enabled")
         quit(-1)

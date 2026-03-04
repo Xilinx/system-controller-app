@@ -7,9 +7,6 @@
 # SPDX-License-Identifier: MIT
 #
 
-set PGG1 0xf1110054
-set PGG3 0xf111005C
-
 source "/usr/share/system-controller-app/BIT/xsdb_funcs.tcl"
 
 set sock ""
@@ -18,89 +15,109 @@ set testBitIdx [lindex $argv 3]
 set action [expr {$testBitIdx >> 8} & 0xFF]
 
 set dut [device_under_test]
-if { $dut != "versal" } {
-	puts "ERROR: unsupported $dut device-under-test"
-	disconnect
-	exit -1
+if {$dut == "versal"} {
+    set PGG1 0xf1110054
+    set PGG3 0xf111005C
+} elseif {$dut == "spartanup"} {
+    set PGG1 0x040A00C4
+    set PGG3 0x040A00CC
+} else {
+    puts "ERROR: unsupported $dut device-under-test"
+    disconnect
+    exit -1
 }
 
 if {$action == 0 || $action == 1} {
-	# Select 'device-under-test' target to load the default PDI
-	dut_connect $dut
+    # Select 'device-under-test' target to load the default PDI
+    dut_connect $dut
 
-	# XXX- need to revisit this workaround when full labtools support is available for T50.
-	if {[string length [targets -nocase -filter {name =~ "*A78*"}]] != 0} {
-		rst -system
-	}
+    # XXX- need to revisit this workaround when full labtools support is available for T50.
+    if {[string length [targets -nocase -filter {name =~ "*A78*"}]] != 0} {
+        rst -system
+    }
 
-	# Download the default PDI
-	load_default_pdi $dut [lindex $argv 1] [lindex $argv 2]
+    # Download the default PDI
+    load_default_pdi $dut [lindex $argv 1] [lindex $argv 2]
 
-	# Select APU target to reset it, and set jtagterminal
-	apu_connect
+    if {$dut == "versal"} {
+        apu_connect
+        rst -clear-registers -skip-activate-subsystem -processor
+    } elseif {$dut == "spartanup"} {
+        spartanup_connect "USER"
+        stop
+    }
 
-	# Download the ELF file to run it on APU
-	rst -clear-registers -skip-activate-subsystem -processor
-	set elf $board
-	append elf "/" versal_bit.elf
-	dow $elf
-	set sock [jtagterminal -start -socket]
-	exec nc localhost $sock &
-	con
-	after 1000
+    # Download the ELF binary to run on processor
+    set elf $board
+    append elf "/" versal_bit.elf
+    dow $elf
+
+    # Connect to 'jtagterminal'
+    if {$dut == "versal"} {
+        set sock [jtagterminal -start -socket]
+        exec nc localhost $sock &
+    }
+
+    # Run the elf binary
+    con
+    after 1000
 }
 
 if {$action == 0 || $action == 2} {
-	# Select APU target to set jtagterminal
-	apu_connect
+    # Re-connect to 'jtagterminal', if it is not already connected
+    if {$dut == "versal"} {
+        apu_connect
+        if { $sock == "" } {
+            set sock [jtagterminal -start -socket]
+            exec nc localhost $sock &
+        }
+    }
 
-	if { $sock == "" } {
-		set sock [jtagterminal -start -socket]
-		exec nc localhost $sock &
-	}
+    # Select 'device-under-test' target to access PGG1 and PPG3
+    dut_connect $dut
+    if {$dut == "spartanup"} {
+        spartanup_connect "PMC"
+    }
 
-	# Select 'device-under-test' target to access PGG1 and PPG3
-	dut_connect $dut
+    # Set BIT test index
+    mwr $PGG1 [expr {1 << (($testBitIdx & 0xff) - 1)}]
 
-	# Set BIT test index
-	mwr $PGG1 [expr {1 << (($testBitIdx & 0xff) - 1)}]
+    # Wait for the test status cleared (= 0)
+    variable stat 0xFFFFFFFF
 
-	# Wait for the test status cleared (= 0)
-	variable stat 0xFFFFFFFF
+    for {set i 0} {$i < 10} {incr i} {
+        scan [lindex [mrd $PGG3] 1] "%x" ::stat
+        if {$::stat == 0} {
+            break
+        }
+        after 200
+    }
 
-	for {set i 0} {$i < 10} {incr i} {
-		scan [lindex [mrd $PGG3] 1] "%x" ::stat
-		if {$::stat == 0} {
-			break
-		}
-		after 200
-	}
+    # Check for the test completed status (0x80000XXX)
+    if {$::stat == 0} {
+        for {set i 0} {$i < 100} {incr i} {
+            after 1000
+            scan [lindex [mrd $PGG3] 1] "%x" ::stat
+            if {($::stat & 0x80000000) != 0} {
+                break
+            }
+        }
+    }
 
-	# Check for the test completed status (0x80000XXX)
-	if {$::stat == 0} {
-		for {set i 0} {$i < 100} {incr i} {
-			after 1000
-			scan [lindex [mrd $PGG3] 1] "%x" ::stat
-			if {($::stat & 0x80000000) != 0} {
-				break
-			}
-		}
-	}
-
-	# Check test passed or failed
-	puts ""
-	if {$::stat == 0x80000000} {
-		# BIT index 6 is 'PL UART Test' and index 7 is 'LEDs Test'; The PASS
-		# status for these tests can not be determined by the code itself
-		# and it requires visual inspection by the user.
-		if {($testBitIdx & 0xff) == 6 || ($testBitIdx & 0xff) == 7} {
-			puts "COMPLETE"
-		} else {
-			puts "PASS"
-		}
-	} else {
-		puts "FAIL"
-	}
+    # Check test passed or failed
+    puts ""
+    if {$::stat == 0x80000000} {
+        # BIT index 6 is 'PL UART Test' and index 7 is 'LEDs Test'; The PASS
+        # status for these tests can not be determined by the code itself
+        # and it requires visual inspection by the user.
+        if {($testBitIdx & 0xff) == 6 || ($testBitIdx & 0xff) == 7} {
+            puts "COMPLETE"
+        } else {
+            puts "PASS"
+        }
+    } else {
+        puts "FAIL"
+    }
 }
 
 disconnect

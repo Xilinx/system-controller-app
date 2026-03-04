@@ -3,7 +3,7 @@
 
 	"SCU200" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "gpio", "SFP", "FMC"]
+			"List" : ["eeprom", "bootmode", "clock", "gpio", "SFP", "FMC", "BIT"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -108,6 +108,102 @@
 			"PDI" : "system_wrapper.pdi",
 			"ImageID" : "0x0",
 			"UniqueID_Rev0" : "0x0"
+		},
+		"BITs" : {
+			"BIT_IDCODE_VERIFY" : {
+				"Name" : "IDCODE Verify",
+				"Description" : "This test verifies silicon device ID code. The test failure means it is not a compatible device.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "idcode_verify.tcl 0x01"
+					}
+				}
+			},
+			"BIT_CLOCKS_OUTPUT_TEST" : {
+				"Name" : "Clocks Output Test",
+				"Description" : "This test verifies the clock output frequencies by measuring the clocks at the device-under-test with clock counters. The test will fail in case the clock settings are different than default values.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x1"
+					}
+				}
+			},
+			"BIT_DDRMC_1_CAL_TEST" : {
+				"Name" : "DDRMC_1 Cal Test",
+				"Description" : "This test verifies FPGA-based DDR memory controller 1 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_1_Test"
+					}
+				}
+			},
+			"BIT_DRAM_MEM_TEST" : {
+				"Name" : "DRAM Mem Test",
+				"Description" : "This test verifies DRAM access by 8MB write, read and compare with cache on/off. The patterns used are 0s, 1's, 0xAAAA5555, row, col, bank.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x4"
+					}
+				}
+			},
+			"BIT_LEDS_TEST" : {
+				"Name" : "LEDs Test",
+				"Description" : "This test verifies board LEDs (LED1 - LED4). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x107",
+						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for LEDs (LED1 - LED4) on the board.\n3- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n4- Click 'OK' when you are ready.\n5- Image location=270,170, size=63,32.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x207",
+						"Instruction" : "\n1- Did you see the LEDs blinking and sequencing?\n2- Click 'Pass' if you observed it.\n3- Image location=270,170, size=63,32.\n"
+					}
+				}
+			},
+			"BIT_BUTTONS_TEST" : {
+				"Name" : "Buttons Test",
+				"Description" : "This test verifies push buttons (SW6, SW9). See the buttons on the board as displayed on the image to locate buttons. The test waits for about 50 secs to press buttons. The test fails if the buttons are not pressed in the order within the time limit.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x108",
+						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for Push Buttons SW9 (Center) and SW6 (West) on the board.\n3- After clicking 'OK' press Push Buttons SW9, followed by SW6, and followed by any button (SW6 or SW9).\n4- Click 'OK' when ready.\n5- Image location=206,89, size=63,32.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x208",
+						"Instruction" : "\nTest Complete\n\nClick 'OK'.\n"
+					}
+				}
+			},
+			"BIT_DIP_SWITCHES_TEST" : {
+				"Name" : "DIP Switches Test",
+				"Description" : "This test verifies DIP switches (SW8). Look at the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to toggle lower 4 DIP switches. The test fails if the DIP switches are not toggled in the order within the time limit.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x109",
+						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for DIP switches (SW8) on the board\n3- After clicking 'OK' turn On and then turn Off lower 4 DIP Switches (1 - 4)\n4- Click 'OK' when you are ready.\n5- Image location=465,300, size=40,63.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x209",
+						"Instruction" : "\nTest Complete\n\nClick 'Ok'\n"
+					}
+				}
+			}
 		}
 	}
 }

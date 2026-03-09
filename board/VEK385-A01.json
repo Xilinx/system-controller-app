@@ -546,18 +546,12 @@
 			},
 			"BIT_PL_UART_TEST" : {
 				"Name" : "PL UART Test",
-				"Description" : "This test verifies PL UART and requires manual verification. The test performs by printing Hello world to PL UART port. It requires USB/jtag connection connected to a terminal application.",
-				"Manual" : 1,
+				"Description" : "This test prints a 'Hello World!' message to the PL UART and automatically verifies that the message was successfully output.",
+				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "versal_bit_download.tcl 0x106",
-						"Instruction" : "\n1- Click on 'HOME >> VERSAL DEVICE CONTROL >> Versal UART Connection >> PL UART 0: Connect' and another browser tab will open connecting to PL UART 0 console.\n2- After clicking 'OK' go to other tab to view console output.\n"
-					},
-					"Level 1" : {
-						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "versal_bit_download.tcl 0x206",
-						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' on the console.\n"
+						"TCL_File" : "versal_bit_download.tcl 0x6"
 					}
 				}
 			},

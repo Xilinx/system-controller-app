@@ -3,7 +3,7 @@
 
 	"VRK160" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC", "BIT"]
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "SFP", "FMC", "BIT"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -70,40 +70,40 @@
 			}
 		},
 		"GPIO" : {
-			"SFP_04_TX_FAULT" : "SFP_04_TX_FAULT",
-			"SFP_04_RX_LOS" : "SFP_04_RX_LOS",
-			"SFP_04_MOD_ABS" : "SFP_04_MOD_ABS",
+			"SFP_04_TX_FAULT_RO" : "SFP_04_TX_FAULT",
+			"SFP_04_RX_LOS_RO" : "SFP_04_RX_LOS",
+			"SFP_04_MOD_ABS_RO" : "SFP_04_MOD_ABS",
 			"SFP_04_TX_DISABLE" : "SFP_04_TX_DISABLE",
 			"SFP_04_RS0" : "SFP_04_RS0",
 			"SFP_04_RS1" : "SFP_04_RS1",
-			"FMCP1_FMC_PRSNT_M2C_B" : "FMCP1_FMC_PRSNT_M2C_B",
-			"FMCP1_FMCP_PRSNT_M2C_B" : "FMCP1_FMCP_PRSNT_M2C_B",
-			"PMBUS4_INA_ALERT" : "PMBUS4_INA_ALERT",
-			"PMBUS3_INA_ALERT" : "PMBUS3_INA_ALERT",
-			"PMBUS2_INA_ALERT" : "PMBUS2_INA_ALERT",
-			"PMBUS1_INA_ALERT" : "PMBUS1_INA_ALERT",
-			"PMBUS1_NIRQ" : "PMBUS_SEQ_NIRQ",
-			"PMBUS1_ALERT" : "PMBUS1_ALERT",
+			"FMCP1_FMC_PRSNT_M2C_B_RO" : "FMCP1_FMC_PRSNT_M2C_B",
+			"FMCP1_FMCP_PRSNT_M2C_B_RO" : "FMCP1_FMCP_PRSNT_M2C_B",
+			"PMBUS4_INA_ALERT_RO" : "PMBUS4_INA_ALERT",
+			"PMBUS3_INA_ALERT_RO" : "PMBUS3_INA_ALERT",
+			"PMBUS2_INA_ALERT_RO" : "PMBUS2_INA_ALERT",
+			"PMBUS1_INA_ALERT_RO" : "PMBUS1_INA_ALERT",
+			"PMBUS1_NIRQ_RO" : "PMBUS_SEQ_NIRQ",
+			"PMBUS1_ALERT_RO" : "PMBUS1_ALERT",
 			"QSFP1_MODSELL" : "QSFP1_MODSELL",
 			"QSFP1_RESETL" : "QSFP1_RESETL",
-			"QSFP1_MODPRSL" : "QSFP1_MODPRSL",
-			"QSFP1_INTL" : "QSFP1_INTL",
+			"QSFP1_MODPRSL_RO" : "QSFP1_MODPRSL",
+			"QSFP1_INTL_RO" : "QSFP1_INTL",
 			"QSFP1_LPMODE" : "QSFP1_LPMODE",
-			"SFP_01_TX_FAULT" : "SFP_01_TX_FAULT",
-			"SFP_01_RX_LOS" : "SFP_01_RX_LOS",
-			"SFP_01_MOD_ABS" : "SFP_01_MOD_ABS",
+			"SFP_01_TX_FAULT_RO" : "SFP_01_TX_FAULT",
+			"SFP_01_RX_LOS_RO" : "SFP_01_RX_LOS",
+			"SFP_01_MOD_ABS_RO" : "SFP_01_MOD_ABS",
 			"SFP_01_TX_DISABLE" : "SFP_01_TX_DISABLE",
 			"SFP_01_RS0" : "SFP_01_RS0",
 			"SFP_01_RS1" : "SFP_01_RS1",
-			"SFP_02_TX_FAULT" : "SFP_02_TX_FAULT",
-			"SFP_02_RX_LOS" : "SFP_02_RX_LOS",
-			"SFP_02_MOD_ABS" : "SFP_02_MOD_ABS",
+			"SFP_02_TX_FAULT_RO" : "SFP_02_TX_FAULT",
+			"SFP_02_RX_LOS_RO" : "SFP_02_RX_LOS",
+			"SFP_02_MOD_ABS_RO" : "SFP_02_MOD_ABS",
 			"SFP_02_TX_DISABLE" : "SFP_02_TX_DISABLE",
 			"SFP_02_RS0" : "SFP_02_RS0",
 			"SFP_02_RS1" : "SFP_02_RS1",
-			"SFP_03_TX_FAULT" : "SFP_03_TX_FAULT",
-			"SFP_03_RX_LOS" : "SFP_03_RX_LOS",
-			"SFP_03_MOD_ABS" : "SFP_03_MOD_ABS",
+			"SFP_03_TX_FAULT_RO" : "SFP_03_TX_FAULT",
+			"SFP_03_RX_LOS_RO" : "SFP_03_RX_LOS",
+			"SFP_03_MOD_ABS_RO" : "SFP_03_MOD_ABS",
 			"SFP_03_TX_DISABLE" : "SFP_03_TX_DISABLE",
 			"SFP_03_RS0" : "SFP_03_RS0",
 			"SFP_03_RS1" : "SFP_03_RS1",
@@ -132,6 +132,40 @@
 				"Voltage_Regulator" : "VADJ_FMC",
 				"Default_Volt" : 1.2,
 				"Access_Label" : "I2C0_SW_SEL",
+				"Access_Level" : 0
+			}
+		},
+		"SFPs" : {
+			"SFP_01" : {
+				"Name" : "SFP_01",
+				"Type" : "sfp",
+				"I2C_Bus" : "/dev/i2c-25",
+				"I2C_Address" : "0x50"
+			},
+			"SFP_02" : {
+				"Name" : "SFP_02",
+				"Type" : "sfp",
+				"I2C_Bus" : "/dev/i2c-26",
+				"I2C_Address" : "0x50"
+			},
+			"SFP_03" : {
+				"Name" : "SFP_03",
+				"Type" : "sfp",
+				"I2C_Bus" : "/dev/i2c-27",
+				"I2C_Address" : "0x50"
+			},
+			"SFP_04" : {
+				"Name" : "SFP_04",
+				"Type" : "sfp",
+				"I2C_Bus" : "/dev/i2c-21",
+				"I2C_Address" : "0x50"
+			},
+			"QSFP1" : {
+				"Name" : "QSFP1",
+				"Type" : "qsfp",
+				"I2C_Bus" : "/dev/i2c-20",
+				"I2C_Address" : "0x50",
+				"Access_Label" : "QSFP1_MODSELL",
 				"Access_Level" : 0
 			}
 		},
@@ -238,18 +272,12 @@
 			},
 			"BIT_PL_UART_TEST" : {
 				"Name" : "PL UART Test",
-				"Description" : "This test verifies PL UART and requires manual verification. The test performs by printing Hello world to PL UART port. It requires USB/jtag connection connected to a terminal application.",
-				"Manual" : 1,
+				"Description" : "This test prints a 'Hello World!' message to the PL UART and automatically verifies that the message was successfully output.",
+				"Manual" : 0,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "versal_bit_download.tcl 0x106",
-						"Instruction" : "\n1- Click on 'HOME >> VERSAL DEVICE CONTROL >> Versal UART Connection >> PL UART 0: Connect' and another browser tab will open connecting to PL UART 0 console.\n2- After clicking 'OK', go to other tab to view console output.\n"
-					},
-					"Level 1" : {
-						"Plat_BIT_Op" : "XSDB_BIT",
-						"TCL_File" : "versal_bit_download.tcl 0x206",
-						"Instruction" : "\n1- Test prints 'Hello world!' message to the PL UART console.\n2- Click 'Pass' if you observe the 'Hello world!' on the console.\n"
+						"TCL_File" : "versal_bit_download.tcl 0x6"
 					}
 				}
 			}

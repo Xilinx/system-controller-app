@@ -32,6 +32,58 @@ proc read_reg {reg} {
     return $reg_val
 }
 
+# Wait until register equals ack or complete, with timeout in ms
+proc wait_for_state {reg ack complete timeout_ms} {
+    set t $timeout_ms
+    while {$t > 0} {
+        set cur [read_reg $reg]
+        if {$cur == $ack}      { return $ack }
+        if {$cur == $complete} { return $complete }
+        after 10
+        incr t -10
+    }
+    return -1
+}
+
+proc sc_to_dut_data_transfer {ctrl_reg data_reg data_str} {
+    set STATE_ACK       0x80
+    set STATE_COMPLETE  0xFF
+    set STATE_DATA      0x01
+
+    set len    [string length $data_str]
+    set chunks [expr {($len + 3) / 4}]
+
+    # Wait for initial ACK
+    if {[wait_for_state $ctrl_reg $STATE_ACK $STATE_COMPLETE 5000] != $STATE_ACK} {
+        puts "ERROR: DUT is not ready"
+        return -1
+    }
+
+    for {set c 0} {$c < $chunks} {incr c} {
+        # Pack 4-byte chunk
+        set word 0
+        for {set i 0} {$i < 4} {incr i} {
+            set idx [expr {$c * 4 + $i}]
+            set ascii [expr {$idx < $len ? [scan [string index $data_str $idx] %c] : 0}]
+            set word [expr {$word | (($ascii & 0xFF) << ($i * 8))}]
+        }
+
+        mwr $data_reg $word
+        mwr $ctrl_reg $STATE_DATA
+
+        # Wait for ACK or COMPLETE
+        set s [wait_for_state $ctrl_reg $STATE_ACK $STATE_COMPLETE 5000]
+        if {$s == $STATE_COMPLETE} {
+            return 0
+        } elseif {$s != $STATE_ACK} {
+            puts "ERROR: Timeout after chunk $c"
+            return -1
+        }
+
+    }
+    return 0
+}
+
 # Run a Boundary Scan Sample command to get the state of all IO pins
 proc bscan {} {
     set s [jtag seq]

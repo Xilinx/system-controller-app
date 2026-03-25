@@ -16,11 +16,15 @@ set action [expr {$testBitIdx >> 8} & 0xFF]
 
 set dut [device_under_test]
 if {$dut == "versal"} {
-    set PGG1 0xf1110054
-    set PGG3 0xf111005C
+    set PGG1 0xF1110054
+    set PGG3 0xF111005C
+    set GGS3 0xF111003C
+    set GGS4 0xF1110040
 } elseif {$dut == "spartanup"} {
     set PGG1 0x040A00C4
     set PGG3 0x040A00CC
+    set GGS3 0x040A00AC
+    set GGS4 0x040A00B0
 } else {
     puts "ERROR: unsupported $dut device-under-test"
     disconnect
@@ -61,6 +65,19 @@ if {$action == 0 || $action == 1} {
     # Run the elf binary
     con
     after 1000
+
+    # Transfer board name from SC to DUT via GGS registers
+    dut_connect $dut
+    if {$dut == "spartanup"} {
+        spartanup_connect "PMC"
+    }
+
+    set status [sc_to_dut_data_transfer $GGS3 $GGS4 $board]
+    if {$status != 0} {
+        puts "ERROR: failed to transfer board name"
+    }
+
+    after 100
 }
 
 if {$action == 0 || $action == 2} {

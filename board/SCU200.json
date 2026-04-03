@@ -155,13 +155,13 @@
 			},
 			"BIT_LEDS_TEST" : {
 				"Name" : "LEDs Test",
-				"Description" : "This test verifies board LEDs (LED1 - LED4). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",
+				"Description" : "This test verifies board LEDs (LED1 - LED8). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x107",
-						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for LEDs (LED1 - LED4) on the board.\n3- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n4- Click 'OK' when you are ready.\n5- Image location=270,170, size=63,32.\n"
+						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for LEDs (LED1 - LED8) on the board.\n3- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n4- Click 'OK' when you are ready.\n5- Image location=270,170, size=63,32.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -172,13 +172,13 @@
 			},
 			"BIT_BUTTONS_TEST" : {
 				"Name" : "Buttons Test",
-				"Description" : "This test verifies push buttons (SW6, SW9). See the buttons on the board as displayed on the image to locate buttons. The test waits for about 50 secs to press buttons. The test fails if the buttons are not pressed in the order within the time limit.",
+				"Description" : "This test verifies push buttons (SW6, SW7, SW9, SW11, SW12). See the buttons on the board as displayed on the image to locate buttons. The test waits for 60 secs to press each button. The test fails if the buttons are not pressed in any order within the time limit.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x108",
-						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for Push Buttons SW9 (Center) and SW6 (West) on the board.\n3- After clicking 'OK' press Push Buttons SW9, followed by SW6, and followed by any button (SW6 or SW9).\n4- Click 'OK' when ready.\n5- Image location=206,89, size=63,32.\n"
+						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for push buttons SW6 (West), SW7 (East), SW9 (Center), SW11 (North), and SW12 (South) on the board.\n3- After clicking 'OK' press push buttons SW6, SW7, SW9, SW11, and SW12 in any order.\n4- Click 'OK' when ready.\n5- Image location=205,82, size=75,45.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -189,13 +189,13 @@
 			},
 			"BIT_DIP_SWITCHES_TEST" : {
 				"Name" : "DIP Switches Test",
-				"Description" : "This test verifies DIP switches (SW8). Look at the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to toggle lower 4 DIP switches. The test fails if the DIP switches are not toggled in the order within the time limit.",
+				"Description" : "This test verifies DIP switches (SW8). Look at the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to toggle all DIP switches. The test fails if the DIP switches are not toggled in the order within the time limit.",
 				"Manual" : 1,
 				"BIT Levels" : {
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x109",
-						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for DIP switches (SW8) on the board\n3- After clicking 'OK' turn On and then turn Off lower 4 DIP Switches (1 - 4)\n4- Click 'OK' when you are ready.\n5- Image location=465,300, size=40,63.\n"
+						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for DIP switches (SW8) on the board.\n3- After clicking 'OK' turn On and then turn Off all DIP Switches.\n4- Click 'OK' when you are ready.\n5- Image location=465,300, size=40,63.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",

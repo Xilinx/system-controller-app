@@ -370,7 +370,6 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 {
 	char *Value_Str;
 	int Clk_Items = 0;
-	IDT_8A34001_Data_t *IDT_8A34001_Data;
 
 	SC_INFO("********************* CLOCK *********************");
 	*CLKs = (Clocks_t *)calloc(1, sizeof(Clocks_t));
@@ -396,170 +395,89 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 		(*CLKs)->Clock[Clk_Items].Part_Name = Value_Str;
 		SC_INFO("Part_Name (Type): %s", (*CLKs)->Clock[Clk_Items].Part_Name);
 
-		if (strcmp((*CLKs)->Clock[Clk_Items].Part_Name, "8A34001") != 0) {
+		/*
+		 * 8A34001 is handled entirely by script/8A34001.py (Vendor_Utility_Clock).
+		 * Parse it like other vendor-managed clocks: Vendor_Managed, extensions,
+		 * Default_Design, I2C, FPGA_Counter_Reg.
+		 */
+		(*Index)++;
+		Value_Str = strndup(Json_File + Tokens[*Index].start,
+				    Tokens[*Index].end - Tokens[*Index].start);
+		if (strcmp(Value_Str, "Vendor_Managed") != 0) {
+			(*CLKs)->Clock[Clk_Items].Vendor_Managed = false;
+			(*Index)--;
+			free(Value_Str);
+		} else {
+			free(Value_Str);
 			(*Index)++;
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
-			                    Tokens[*Index].end - Tokens[*Index].start);
-			if (strcmp(Value_Str, "Vendor_Managed") != 0) {
-				(*CLKs)->Clock[Clk_Items].Vendor_Managed = false;
-				(*Index)--;
-			} else {
-				(*Index)++;
-				Value_Str = strndup(Json_File + Tokens[*Index].start,
-						    Tokens[*Index].end - Tokens[*Index].start);
-				Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
-				(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
-				free(Value_Str);
+					    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
+			(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
+			free(Value_Str);
 
-				(*Index)++;
-				Check_Attribute("Clock_File_Extensions", "CLOCK");
-				(*CLKs)->Clock[Clk_Items].Extension_Numbers = Tokens[*Index].size;
-				SC_INFO("Number of Clock File Extensions: %d",
-					(*CLKs)->Clock[Clk_Items].Extension_Numbers);
-				SC_INFO("Extensions:");
-				char **Extension_List = (char **)malloc((*CLKs)->Clock[Clk_Items].Extension_Numbers * sizeof(char *));
-				int Item = 0;
-				while (Item < (*CLKs)->Clock[Clk_Items].Extension_Numbers) {
-					(*Index)++;
-					Value_Str = strndup(Json_File + Tokens[*Index].start,
-							    Tokens[*Index].end - Tokens[*Index].start);
-					Validate_Str_Size(Value_Str, "CLOCK", "Clock_File_Extensions", STRLEN_MAX);
-					Extension_List[Item] = Value_Str;
-					SC_INFO("  %s  ", Extension_List[Item]);
-					Item++;
-				}
-
-				(*CLKs)->Clock[Clk_Items].Clock_File_Extensions = Extension_List;
-			}
-
-			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
-			if ((*CLKs)->Clock[Clk_Items].Vendor_Managed) {
-				(*Index)++;
-				Check_Attribute("Default_Design", "CLOCK");
-				Value_Str = strndup(Json_File + Tokens[*Index].start,
-						    Tokens[*Index].end - Tokens[*Index].start);
-				Validate_Str_Size(Value_Str, "CLOCK", "Default_Design", STRLEN_MAX);
-				(*CLKs)->Clock[Clk_Items].Default_Design = Value_Str;
-				SC_INFO("Default_Design: %s", (*CLKs)->Clock[Clk_Items].Default_Design);
-			} else {
-				(*Index)++;
-				Check_Attribute("Sysfs_Path", "CLOCK");
-				Value_Str = strndup(Json_File + Tokens[*Index].start,
-				                    Tokens[*Index].end - Tokens[*Index].start);
-				Validate_Str_Size(Value_Str, "CLOCK", "Sysfs_Path", SYSCMD_MAX);
-				(*CLKs)->Clock[Clk_Items].Sysfs_Path = Value_Str;
-				SC_INFO("Sysfs Path: %s", (*CLKs)->Clock[Clk_Items].Sysfs_Path);
-
-				(*Index)++;
-				Check_Attribute("Default_Freq", "CLOCK");
-				Value_Str = strndup(Json_File + Tokens[*Index].start,
-						    Tokens[*Index].end - Tokens[*Index].start);
-				(*CLKs)->Clock[Clk_Items].Default_Freq = atof(Value_Str);
-				free(Value_Str);
-				SC_INFO("Default Freq: %f", (*CLKs)->Clock[Clk_Items].Default_Freq);
-
-				(*Index)++;
-				Check_Attribute("Upper_Freq", "CLOCK");
-				Value_Str = strndup(Json_File + Tokens[*Index].start,
-						    Tokens[*Index].end - Tokens[*Index].start);
-				(*CLKs)->Clock[Clk_Items].Upper_Freq = atof(Value_Str);
-				free(Value_Str);
-				SC_INFO("Upper Freq: %f", (*CLKs)->Clock[Clk_Items].Upper_Freq);
-
-				(*Index)++;
-				Check_Attribute("Lower_Freq", "CLOCK");
-				Value_Str = strndup(Json_File + Tokens[*Index].start,
-						    Tokens[*Index].end - Tokens[*Index].start);
-				(*CLKs)->Clock[Clk_Items].Lower_Freq = atof(Value_Str);
-				free(Value_Str);
-				SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
-			}
-
-		} else {	// (Type == 8A34001)
 			(*Index)++;
-			Value_Str = strndup(Json_File + Tokens[*Index].start,
-			                    Tokens[*Index].end - Tokens[*Index].start);
-			if (strcmp(Value_Str, "Vendor_Managed") != 0) {
-				(*CLKs)->Clock[Clk_Items].Vendor_Managed = true;
-				(*Index)--;
-			} else {
-				(*Index)++;
-				Value_Str = strndup(Json_File + Tokens[*Index].start,
-						    Tokens[*Index].end - Tokens[*Index].start);
-				Validate_Str_Size(Value_Str, "CLOCK", "Vendor_Managed", STRLEN_MAX);
-				(*CLKs)->Clock[Clk_Items].Vendor_Managed = atoi(Value_Str);
-				free(Value_Str);
-			}
-
-			/*
-			 * When support for '8A34001' clock type is converted to be similar to
-			 * other vendor utility supported clocks, parse the extensions from JSON
-			 * file, but for now, hard-code those extensions here.
-			 */
-			(*CLKs)->Clock[Clk_Items].Extension_Numbers = 3;
+			Check_Attribute("Clock_File_Extensions", "CLOCK");
+			(*CLKs)->Clock[Clk_Items].Extension_Numbers = Tokens[*Index].size;
 			SC_INFO("Number of Clock File Extensions: %d",
 				(*CLKs)->Clock[Clk_Items].Extension_Numbers);
-			char **Extension_List = (char **)malloc((*CLKs)->Clock[Clk_Items].Extension_Numbers * sizeof(char *));
-			for (int i = 0; i < (*CLKs)->Clock[Clk_Items].Extension_Numbers; i++) {
-				Extension_List[i] = (char *)malloc(5);
-			}
-
-			(void) strcpy(Extension_List[0], ".tcs");
-			(void) strcpy(Extension_List[1], ".txt");
-			(void) strcpy(Extension_List[2], ".bin");
-			(*CLKs)->Clock[Clk_Items].Clock_File_Extensions = Extension_List;
 			SC_INFO("Extensions:");
-			for (int i = 0; i < (*CLKs)->Clock[Clk_Items].Extension_Numbers; i++) {
-				SC_INFO("  %s  ", (*CLKs)->Clock[Clk_Items].Clock_File_Extensions[i]);
+			char **Extension_List = (char **)malloc((*CLKs)->Clock[Clk_Items].Extension_Numbers * sizeof(char *));
+			int Item = 0;
+			while (Item < (*CLKs)->Clock[Clk_Items].Extension_Numbers) {
+				(*Index)++;
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "CLOCK", "Clock_File_Extensions", STRLEN_MAX);
+				Extension_List[Item] = Value_Str;
+				SC_INFO("  %s  ", Extension_List[Item]);
+				Item++;
 			}
 
-			SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ?
-				"Vendor" : "Linux"));
+			(*CLKs)->Clock[Clk_Items].Clock_File_Extensions = Extension_List;
+		}
 
+		SC_INFO("Managed by: %s", ((*CLKs)->Clock[Clk_Items].Vendor_Managed ? "Vendor" : "Linux"));
+		if ((*CLKs)->Clock[Clk_Items].Vendor_Managed) {
 			(*Index)++;
 			Check_Attribute("Default_Design", "CLOCK");
 			Value_Str = strndup(Json_File + Tokens[*Index].start,
 					    Tokens[*Index].end - Tokens[*Index].start);
-			Validate_Str_Size(Value_Str, "CLOCK", "Default_Design", LSTRLEN_MAX);
+			Validate_Str_Size(Value_Str, "CLOCK", "Default_Design", STRLEN_MAX);
 			(*CLKs)->Clock[Clk_Items].Default_Design = Value_Str;
 			SC_INFO("Default_Design: %s", (*CLKs)->Clock[Clk_Items].Default_Design);
-
-			IDT_8A34001_Data =
-				(IDT_8A34001_Data_t *)calloc(1, sizeof(IDT_8A34001_Data_t));
+		} else {
+			(*Index)++;
+			Check_Attribute("Sysfs_Path", "CLOCK");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+			                    Tokens[*Index].end - Tokens[*Index].start);
+			Validate_Str_Size(Value_Str, "CLOCK", "Sysfs_Path", SYSCMD_MAX);
+			(*CLKs)->Clock[Clk_Items].Sysfs_Path = Value_Str;
+			SC_INFO("Sysfs Path: %s", (*CLKs)->Clock[Clk_Items].Sysfs_Path);
 
 			(*Index)++;
-			Check_Attribute("Display_Label", "CLOCK");
-			int Count = Tokens[*Index].size;
-			(*Index)++;
-			char **Display_Labels = (char **)malloc(Count * sizeof(char *));
-			for (int i = 0; i < Count; i++) {
-				Value_Str = strndup(Json_File + Tokens[*Index + i].start,
-						    Tokens[*Index + i].end -
-						    Tokens[*Index + i].start);
-				Validate_Str_Size(Value_Str, "CLOCK", "Display_Label", SYSCMD_MAX);
-				Display_Labels[i] = Value_Str;
-				SC_INFO("%s", Display_Labels[i]);
-			}
-			IDT_8A34001_Data->Display_Label = Display_Labels;
+			Check_Attribute("Default_Freq", "CLOCK");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*CLKs)->Clock[Clk_Items].Default_Freq = atof(Value_Str);
+			free(Value_Str);
+			SC_INFO("Default Freq: %f", (*CLKs)->Clock[Clk_Items].Default_Freq);
 
-			*Index += Count;
-			Check_Attribute("Internal_Label", "CLOCK");
 			(*Index)++;
-			char **Internal_Labels = (char **)malloc(Count * sizeof(char *));
-			for (int i = 0; i < Count; i++) {
-				Value_Str = strndup(Json_File + Tokens[*Index + i].start,
-						    Tokens[*Index + i].end -
-						    Tokens[*Index + i].start);
-				Validate_Str_Size(Value_Str, "CLOCK", "Internal_Label", SYSCMD_MAX);
-				Internal_Labels[i] = Value_Str;
-				SC_INFO("%s", Internal_Labels[i]);
-			}
-			IDT_8A34001_Data->Internal_Label = Internal_Labels;
+			Check_Attribute("Upper_Freq", "CLOCK");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*CLKs)->Clock[Clk_Items].Upper_Freq = atof(Value_Str);
+			free(Value_Str);
+			SC_INFO("Upper Freq: %f", (*CLKs)->Clock[Clk_Items].Upper_Freq);
 
-			*Index += (Count - 1);
-			IDT_8A34001_Data->Number_Label = Count;
-			IDT_8A34001_Data->Chip_Reset = Reset_IDT_8A34001;
-			(*CLKs)->Clock[Clk_Items].Type_Data = (void *)IDT_8A34001_Data;
+			(*Index)++;
+			Check_Attribute("Lower_Freq", "CLOCK");
+			Value_Str = strndup(Json_File + Tokens[*Index].start,
+					    Tokens[*Index].end - Tokens[*Index].start);
+			(*CLKs)->Clock[Clk_Items].Lower_Freq = atof(Value_Str);
+			free(Value_Str);
+			SC_INFO("Lower Freq: %f", (*CLKs)->Clock[Clk_Items].Lower_Freq);
 		}
 
 		(*Index)++;

@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include "sc_app.h"
 
 /*
@@ -1115,10 +1116,6 @@ Clock_Ops(void)
 
 	switch (Command.CmdId) {
 	case GETCLOCK:
-		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
-			return Get_IDT_8A34001(Clock);
-		}
-
 		if (Clock->Vendor_Managed) {
 			return Vendor_Utility_Clock(Clock, Command_Arg, Target_Arg, Value_Arg);
 		}
@@ -1165,14 +1162,6 @@ Clock_Ops(void)
 		if (V_Flag == 0) {
 			SC_ERR("no value is provided for clock");
 			return -1;
-		}
-
-		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
-			if (Command.CmdId == SETCLOCK) {
-				return Set_IDT_8A34001(Clock, Value_Arg, 0);
-			} else {
-				return Set_IDT_8A34001(Clock, Value_Arg, 1);
-			}
 		}
 
 		if (Clock->Vendor_Managed) {
@@ -1223,10 +1212,6 @@ Clock_Ops(void)
 
 		break;
 	case RESTORECLOCK:
-		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
-			return Restore_IDT_8A34001(Clock);
-		}
-
 		if (Clock->Vendor_Managed) {
 			return Vendor_Utility_Clock(Clock, Command_Arg, Target_Arg, Value_Arg);
 		}
@@ -3899,86 +3884,266 @@ Apply_Workarounds(void)
 }
 
 /*
- * This routine sets any custom clock frequency defined by the user.
+ * Boot_Set_Vendor_Clocks: collect <Clock_Name>_boot files, purge other files.
+ * Each <Clock_Name>_boot file contains the name of the custom clock design.
+ * Validate that the clock is a Vendor_Managed clock before calling
+ * Vendor_Utility_Clock() to set the clock; otherwise log an error and continue.
  */
-int
-Boot_Set_Clocks(void)
+static int
+Boot_Set_Vendor_Clocks(Clocks_t *Clocks)
 {
+	DIR *DP;
+	struct dirent *Dir_Entry;
+	char File_Path[SYSCMD_MAX];
 	FILE *FP;
-	int FD;
-	Clocks_t *Clocks;
-	Clock_t *Clock = NULL;
 	char Buffer[SYSCMD_MAX];
-	char Value[SYSCMD_MAX];
+	size_t Name_Len;
+	char Clock_Names[ITEMS_MAX][STRLEN_MAX];
+	char Clock_Designs[ITEMS_MAX][SYSCMD_MAX];
+	int Clock_Num;
+	int i, j;
+	Clock_t *Clock;
 
-	/* Remove 'vendor_clock' directory, if there is one */
-	(void) sprintf(Buffer, "rm -rf %s", VENDORCLOCKDIR);
-	if (Shell_Execute(Buffer) != 0) {
-		SC_ERR("failed to remove \'%s\' directory", VENDORCLOCKDIR);
-	}
-
-	/* Remove '8A34001' file, if there is one */
-	(void) remove(IDT8A34001FILE);
-
-	/* If there is no clock file, there is nothing to do */
-	if (access(CLOCKFILE, F_OK) != 0) {
-		return 0;
-	}
-
-	FP = fopen(CLOCKFILE, "r");
-	if (FP == NULL) {
-		SC_ERR("failed to read clock file: %m");
+	Clock_Num = 0;
+	if (VENDORCLOCKDIR == NULL) {
 		return -1;
 	}
 
-	Clocks = Plat_Devs->Clocks;
-	while (fgets(Buffer, SYSCMD_MAX, FP)) {
-		SC_INFO("%s: %s", CLOCKFILE, Buffer);
-		(void) strtok(Buffer, ":");
-		(void) strcpy(Value, strtok(NULL, "\n"));
-		for (int i = 0; i < Clocks->Numbers; i++) {
-			if (strcmp(Buffer, (char *)Clocks->Clock[i].Name) == 0) {
+	if (access(VENDORCLOCKDIR, F_OK) != 0) {
+		return 0;
+	}
+
+	DP = opendir(VENDORCLOCKDIR);
+	if (DP == NULL) {
+		SC_ERR("failed to open '%s': %m", VENDORCLOCKDIR);
+		return -1;
+	}
+
+	while ((Dir_Entry = readdir(DP)) != NULL) {
+		if (Dir_Entry->d_type != DT_REG && Dir_Entry->d_type != DT_UNKNOWN) {
+			continue;
+		}
+
+		(void) sprintf(File_Path, "%s/%s", VENDORCLOCKDIR, Dir_Entry->d_name);
+		if (Dir_Entry->d_type == DT_UNKNOWN) {
+			struct stat Stat_St;
+
+			if (stat(File_Path, &Stat_St) != 0 || !S_ISREG(Stat_St.st_mode)) {
+				continue;
+			}
+
+		}
+
+		Name_Len = strlen(Dir_Entry->d_name);
+		if (Name_Len > 5 && strcmp(Dir_Entry->d_name + Name_Len - 5, "_boot") == 0) {
+			if (Clock_Num >= ITEMS_MAX) {
+				continue;
+			}
+
+			FP = fopen(File_Path, "r");
+			if (FP == NULL) {
+				continue;
+			}
+
+			if (fgets(Buffer, sizeof(Buffer), FP) == NULL) {
+				(void) fclose(FP);
+				continue;
+			}
+
+			(void) fclose(FP);
+			Buffer[strcspn(Buffer, "\r\n")] = '\0';
+			if (Buffer[0] == '\0') {
+				continue;
+			}
+
+			/*
+			 * Bounded copy: d_name can be long; Clock_Names[] is STRLEN_MAX.
+			 * strnlen caps bytes copied; we always NUL-terminate within the row.
+			 */
+			{
+				size_t Len;
+
+				Len = strnlen(Dir_Entry->d_name, STRLEN_MAX - 1);
+				memcpy(Clock_Names[Clock_Num], Dir_Entry->d_name, Len);
+				Clock_Names[Clock_Num][Len] = '\0';
+			}
+
+			Name_Len = strlen(Clock_Names[Clock_Num]);
+			if (Name_Len > 5) {
+				Clock_Names[Clock_Num][Name_Len - 5] = '\0';
+			}
+
+			(void) snprintf(Clock_Designs[Clock_Num], SYSCMD_MAX, "%s", Buffer);
+			SC_INFO("vendor boot clock: %s (design: %s)",
+				Clock_Names[Clock_Num], Clock_Designs[Clock_Num]);
+			Clock_Num++;
+			continue;
+		}
+
+		if (unlink(File_Path) != 0) {
+			SC_ERR("failed to remove '%s': %m", File_Path);
+			(void) closedir(DP);
+			return -1;
+		}
+	}
+
+	(void) closedir(DP);
+
+	if (Clock_Num == 0) {
+		return 0;
+	}
+
+	for (j = 0; j < Clock_Num; j++) {
+		Clock = NULL;
+		for (i = 0; i < Clocks->Numbers; i++) {
+			if (strcmp((char *)Clocks->Clock[i].Name, Clock_Names[j]) == 0) {
 				Clock = &Clocks->Clock[i];
 				break;
 			}
 		}
 
 		if (Clock == NULL) {
-			SC_ERR("invalid clock %s", Buffer);
-			(void) fclose(FP);
-			return -1;
+			SC_ERR("vendor boot clock '%s': no matching board clock",
+				Clock_Names[j]);
+			continue;
 		}
 
-		if (strcmp(Clock->Part_Name, "8A34001") == 0) {
-			if (Set_IDT_8A34001(Clock, Value, 0) != 0) {
-				(void) fclose(FP);
-				return -1;
-			}
+		if (!Clock->Vendor_Managed) {
+			SC_ERR("vendor boot clock '%s': not vendor-managed",
+				Clock_Names[j]);
+			continue;
+		}
 
+		if (Vendor_Utility_Clock(Clock, "setclock", Clock->Name,
+		    Clock_Designs[j]) != 0) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+/*
+ * Read CLOCKFILE and apply sysfs frequency for non-vendor clocks listed there.
+ */
+static int
+Boot_Set_Sysfs_Clocks(Clocks_t *Clocks)
+{
+	FILE *FP;
+	char Clock_Names[ITEMS_MAX][STRLEN_MAX];
+	char Clock_Frequencies[ITEMS_MAX][SYSCMD_MAX];
+	int Clock_Num;
+	char Buffer[SYSCMD_MAX];
+	int i, j;
+	int FD;
+	Clock_t *Clock;
+	char Value[SYSCMD_MAX];
+	char *Frequency;
+
+	if (access(CLOCKFILE, F_OK) != 0) {
+		return 0;
+	}
+
+	Clock_Num = 0;
+	FP = fopen(CLOCKFILE, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read clock file: %m");
+		return -1;
+	}
+
+	while (fgets(Buffer, SYSCMD_MAX, FP) != NULL && Clock_Num < ITEMS_MAX) {
+		char *Val;
+
+		Val = strchr(Buffer, ':');
+		if (Val == NULL) {
+			continue;
+		}
+
+		*Val++ = '\0';
+		Val[strcspn(Val, "\r\n")] = '\0';
+
+		/*
+		 * Bounded copy: Buffer can be long; Clock_Names[] is STRLEN_MAX.
+		 * strnlen caps bytes copied; we always NUL-terminate within the row.
+		 */
+		{
+			size_t Len;
+
+			Len = strnlen(Buffer, STRLEN_MAX - 1);
+			memcpy(Clock_Names[Clock_Num], Buffer, Len);
+			Clock_Names[Clock_Num][Len] = '\0';
+		}
+
+		(void) snprintf(Clock_Frequencies[Clock_Num], SYSCMD_MAX, "%s", Val);
+		SC_INFO("CLOCKFILE entry: %s (frequency: %s)",
+			Clock_Names[Clock_Num], Clock_Frequencies[Clock_Num]);
+		Clock_Num++;
+	}
+
+	(void) fclose(FP);
+
+	for (i = 0; i < Clocks->Numbers; i++) {
+		Clock = &Clocks->Clock[i];
+		if (Clock->Vendor_Managed) {
+			continue;
+		}
+
+		Frequency = NULL;
+		for (j = 0; j < Clock_Num; j++) {
+			if (strcmp((char *)Clock->Name, Clock_Names[j]) == 0) {
+				Frequency = Clock_Frequencies[j];
+				break;
+			}
+		}
+
+		if (Frequency == NULL) {
 			continue;
 		}
 
 		FD = open(Clock->Sysfs_Path, O_WRONLY);
 		if (FD < 0) {
 			SC_ERR("failed to open %s: %m", Clock->Sysfs_Path);
-			(void) fclose(FP);
 			return -1;
 		}
 
 		/* Remove any white spaces in Value string */
 		(void) sprintf(Value, "%u\n",
-		    (unsigned int)(strtod(Value, NULL) * 1000000));
+		    (unsigned int)(strtod(Frequency, NULL) * 1000000));
 		if (write(FD, Value, strlen(Value)) != strlen(Value)) {
 			SC_ERR("failed to set clock frequency %s: %m", Value);
 			(void) close(FD);
-			(void) fclose(FP);
 			return -1;
 		}
 
 		(void) close(FD);
 	}
 
-	(void) fclose(FP);
+	return 0;
+}
+
+/*
+ * This routine sets any custom clock frequency defined by the user.
+ * Boot_Set_Vendor_Clocks: set custom clock design listed in <Clock_Name>_boot files.
+ * Boot_Set_Sysfs_Clocks: set custom clock frequency of sysfs clocks listed in CLOCKFILE.
+ */
+int
+Boot_Set_Clocks(void)
+{
+	Clocks_t *Clocks;
+
+	Clocks = Plat_Devs->Clocks;
+	if (Clocks == NULL) {
+		return 0;
+	}
+
+	if (Boot_Set_Vendor_Clocks(Clocks) != 0) {
+		return -1;
+	}
+
+	if (Boot_Set_Sysfs_Clocks(Clocks) != 0) {
+		return -1;
+	}
+
 	return 0;
 }
 

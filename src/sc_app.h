@@ -35,14 +35,12 @@
 #define SILICONFILE	Appfile("silicon")
 #define CLOCKFILE	Appfile("clock")
 #define VOLTAGEFILE	Appfile("voltage")
-#define IDT8A34001FILE	Appfile("8A34001")
 #define PDIFILE		Appfile("PDI")
 #define BITLOGFILE	Appfile("BIT.log")
 #define VENDORCLOCKDIR	Appfile("vendor_clock")
 
 #define BIT_PATH	INSTALLDIR"/BIT/"
 #define BOARD_PATH	INSTALLDIR"/board/"
-#define IDT8A34001_CFS_PATH	INSTALLDIR"/BIT/clock_files/8A34001/"
 #define SCRIPT_PATH	INSTALLDIR"/script/"
 #define DATADIR		"/data"
 #define CUSTOM_CFS_PATH		DATADIR"/clock_files/"
@@ -143,13 +141,6 @@ typedef struct Clocks {
 	int	Numbers;
 	Clock_t	Clock[ITEMS_MAX];
 } Clocks_t;
-
-typedef struct {
-	int	Number_Label;
-	char	**Display_Label;
-	char	**Internal_Label;
-	int	(*Chip_Reset)(void);
-} IDT_8A34001_Data_t;
 
 /*
  * INA226
@@ -506,7 +497,6 @@ typedef struct {
 #define TCL_CMD_TCL	"versal_tcl_cmd.tcl"
 #define SFP_PRES_TCL	"sfp_presence.tcl"
 #define DEFAULT_PDI	"system_wrapper.pdi"
-#define PROGRAM_8A34001	"8A34001_eeprom.py"
 #define READ_CLOCK_CMD	"read_clock"
 #define LOAD_DEFAULT_PDI_CMD	"load_default_pdi"
 
@@ -539,7 +529,6 @@ int Get_GPIO(char *, int *, enum gpiod_line_direction);
 int Get_GPIO(char *, int *);
 #endif
 int Get_IDCODE(char *, int);
-int Get_IDT_8A34001(Clock_t *);
 int Get_Measured_Clock(char *, char *);
 int Get_Measured_Clock_Vendor(Clock_t *);
 int Get_Silicon_Revision(char *);
@@ -547,13 +536,10 @@ int Get_Temperature(Temperature_t *);
 int Set_JTAGSelect(char *);
 int Parse_JSON(const char *, Plat_Devs_t *);
 int QSFP_ModuleSelect(SFP_t *, int);
-int Reset_IDT_8A34001(void);
 int Reset_Op(void);
-int Restore_IDT_8A34001(Clock_t *);
 int Set_AltBootMode(int);
 int Set_BootMode(BootMode_t *, int);
 int Set_GPIO(char *, int);
-int Set_IDT_8A34001(Clock_t *, char *, int);
 int Shell_Execute(char *);
 int Silicon_Identification(char *, int);
 int VCK190_QSFP_ModuleSelect(SFP_t *, int);

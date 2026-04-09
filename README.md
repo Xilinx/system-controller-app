@@ -83,6 +83,6 @@
 		getFMC - get the content of EEPROM on <target> FMC for either <value>:
 			 'all', 'common', 'board', or 'multirecord'
 
-		loadPDI - load <target> PDI to Versal
-		setbootPDI - set <target> PDI to be loaded to Versal at boot time
+		loadPDI - load <target> PDI to device-under-test
+		setbootPDI - set <target> PDI to be loaded to device-under-test at boot time
 		resetbootPDI - remove any boot PDI that has been set

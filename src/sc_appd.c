@@ -172,8 +172,8 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	getFMC - get the content of EEPROM on <target> FMC for either <value>:\n\
 		 'all', 'common', 'board', or 'multirecord'\n\
 \n\
-	loadPDI - load <target> PDI to Versal\n\
-	setbootPDI - set <target> PDI to be loaded to Versal at boot time\n\
+	loadPDI - load <target> PDI to device-under-test\n\
+	setbootPDI - set <target> PDI to be loaded to device-under-test at boot time\n\
 	resetbootPDI - remove any boot PDI that has been set\n\
 ";
 

@@ -28,7 +28,7 @@ if {[catch {targets -set -nocase -filter {name =~ "*A78*#0.0"}} err] == 0} {
 
 # For Spartan UltraScale+ re-target so PL's address space could be accessed from xsdb
 if { $dut == "spartanup" } {
-    spartanup_connect "USER"
+    spartanup_connect
 }
 
 # Invoke the proc

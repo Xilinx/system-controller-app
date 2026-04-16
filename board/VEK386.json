@@ -1,0 +1,135 @@
+{
+	"License" : "Copyright (c) 2026 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
+	"VEK386" : {
+		"FEATURE" : {
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "SFP", "FMC"]
+		},
+		"BOOTMODES" : {
+			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
+			"Modes" : {
+				"JTAG" : "0x0",
+				"OSPI" : "0x8",
+				"UFS" : "0xb"
+			}
+		},
+		"JTAGSELECTS" : {
+			"Select_Lines" : ["SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S1"],
+			"Selects" : {
+				"SC" : "0x0",
+				"FTDI" : "0x1",
+				"EXT" : "0x2"
+			}
+		},
+		"CLOCK" : {
+			"SiT95211_CLK" : {
+				"Name" : "SiT95211_CLK",
+				"Type" : "SIT95211",
+				"Vendor_Managed" : 1,
+				"Clock_File_Extensions" : [".csv", ".eeprom.py"],
+				"Default_Design" : "VEK385_SiT95211",
+				"I2C_Bus" : "/dev/i2c-7",
+				"I2C_Address" : "0x69",
+			},
+			"SiT95314_CLK" : {
+				"Name" : "SiT95314_CLK",
+				"Type" : "SIT95314",
+				"Vendor_Managed" : 1,
+				"Clock_File_Extensions" : [".csv", ".eeprom.py"],
+				"Default_Design" : "VEK385_SiT95314",
+				"I2C_Bus" : "/dev/i2c-8",
+				"I2C_Address" : "0x69",
+			}
+		},
+		"Temperature" : {
+			"Name" : "Versal-Gen2",
+			"Sensor" : "versal-isa-0000"
+		},
+		"GPIO_Group" : {
+			"SW1" : {
+				"Name" : "SW1",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW1 Readback" : {
+				"Name" : "SW1 Readback",
+				"Type" : "RO",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3_READBACK",
+						"SYSCTLR_VERSAL_MODE2_READBACK",
+						"SYSCTLR_VERSAL_MODE1_READBACK",
+						"SYSCTLR_VERSAL_MODE0_READBACK"]
+			},
+			"SW3" : {
+				"Name" : "SW3",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
+		"GPIO" : {
+			"VMON1_SLP" : "VMON1_SLP",
+			"VMON2_SLP" : "VMON2_SLP",
+			"VMON3_SLP" : "VMON3_SLP",
+			"PCIE_RP_i2C_ALERT_B" : "PCIE_RP_i2C_ALERT_B",
+			"PCIE_RP_CLKREQ_B" : "PCIE_RP_CLKREQ_B",
+			"PCIE_RP_PEWAKE_B" : "PCIE_RP_PEWAKE_B",
+			"FMCP1_FMC_PRSNT_M2C_B" : "FMCP1_FMC_PRSNT_M2C_B",
+			"FMCP1_FMCP_PRSNT_M2C_B" : "FMCP1_FMCP_PRSNT_M2C_B",
+			"PMBUS4_INA_ALERT" : "PMBUS4_INA_ALERT",
+			"PMBUS3_INA_ALERT" : "PMBUS3_INA_ALERT",
+			"PMBUS2_INA_ALERT" : "PMBUS2_INA_ALERT",
+			"PMBUS1_INA_ALERT" : "PMBUS1_INA_ALERT",
+			"PMBUS1_NIRQ" : "PMBUS1_NIRQ",
+			"PMBUS1_ALERT" : "PMBUS1_ALERT",
+			"QSFP1_MODSELL" : "QSFP1_MODSELL",
+			"QSFP1_RESETL" : "QSFP1_RESETL",
+			"QSFP1_MODPRSL" : "QSFP1_MODPRSL",
+			"QSFP1_INTL" : "QSFP1_INTL",
+			"QSFP1_LPMODE" : "QSFP1_LPMODE",
+			"SFP_TX_FAULT" : "SFP_TX_FAULT",
+			"SFP_RX_LOS" : "SFP_RX_LOS",
+			"SFP_MOD_ABS" : "SFP_MOD_ABS",
+			"SFP_TX_DISABLE" : "SFP_TX_DISABLE",
+			"SFP_RS0_R" : "SFP_RS0_R",
+			"SFP_RS1_R" : "SFP_RS1_R",
+			"SYSCTLR_JTAG_S1" : "SYSCTRL_MIO27_JTAG_S1",
+			"SYSCTLR_JTAG_S0" : "SYSCTRL_MIO26_JTAG_S0",
+			"SYSCTLR_VERSAL_MODE3" : "SYSCTRL_MIO41_DUT_MODE3",
+			"SYSCTLR_VERSAL_MODE2" : "SYSCTRL_MIO40_DUT_MODE2",
+			"SYSCTLR_VERSAL_MODE1" : "SYSCTRL_MIO39_DUT_MODE1",
+			"SYSCTLR_VERSAL_MODE0" : "SYSCTRL_MIO38_DUT_MODE0",
+			"SYSCTLR_VERSAL_MODE3_READBACK_RO" : "SYSCTRL_MIO45_MODE3_Rdbk",
+			"SYSCTLR_VERSAL_MODE2_READBACK_RO" : "SYSCTRL_MIO44_MODE2_Rdbk",
+			"SYSCTLR_VERSAL_MODE1_READBACK_RO" : "SYSCTRL_MIO43_MODE1_Rdbk",
+			"SYSCTLR_VERSAL_MODE0_READBACK_RO" : "SYSCTRL_MIO42_MODE0_Rdbk",
+			"SYSCTLR_POR_B_LS" : "SYSCTRL_MIO30_DUT_POR",
+			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTRL_MIO46_DUT_POR_Rd",
+			"VERSAL_ERROR_OUT_LS_RO" : "SYSCTRL_MIO28_DUT_ERR_Rd",
+			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE"
+		},
+		"SFPs" : {
+			"QSFP" : {
+				"Name" : "QSFP1",
+				"Type" : "qsfp",
+				"I2C_Bus" : "/dev/i2c-20",
+				"I2C_Address" : "0x50",
+				"Access_Label" : "QSFP1_MODSELL",
+				"Access_Level" : 0
+			}
+		},
+		"FMCs" : {
+			"FMC" : {
+				"Name" : "FMC",
+				"I2C_Bus" : "/dev/i2c-0",
+				"I2C_Address" : "0x50",
+				"Presence_Labels" : ["FMCP1_FMC_PRSNT_M2C_B", "FMCP1_FMCP_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VADJ_FMC",
+				"Default_Volt" : 1.2,
+				"Access_Label" : "I2C0_SW_SEL",
+				"Access_Level" : 0
+			}
+		}
+	}
+}

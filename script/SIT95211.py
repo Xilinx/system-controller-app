@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 #
-# Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2025 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -199,6 +199,14 @@ def Find_Clock_File(Chip, Design, Extension):
     # Validate that the design file for programming EEPROM is generated correctly
     #
     if (Extension == EEPROM_Ext):
+        #
+        # On SCU200, the default EEPROM image programs five different designs at
+        # different offsets in EEPROM; a single-design header check does not apply
+        # here, so skip the following validation on this board.
+        #
+        if (Board == "SCU200"):
+            return File
+
         Command = ['/bin/head', '-1', File]
         Result = subprocess.run(Command, capture_output=True, text=True)
         EEPROM_Identifier = Result.stdout.strip().splitlines()[0]

@@ -47,7 +47,7 @@ if {$action == 0 || $action == 1} {
         apu_connect
         rst -clear-registers -skip-activate-subsystem -processor
     } elseif {$dut == "spartanup"} {
-        spartanup_connect "USER"
+        spartanup_connect
         stop
     }
 
@@ -66,12 +66,6 @@ if {$action == 0 || $action == 1} {
     con
     after 1000
 
-    # Transfer board name from SC to DUT via GGS registers
-    dut_connect $dut
-    if {$dut == "spartanup"} {
-        spartanup_connect "PMC"
-    }
-
     set status [sc_to_dut_data_transfer $GGS3 $GGS4 $board]
     if {$status != 0} {
         puts "ERROR: failed to transfer board name"
@@ -81,19 +75,16 @@ if {$action == 0 || $action == 1} {
 }
 
 if {$action == 0 || $action == 2} {
-    # Re-connect to 'jtagterminal', if it is not already connected
     if {$dut == "versal"} {
         apu_connect
+
+        # Re-connect to 'jtagterminal', if it is not already connected
         if { $sock == "" } {
             set sock [jtagterminal -start -socket]
             exec nc localhost $sock &
         }
-    }
-
-    # Select 'device-under-test' target to access PGG1 and PPG3
-    dut_connect $dut
-    if {$dut == "spartanup"} {
-        spartanup_connect "PMC"
+    } else {
+        spartanup_connect
     }
 
     # Set BIT test index

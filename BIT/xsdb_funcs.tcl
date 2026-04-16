@@ -174,15 +174,9 @@ proc switch_bootmode {dut alt_boot_mode} {
        # switched back
        mwr -force 0xF1260138 0
        mwr -force 0xF1260320 0x77
-   } elseif { $dut == "spartanup" } {
-       # Connect to PMC target
-       spartanup_connect "PMC"
-
-       # Switch to JTAG boot mode
-       mwr -force 0x040A007C $boot_mode_user
-
-       # Set Multi-boot address to 0
-       mwr -force 0x040A0130 0x0
+   } elseif { $dut == "spartanup" && $alt_boot_mode == 5 } {
+       # Configure for JTAG mode programming
+       jprog
    } else {
        puts "ERROR: unable to switch_bootmode for $dut device-under-test"
    }
@@ -312,6 +306,43 @@ proc pmc_tap_id {} {
     return $node
 }
 
+proc jtag_lock {} {
+    if { [catch {jtag lock} msg opt] } {
+        if { $msg != "already locked" } {
+            return -options $opt $msg
+        }
+        return 0
+    } else {
+        return 1
+    }
+}
+
+proc jtag_unlock {locked} {
+    if { $locked } {
+        jtag unlock
+    }
+    return ""
+}
+
+# Configure 'spartanup' for JTAG mode programming
+ proc jprog {} {
+    set node [pmc_tap_id]
+    jtag targets -set -filter {target_ctx==$node}
+    set unlock [jtag_lock]
+    set s [jtag seq]
+    #    $s state RESET
+    $s irshift -state IDLE -int 6 0x0b
+    $s run -node $node
+    after 1000
+    $s clear
+    #    $s state RESET
+    $s irshift -state IDLE -int 6 0x3f
+    $s run -node $node
+    $s delete
+    jtag_unlock $unlock
+    return ""
+}
+
 # System Reset
 proc srst {dut} {
     if { $dut == "versal" } {
@@ -386,26 +417,24 @@ proc apu_connect {} {
     }
 }
 
-# Connect to targets on Spartan UltraScale+
-proc spartanup_connect {module} {
-    if { $module == "USER" } {
-        set line [targets -nocase -filter {name =~ "*RISC-V at USER*"}]
-    } elseif { $module == "PMC" } {
-        set line [targets -nocase -filter {name =~ "*RISC-V at PMC*"}]
-    } else {
-        puts "ERROR: invalid target module"
-        return
-    }
-
+# Connect to Spartan UltraScale+ target
+proc spartanup_connect {} {
+    set line [targets -nocase -filter {name =~ "*RISC-V at USER*"}]
     if { $line == "" } {
         device reset
         after 1000
-        spartanup_connect $module
+        spartanup_connect
         return
     }
 
-    set module_index [lindex $line 0]
-    # The 'Hart' target is one after the 'RISC-V' target.
-    set index [expr $module_index + 1]
-    targets -set $index
+    set line [targets -nocase -filter {name =~ "*Hart*"}]
+    if { $line == "" } {
+        after 1000
+        spartanup_connect
+        return
+    }
+
+    # Wait for 'Hart' target to get to 'Running' state
+    after 3000
+    targets -set -nocase -filter {name =~ "*Hart*"}
 }

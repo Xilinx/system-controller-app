@@ -1,0 +1,108 @@
+{
+	"License" : "Copyright (c) 2026 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+
+	"VPK360" : {
+		"FEATURE" : {
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio"]
+		},
+		"BOOTMODES" : {
+			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
+				"SYSCTLR_VERSAL_MODE2", "SYSCTLR_VERSAL_MODE3"],
+			"Modes" : {
+				"JTAG" : "0x0",
+				"OSPI" : "0x8",
+				"SD1_3.0" : "0xe"
+			}
+		},
+		"JTAGSELECTS" : {
+			"Select_Lines" : ["SYSCTLR_JTAG_S0", "SYSCTLR_JTAG_S1"],
+			"Selects" : {
+				"SC" : "0x0",
+				"FTDI" : "0x1"
+			}
+		},
+		"CLOCK" : {
+			"8A34001" : {
+				"Name" : "8A34001",
+				"Type" : "8A34001",
+				"Vendor_Managed" : 1,
+				"Clock_File_Extensions" : [".tcs", ".txt", ".bin"],
+				"Default_Design" : "VPK360_8A34001_2020-0318_156MHz",
+				"I2C_Bus" : "/dev/i2c-18",
+				"I2C_Address" : "0x5b"
+			}
+		},
+		"Temperature" : {
+			"Name" : "Versal",
+			"Sensor" : "versal-isa-0000"
+		},
+		"GPIO_Group" : {
+			"SW7" : {
+				"Name" : "SW7",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3", "SYSCTLR_VERSAL_MODE2",
+						"SYSCTLR_VERSAL_MODE1", "SYSCTLR_VERSAL_MODE0"]
+			},
+			"SW7 Readback" : {
+				"Name" : "SW7 Readback",
+				"Type" : "RO",
+				"GPIO_Lines" : ["SYSCTLR_VERSAL_MODE3_READBACK",
+						"SYSCTLR_VERSAL_MODE2_READBACK",
+						"SYSCTLR_VERSAL_MODE1_READBACK",
+						"SYSCTLR_VERSAL_MODE0_READBACK"]
+			},
+			"SW10" : {
+				"Name" : "SW10",
+				"Type" : "RW",
+				"GPIO_Lines" : ["SYSCTLR_JTAG_S1", "SYSCTLR_JTAG_S0"]
+			}
+		},
+		"GPIO" : {
+			"PMBUS_REG_ALERT" : "PMBUS_REG_ALERT",
+			"IMON_PMC_ALERT" : "IMON_PMC_ALERT",
+			"IMON_LPD_ALERT" : "IMON_LPD_ALERT",
+			"IMON_SPD_ALERT" : "IMON_SPD_ALERT",
+			"IMON_FPD_ALERT" : "IMON_FPD_ALERT",
+			"IMON_PL_ALERT" : "IMON_PL_ALERT",
+			"IMON_LP5_ALERT" : "IMON_LP5_ALERT",
+			"8A34001_EXP_RST_B" : "8A34001_EXP_RST_B",
+			"QSFP1_MODSELL" : "QSFP1_MODSELL",
+			"QSFP1_RESETL" : "QSFP1_RESETL",
+			"QSFP1_MODPRSL_RO" : "QSFP1_MODPRSL",
+			"QSFP1_INTL_RO" : "QSFP1_INTL",
+			"QSFP1_INITMODE" : "QSFP1_INITMODE",
+			"QSFP2_MODSELL" : "QSFP2_MODSELL",
+			"QSFP2_RESETL" : "QSFP2_RESETL",
+			"QSFP2_MODPRSL_RO" : "QSFP2_MODPRSL",
+			"QSFP2_INTL_RO" : "QSFP2_INTL",
+			"QSFP2_INITMODE" : "QSFP2_INITMODE",
+			"SYSCTLR_JTAG_S0" : "SYSCTRL_MIO26_JTAG_S0",
+			"SYSCTLR_JTAG_S1" : "SYSCTRL_MIO27_JTAG_S1",
+			"SYSCTLR_VERSAL_MODE0" : "SYSCTRL_MIO38_DUT_MODE0",
+			"SYSCTLR_VERSAL_MODE1" : "SYSCTRL_MIO39_DUT_MODE1",
+			"SYSCTLR_VERSAL_MODE2" : "SYSCTRL_MIO40_DUT_MODE2",
+			"SYSCTLR_VERSAL_MODE3" : "SYSCTRL_MIO41_DUT_MODE3",
+			"SYSCTLR_VERSAL_MODE0_READBACK_RO" : "SYSCTRL_MIO42_MODE0_Rdbk",
+			"SYSCTLR_VERSAL_MODE1_READBACK_RO" : "SYSCTRL_MIO43_MODE1_Rdbk",
+			"SYSCTLR_VERSAL_MODE2_READBACK_RO" : "SYSCTRL_MIO44_MODE2_Rdbk",
+			"SYSCTLR_VERSAL_MODE3_READBACK_RO" : "SYSCTRL_MIO45_MODE3_Rdbk",
+			"VERSAL_ERROR_OUT_LS_RO" : "SYSCTRL_MIO28_DUT_ERR_Rd",
+			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE",
+			"SYSCTLR_POR_B_LS" : "SYSCTRL_MIO30_DUT_POR",
+			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTRL_MIO46_DUT_POR_Rd",
+			"UART_MUXSEL0" : "SYSCTRL_MIO48_UART_MUXsel0",
+			"UART_MUXSEL1" : "SYSCTRL_MIO49_UART_MUXsel1",
+			"FAN_PWM" : "SYSCTRL_MIO47_FAN_PWM",
+			"FAN_TACH_RO" : "SYSCTRL_HPA03P_FAN_TACH",
+			"I2C0_SW_SEL" : "SYSCTRL_MIO65_I2C0_SW_SEL",
+			"EEPROM_WC_B" : "SYSCTRL_HPA03N_EEPROM_WC_B",
+			"PMU_RST" : "SYSCTRL_MIO35_PMU_RST",
+			"PS_PGOOD_RO" : "SYSCTRL_PS_PGOOD",
+			"PL_PGOOD_RO" : "SYSCTRL_PL_PGOOD",
+			"PWRGD_FPD_LPD_RO" : "SYSCTRL_PWRGD_FPD_LPD_M2C",
+			"PWRGD_PL_RO" : "SYSCTRL_PWRGD_PL_M2C",
+			"FMC_LPC_PRSNT_M2C_B_RO" : "FMC_LPC_PRSNT_M2C_B",
+			"FMC_HPC_PRSNT_M2C_B_RO" : "FMC_HPC_PRSNT_M2C_B"
+		}
+	}
+}

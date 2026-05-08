@@ -21,6 +21,10 @@ import sys
 import time
 import subprocess
 from chipscopy import create_session
+from chipscopy.utils.printer import printer
+
+# Suppress ChipScoPy client/server version mismatch warning.
+printer.quiet = True
 
 if len(sys.argv) != 5:
     print("ERROR: missing DDRMC number, board name, image id, and unique id")

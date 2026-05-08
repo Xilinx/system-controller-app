@@ -42,7 +42,7 @@
 				"Upper_Freq" : 2100.0,
 				"Lower_Freq" : 15.0,
 				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x57"
+				"I2C_Address" : "0x40"
 			},
 			"LP5_OSC2_CLK" : {
 				"Name" : "LP5_OSC2_CLK",
@@ -64,53 +64,13 @@
 				"I2C_Bus" : "/dev/i2c-1",
 				"I2C_Address" : "0x59"
 			},
-			"PCIE_GEN_RC0_OUTCLK" : {
-				"Name" : "PCIE_GEN_RC0_OUTCLK",
+			"PCIE_OUTCLK" : {
+				"Name" : "PCIE_OUTCLK",
 				"Type" : "RC21008B",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-4/set_rate",
+				"Sysfs_Path" : "/sys/devices/platform/gen-rc0-outclk/set_rate",
 				"Default_Freq" : 100.0,
 				"Upper_Freq" : 650.0,
-				"Lower_Freq" : 0.001,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x39"
-			},
-			"PCIE_GEN_RC1_OUTCLK" : {
-				"Name" : "PCIE_GEN_RC1_OUTCLK",
-				"Type" : "RC21008B",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-5/set_rate",
-				"Default_Freq" : 100.0,
-				"Upper_Freq" : 650.0,
-				"Lower_Freq" : 0.001,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x39"
-			},
-			"PCIE_GEN_RC2_OUTCLK" : {
-				"Name" : "PCIE_GEN_RC2_OUTCLK",
-				"Type" : "RC21008B",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-6/set_rate",
-				"Default_Freq" : 100.0,
-				"Upper_Freq" : 650.0,
-				"Lower_Freq" : 0.001,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x39"
-			},
-			"PCIE_CPM6_CLKMUX_INCLK" : {
-				"Name" : "PCIE_CPM6_CLKMUX_INCLK",
-				"Type" : "RC21008B",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-7/set_rate",
-				"Default_Freq" : 100.0,
-				"Upper_Freq" : 650.0,
-				"Lower_Freq" : 0.001,
-				"I2C_Bus" : "/dev/i2c-1",
-				"I2C_Address" : "0x39"
-			},
-			"PCIE_PL_CLKMUX_INCLK" : {
-				"Name" : "PCIE_PL_CLKMUX_INCLK",
-				"Type" : "RC21008B",
-				"Sysfs_Path" : "/sys/devices/platform/sys-clk-8/set_rate",
-				"Default_Freq" : 100.0,
-				"Upper_Freq" : 650.0,
-				"Lower_Freq" : 0.001,
+				"Lower_Freq" : 50.0,
 				"I2C_Bus" : "/dev/i2c-1",
 				"I2C_Address" : "0x39"
 			}

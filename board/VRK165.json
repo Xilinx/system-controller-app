@@ -182,7 +182,7 @@
 		"Boot Config" : {
 			"PDI" : "system_wrapper.pdi",
 			"ImageID" : "0x18700001",
-			"UniqueID_Rev0" : "0x7ddaa9b2"
+			"UniqueID_Rev0" : "0xf8abbc64"
 		},
 		"BITs" : {
 			"BIT_IDCODE_VERIFY" : {
@@ -316,6 +316,23 @@
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x207",
 						"Instruction" : "\n1- Did you see the LEDs blinking and sequencing?\n2- Click 'Pass' if you observed it.\n3- Image location=1620,1710, size=42,57.\n"
+					}
+				}
+			},
+			"BIT_BUTTONS_TEST" : {
+				"Name" : "Buttons Test",
+				"Description" : "This test verifies push buttons (SW10, SW12). See the buttons on the board as displayed on the image to locate buttons. The test waits for 60 secs to press each button. The test fails if the buttons are not pressed in any order within the time limit.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x108",
+						"Instruction" : "\n1- Look for push buttons SW10 and SW12 on the board. \n2- After clicking 'OK' press push buttons SW12 and SW10 in any order.\n3- Click 'OK' when ready.\n4- Image location=1488,1710, size=77,83.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x208",
+						"Instruction" : "\nTest Complete\n\nClick 'OK'.\n"
 					}
 				}
 			},

@@ -3,7 +3,7 @@
 
 	"SCU200" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "gpio", "SFP", "FMC", "BIT"]
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "SFP", "FMC", "BIT"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -32,6 +32,10 @@
 				"I2C_Address" : "0x69",
 				"FPGA_Counter_Reg" : ["0x0", "0x40020000", "0x40030000", "0x40040000", "0x0", "0x0", "0x0", "0x0", "0x40050000", "0x40060000", "0x0", "0x0"]
 			}
+		},
+		"Temperature" : {
+			"Name" : "Spartan-US+",
+			"Sensor" : "versal-isa-0000"
 		},
 		"GPIO_Group" : {
 			"SW1" : {

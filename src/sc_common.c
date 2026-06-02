@@ -1486,19 +1486,19 @@ EEPROM_MultiRecord(char *Buffer, int MAC_Address)
 
 	Print_Filter = (MAC_Address) ? 1 : 0;
 
-	/* Common Header offset 0x5 points to Multirecord areas */
-	Offset = Buffer[5] * 8;
-
 	/*
-	 * XXX - Some early VCK190/VMK180 boards have incorrect offset
-	 * value programmed.  If 'Type' is not one of the expected codes
-	 * for 'Multi Record Area' field, adjust the offset to reach to
-	 * the correct area.
+	 * Common header offset 0x5 contains offset in bytes to the Multirecord
+	 * areas.  If that value is 0, it indicates that no Multirecord area is
+	 * present.
 	 */
-	Type = Buffer[Offset];
-	if (!(Type == DC_OUTPUT || Type == DC_LOAD || Type == OEM_D2 ||
-	      Type == OEM_D3 || Type == OEM_VITA_57_1)) {
-		Offset = 0x68;
+	Offset = Buffer[5] * 8;
+	if (Offset == 0) {
+		if (MAC_Address && Determine_SC_MAC() != 0) {
+			SC_ERR("failed to determine SC MAC address");
+			return -1;
+		}
+
+		return 0;
 	}
 
 	do {

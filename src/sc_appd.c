@@ -990,8 +990,7 @@ EEPROM_Ops(void)
 		Length = (In_Buffer[Offset] & 0x3F);
 		snprintf(Buffer, Length + 1, "%s", &In_Buffer[Offset + 1]);
 		SC_PRINT("Board Revision: %s", Buffer);
-		EEPROM_MultiRecord(In_Buffer, 1);
-		break;
+		return EEPROM_MultiRecord(In_Buffer, 1);
 	case EEPROM_ALL:
 		EEPROM_Print_All(In_Buffer, 256, 16);
 		break;

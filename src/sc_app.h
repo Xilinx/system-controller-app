@@ -292,8 +292,9 @@ typedef struct FMCs {
  */
 typedef struct {
 	char	*Name;
-	int	Arg_Needed;
-	int	(*Plat_Workaround_Op)(void *);
+	char	*Script_Name;
+	int	Script_Args_Count;
+	char	*Script_Args[ITEMS_MAX];
 } Workaround_t;
 
 typedef struct Workarounds {

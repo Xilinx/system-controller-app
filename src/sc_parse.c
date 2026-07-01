@@ -1316,7 +1316,11 @@ Parse_Workaround(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	int Item = 0;
 
 	SC_INFO("***************** WORKAROUNDS **************\n");
-	*WAs = (Workarounds_t *)malloc(sizeof(Workarounds_t));
+	*WAs = (Workarounds_t *)calloc(1, sizeof(Workarounds_t));
+	if (*WAs == NULL) {
+		SC_ERR("failed to allocate Workarounds");
+		return -1;
+	}
 
 	(*Index)++;
 	(*WAs)->Numbers = Tokens[*Index].size;
@@ -1332,18 +1336,37 @@ Parse_Workaround(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		SC_INFO("Name: %s", (*WAs)->Workaround[Item].Name);
 
 		(*Index)++;
-		Check_Attribute("Arg_Needed", "WORKAROUND");
+		Check_Attribute("Script_Name", "WORKAROUND");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		(*WAs)->Workaround[Item].Arg_Needed = atoi(Value_Str);
-		SC_INFO("Args Needed: %i", (*WAs)->Workaround[Item].Arg_Needed);
+		Validate_Str_Size(Value_Str, "WORKAROUND", "Script_Name", STRLEN_MAX);
+		(*WAs)->Workaround[Item].Script_Name = Value_Str;
+		SC_INFO("Script Name: %s", (*WAs)->Workaround[Item].Script_Name);
 
 		(*Index)++;
-		Check_Attribute("Plat_Workaround_Op", "WORKAROUND");
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
 				    Tokens[*Index].end - Tokens[*Index].start);
-		SC_INFO("Plat_Workaround_Op: %s", Value_Str);
+		if (strcmp(Value_Str, "Script_Args") == 0) {
+			free(Value_Str);
+			(*Index)++;
+			Validate_Item_Size(Tokens[*Index].size, "WORKAROUND",
+					   "Script_Args", ITEMS_MAX);
+			(*WAs)->Workaround[Item].Script_Args_Count = Tokens[*Index].size;
+			SC_INFO("Number of Script_Args: %i", (*WAs)->Workaround[Item].Script_Args_Count);
+			for (int i = 0; i < (*WAs)->Workaround[Item].Script_Args_Count; i++) {
+				(*Index)++;
+				Value_Str = strndup(Json_File + Tokens[*Index].start,
+						    Tokens[*Index].end - Tokens[*Index].start);
+				Validate_Str_Size(Value_Str, "WORKAROUND", "Script_Args", STRLEN_MAX);
+				(*WAs)->Workaround[Item].Script_Args[i] = Value_Str;
+				SC_INFO("Script Args[%i]: %s", i, (*WAs)->Workaround[Item].Script_Args[i]);
+			}
+		} else {
+			free(Value_Str);
+			(*Index)--;
+		}
 
+		SC_INFO("");
 		Item++;
 	}
 

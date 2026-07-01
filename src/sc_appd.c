@@ -13,7 +13,7 @@
 #include <time.h>
 #include <math.h>
 #include <errno.h>
-#include <signal.h>
+#include <sys/wait.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -82,7 +82,6 @@ int SFP_Ops(void);
 int EBM_Ops(void);
 int FMC_Ops(void);
 int PDI_Ops(void);
-int (*Workaround_Op)(void *);
 int FMC_Autodetect_Vadj(void);
 int Boot_Set_Clocks(void);
 int Boot_Set_Voltages(void);
@@ -90,6 +89,7 @@ int Boot_Load_PDI(void);
 int Apply_Workarounds(void);
 int IO_Exp_Initialized(void);
 static void String_2_Argv(char *, int *, char **);
+static int Invoke_Workaround(const Workaround_t *, const char *);
 
 static char Usage[] = "\n\
 sc_app -c <command> [-t <target> [-v <value>]]\n\n\
@@ -138,7 +138,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	powerdomain - get the power used by <target> power domain\n\
 \n\
 	listworkaround - list the applicable workaround targets\n\
-	workaround - apply <target> workaround (may requires <value>)\n\
+	workaround - apply <target> workaround (may have optional <value>)\n\
 \n\
 	listBIT - list the supported Board Interface Test targets\n\
 	describeBIT - describe BIT for <target>\n\
@@ -1987,14 +1987,207 @@ int Power_Domain_Ops(void)
 }
 
 /*
+ * Start a workaround script in the background via fork(2) and execv(3).
+ */
+static int
+Invoke_Workaround(const Workaround_t *Workaround, const char *Override_Args)
+{
+	char Script_Path[SYSCMD_MAX];
+	char Log_Path[SYSCMD_MAX];
+	pid_t Pid;
+	int Length;
+
+	Length = snprintf(Script_Path, sizeof(Script_Path), "%s%s",
+			  SCRIPT_PATH, Workaround->Script_Name);
+	if (Length < 0 || (size_t)Length >= sizeof(Script_Path)) {
+		SC_ERR("workaround script path overflow");
+		return -1;
+	}
+
+	if (access(Script_Path, X_OK) != 0) {
+		SC_ERR("workaround script not found or not executable: %s", Script_Path);
+		return -1;
+	}
+
+	Length = snprintf(Log_Path, sizeof(Log_Path), "%s/.sc_app/%s.log",
+			  INSTALLDIR, Workaround->Name);
+	if (Length < 0 || (size_t)Length >= sizeof(Log_Path)) {
+		SC_ERR("workaround log path overflow");
+		return -1;
+	}
+
+	if (Override_Args != NULL && Override_Args[0] != '\0') {
+		char Override_Copy[LSTRLEN_MAX];
+		char *Token;
+		int Extra_Args = 0;
+
+		(void) strncpy(Override_Copy, Override_Args,
+			       sizeof(Override_Copy) - 1);
+		Override_Copy[sizeof(Override_Copy) - 1] = '\0';
+
+		for (Token = strtok(Override_Copy, " "); Token != NULL;
+		     Token = strtok(NULL, " ")) {
+			Extra_Args++;
+		}
+
+		if (Extra_Args > ITEMS_MAX) {
+			SC_ERR("workaround '-v' token list too long");
+			return -1;
+		}
+	}
+
+	Pid = fork();
+	if (Pid < 0) {
+		SC_ERR("failed to fork workaround launcher: %m");
+		return -1;
+	}
+
+	/*
+	 * fork(2) returns 0 in the child. The code below runs in the
+	 * forked child process, not in sc_appd, until execv(3) which replaces
+	 * this process with the workaround script.
+	 */
+	if (Pid == 0) {
+		/*
+		 * Script path, board name, revision; up to ITEMS_MAX Script_Args;
+		 * +1 is required by execv(3) to hold the NULL terminator.
+		 */
+		char *Argv[ITEMS_MAX + 3 + 1];
+		char Override_Copy[LSTRLEN_MAX];
+		int Argc = 0;
+		long Max_FD;
+		int Null_FD;
+		int Log_FD;
+		char *Token;
+
+		/* Child: build argv for execv(3) */
+		Argv[Argc++] = Script_Path;
+		Argv[Argc++] = Board_Name;
+		Argv[Argc++] = Board_Revision;
+
+		if (Override_Args != NULL && Override_Args[0] != '\0') {
+			/* Runtime '-v': split the override string into argv tokens */
+			(void) strncpy(Override_Copy, Override_Args,
+				       sizeof(Override_Copy) - 1);
+			Override_Copy[sizeof(Override_Copy) - 1] = '\0';
+
+			for (Token = strtok(Override_Copy, " "); Token != NULL;
+			     Token = strtok(NULL, " ")) {
+				if (Argc >= (int)(sizeof(Argv) / sizeof(Argv[0])) - 1) {
+					/*
+					 * 127 is the usual shell status for exec failure;
+					 * operation of sc_appd is not impacted by this failure.
+					 */
+					_exit(127);
+				}
+
+				Argv[Argc++] = Token;
+			}
+		} else {
+			/* Boot or no '-v': append each JSON Script_Args entry */
+			for (int j = 0; j < Workaround->Script_Args_Count; j++) {
+				if (Argc >= (int)(sizeof(Argv) / sizeof(Argv[0])) - 1) {
+					_exit(127);
+				}
+
+				Argv[Argc++] = Workaround->Script_Args[j];
+			}
+		}
+
+		/* Terminate argv for execv(3) */
+		Argv[Argc] = NULL;
+
+		/* Start a new session so the script is not in sc_appd's process group */
+		if (setsid() < 0) {
+			_exit(127);
+		}
+
+		/* Close every FD sc_appd inherited above stdin/stdout/stderr */
+		Max_FD = sysconf(_SC_OPEN_MAX);
+		if (Max_FD < 0) {
+			Max_FD = 1024;
+		}
+
+		for (int FD = 3; FD < Max_FD; FD++) {
+			(void) close(FD);
+		}
+
+		/* Redirect stdin from /dev/null */
+		Null_FD = open("/dev/null", O_RDONLY);
+		if (Null_FD < 0) {
+			_exit(127);
+		}
+
+		/* Open the per-workaround log (truncate on each launch) */
+		Log_FD = open(Log_Path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		if (Log_FD < 0) {
+			(void) close(Null_FD);
+			_exit(127);
+		}
+
+		/* Wire stdin to /dev/null and stdout & stderr to the log file */
+		if (dup2(Null_FD, STDIN_FILENO) < 0 ||
+		    dup2(Log_FD, STDOUT_FILENO) < 0 ||
+		    dup2(Log_FD, STDERR_FILENO) < 0) {
+			(void) close(Null_FD);
+			(void) close(Log_FD);
+			_exit(127);
+		}
+
+		/* Drop the temporary FDs once dup2() has copied them */
+		if (Null_FD > STDERR_FILENO) {
+			(void) close(Null_FD);
+		}
+
+		if (Log_FD > STDERR_FILENO) {
+			(void) close(Log_FD);
+		}
+
+		/* Replace this child with the workaround script/binary */
+		execv(Script_Path, Argv);
+		_exit(127);
+	}
+
+	SC_INFO("started workaround '%s' in background (pid %d): %s",
+		Workaround->Name, (int)Pid, Script_Path);
+
+	/* Reap other exited workaround children without waiting on the new one */
+	while ((Pid = waitpid(-1, NULL, WNOHANG)) > 0) {
+		continue;
+	}
+
+	return 0;
+}
+
+int
+Apply_Workarounds(void)
+{
+	Workarounds_t *Workarounds;
+
+	if (Plat_Devs == NULL || Plat_Devs->Workarounds == NULL) {
+		return 0;
+	}
+
+	Workarounds = Plat_Devs->Workarounds;
+	for (int i = 0; i < Workarounds->Numbers; i++) {
+		if (Invoke_Workaround(&Workarounds->Workaround[i], NULL) != 0) {
+			return -1;
+		}
+	}
+
+	SC_INFO("started workarounds in background");
+	return 0;
+}
+
+/*
  * Workaround Operations
  */
 int Workaround_Ops(void)
 {
 	int Target_Index = -1;
 	Workarounds_t *Workarounds;
-	unsigned long int Value;
-	int Return = -1;
+	Workaround_t *Workaround;
+	const char *Args;
 
 	Workarounds = Plat_Devs->Workarounds;
 	if (Workarounds == NULL) {
@@ -2019,6 +2212,7 @@ int Workaround_Ops(void)
 	for (int i = 0; i < Workarounds->Numbers; i++) {
 		if (strcmp(Target_Arg, (char *)Workarounds->Workaround[i].Name) == 0) {
 			Target_Index = i;
+			Workaround = &Workarounds->Workaround[Target_Index];
 			break;
 		}
 	}
@@ -2028,25 +2222,8 @@ int Workaround_Ops(void)
 		return -1;
 	}
 
-	/* Does the workaround need argument? */
-	if (Workarounds->Workaround[Target_Index].Arg_Needed == 1 && V_Flag == 0) {
-		SC_ERR("no workaround value");
-		return -1;
-	}
-
-	if (V_Flag == 0) {
-		Return = (*Workarounds->Workaround[Target_Index].Plat_Workaround_Op)(NULL);
-	} else {
-		Value = atol(Value_Arg);
-		if (Value != 0 && Value != 1) {
-			SC_ERR("invalid value");
-			return -1;
-		}
-
-		Return = (*Workarounds->Workaround[Target_Index].Plat_Workaround_Op)(&Value);
-	}
-
-	if (Return == -1) {
+	Args = V_Flag ? Value_Arg : NULL;
+	if (Invoke_Workaround(Workaround, Args) != 0) {
 		SC_ERR("failed to apply workaround");
 		return -1;
 	}
@@ -3870,15 +4047,6 @@ PDI_Ops(void)
 		return -1;
 	}
 
-	return 0;
-}
-
-/*
- * Apply any applicable workaround
- */
-int
-Apply_Workarounds(void)
-{
 	return 0;
 }
 

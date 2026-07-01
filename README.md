@@ -49,7 +49,7 @@
 		powerdomain - get the power used by <target> power domain
 
 		listworkaround - list the applicable workaround targets
-		workaround - apply <target> workaround (may requires <value>)
+		workaround - apply <target> workaround (may have optional <value>)
 
 		listBIT - list the supported Board Interface Test targets
 		describeBIT - describe BIT for <target>

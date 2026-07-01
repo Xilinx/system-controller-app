@@ -1,6 +1,6 @@
 {
 	"License" : "Copyright (c) 2021 - 2022 Xilinx, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
-	"License" : "Copyright (c) 2022 - 2025 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
+	"License" : "Copyright (c) 2022 - 2026 Advanced Micro Devices, Inc.  All rights reserved. SPDX-License-Identifier: MIT",
 
 	"VMK180" : {
 		"FEATURE" : {
@@ -578,13 +578,6 @@
 				"Supported_Volts" : [1.2, 1.5],
 				"Voltage_Regulator" : "VADJ_FMC",
 				"Default_Volt" : 1.5
-			}
-		},
-		"WORKAROUND" : {
-			"WORKAROUND_VCCAUX" : {
-				"Name" : "vccaux",
-				"Arg_Needed" : 1,
-				"Plat_Workaround_Op" : "VCK190_ES1_Vccaux_Workaround"
 			}
 		},
 		"Boot Config" : {

@@ -8,6 +8,7 @@
 		version - version and build information
 		board - name of the board
 		reset - apply power-on-reset
+		fan - read pwm-fan duty and tachometer
 
 		listfeature - list the supported features for this board
 

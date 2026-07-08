@@ -48,9 +48,10 @@
  * 1.23 - Added 'listFMCvoltage' command to list rail info providing power to FMCs.
  * 1.24 - Added 'setinputgpio' command to set the direction of a gpio line to input.
  * 1.25 - Added JTAG select commands to select different JTAG controllers.
+ * 1.26 - Added 'fan' command to read pwm-fan duty and tachometer.
  */
 #define MAJOR	1
-#define MINOR	25
+#define MINOR	26
 
 int Client_FD;
 char Sock_OutBuffer[SOCKBUF_MAX];
@@ -97,6 +98,7 @@ sc_app -c <command> [-t <target> [-v <value>]]\n\n\
 	version - version and build information\n\
 	board - name of the board\n\
 	reset - apply power-on-reset\n\
+	fan - read pwm-fan duty and tachometer\n\
 \n\
 	listfeature - list the supported features for this board\n\
 \n\
@@ -181,6 +183,7 @@ typedef enum {
 	VERSION,
 	BOARD,
 	RESET,
+	FAN,
 	LISTFEATURE,
 	LISTEEPROM,
 	GETEEPROM,
@@ -248,6 +251,7 @@ static Command_t Commands[] = {
 	{ .CmdId = VERSION, .CmdStr = "version", .CmdOps = Version_Ops, },
 	{ .CmdId = BOARD, .CmdStr = "board", .CmdOps = Board_Ops, },
 	{ .CmdId = RESET, .CmdStr = "reset", .CmdOps = Reset_Op, },
+	{ .CmdId = FAN, .CmdStr = "fan", .CmdOps = Fan_Op, },
 	{ .CmdId = LISTFEATURE, .CmdStr = "listfeature", .CmdOps = Feature_Ops, },
 	{ .CmdId = LISTEEPROM, .CmdStr = "listeeprom", .CmdOps = EEPROM_Ops, },
 	{ .CmdId = GETEEPROM, .CmdStr = "geteeprom", .CmdOps = EEPROM_Ops, },

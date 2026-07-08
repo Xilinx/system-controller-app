@@ -16,6 +16,8 @@
 #include <glob.h>
 #include <libgen.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
+#include <stdint.h>
 #include "sc_app.h"
 
 Plat_Devs_t *Plat_Devs;
@@ -2378,6 +2380,279 @@ Check_Config_File(char *Name, char *Value, int *Found)
 
 		(void) fclose(FP);
 	}
+
+	return 0;
+}
+
+/* fan_tach IP: S00 control, S01 tach counter, S02 AXI timer gate */
+#define FAN_BASE_S00		0x80080000U	/* S00 register block physical base */
+#define FAN_BASE_S01		0x80081000U	/* S01 register block physical base */
+#define FAN_BASE_S02		0x80082000U	/* S02 AXI timer register block physical base */
+#define FAN_OFF_CLEAR		0x8U		/* S00 offset of CLEAR (GPIO2 bit 0) */
+#define FAN_OFF_COUNT_THRESH	0x0U		/* S01 offset of COUNT_THRESH register */
+#define FAN_OFF_COUNT		0x8U		/* S01 offset of COUNT (pulse tally) register */
+#define FAN_OFF_TCSR0		0x0U		/* S02 offset of TCSR0 (timer control/status) */
+#define FAN_OFF_TLR0		0x4U		/* S02 offset of TLR0 (timer load value) */
+#define FAN_TCSR_LOAD		0x00000066U	/* TCSR0 write: load TLR0 into the timer */
+#define FAN_TCSR_START		0x000000c6U	/* TCSR0 write: start gate-interval timer */
+#define FAN_ENT_MASK		0x00000080U	/* TCSR0 bit mask: ENT (timer enable) */
+#define FAN_T0INT_MASK		0x00000100U	/* TCSR0 bit mask: T0INT (gate done) */
+#define FAN_CLEAR_MASK		0x00000001U	/* S00 CLEAR bit mask */
+#define FAN_COUNT_MASK		0x03ffffffU	/* Valid bits when reading COUNT (26 bits) */
+#define FAN_COUNT_THRESH	32U		/* COUNT_THRESH: min tach pulse width (clocks) */
+#define FAN_WINDOW_SEC		2.0		/* Gate duration (seconds) */
+#define FAN_TIMER_CLK_HZ	100000000ULL	/* AXI timer input clock frequency (Hz) */
+#define FAN_PULSES_PER_REV	2U		/* Tach pulses per fan revolution (PPR) */
+#define FAN_POLL_MS		20U		/* T0INT poll interval (milliseconds) */
+#define FAN_GATE_POLL_MAX	150U		/* T0INT poll limit: 2 s gate + 50% @ 20 ms */
+#define FAN_PWM1_SYSFS	"/sys/devices/platform/pwm-fan/hwmon/hwmon*/pwm1"
+#define FAN_TACH_PLAT_SYSFS	"/sys/bus/platform/devices/80080000.fan_tach"
+
+typedef struct {
+	void		*Virt;
+	uintptr_t	Phys_Base;
+	size_t		Length;
+} Fan_MemMap_t;
+
+static int
+Fan_Read_PWM(int *PWM)
+{
+	glob_t Glob_Result;
+	FILE *FP;
+	const char *Sysfs_Path = NULL;
+	char PWM_Sysfs_Path[STRLEN_MAX];
+
+	if (PWM == NULL) {
+		return -1;
+	}
+
+	if (glob(FAN_PWM1_SYSFS, 0, NULL, &Glob_Result) != 0 || Glob_Result.gl_pathc == 0) {
+		globfree(&Glob_Result);
+		SC_ERR("pwm-fan pwm1 sysfs not found");
+		return -1;
+	}
+
+	(void) strncpy(PWM_Sysfs_Path, Glob_Result.gl_pathv[0],
+		       sizeof(PWM_Sysfs_Path) - 1);
+	globfree(&Glob_Result);
+	Sysfs_Path = PWM_Sysfs_Path;
+
+	FP = fopen(Sysfs_Path, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to open '%s': %m", Sysfs_Path);
+		return -1;
+	}
+
+	if (fscanf(FP, "%d", PWM) != 1) {
+		(void) fclose(FP);
+		SC_ERR("failed to read PWM from '%s'", Sysfs_Path);
+		return -1;
+	}
+
+	(void) fclose(FP);
+
+	return 0;
+}
+
+static int
+Fan_Map_Regs(Fan_MemMap_t *Map)
+{
+	/*
+	 * mmap one page-aligned region spanning S00, S01, and S02.
+	 * Map_End_Addr is High_Base_Addr + 0x100 (256-byte register window),
+	 * rounded up to the next page boundary.
+	 */
+	uintptr_t Low_Base_Addr = FAN_BASE_S00;
+	uintptr_t High_Base_Addr = FAN_BASE_S02;
+	uintptr_t Page_Size = (uintptr_t)sysconf(_SC_PAGESIZE);
+	uintptr_t Map_Phys_Addr = Low_Base_Addr & ~(Page_Size - 1);
+	uintptr_t Map_End_Addr = (High_Base_Addr + 0x100U + Page_Size - 1) &
+	    ~(Page_Size - 1);
+	int Mem_FD;
+
+	Map->Phys_Base = Map_Phys_Addr;
+	Map->Length = Map_End_Addr - Map_Phys_Addr;
+	Map->Virt = NULL;
+
+	Mem_FD = open("/dev/mem", O_RDWR | O_SYNC);
+	if (Mem_FD < 0) {
+		SC_ERR("failed to open '/dev/mem': %m");
+		return -1;
+	}
+
+	Map->Virt = mmap(NULL, Map->Length, PROT_READ | PROT_WRITE,
+			 MAP_SHARED, Mem_FD, (off_t)Map_Phys_Addr);
+	(void) close(Mem_FD);
+	if (Map->Virt == MAP_FAILED) {
+		Map->Virt = NULL;
+		SC_ERR("failed to mmap fan_tach registers: %m");
+		return -1;
+	}
+
+	return 0;
+}
+
+static void
+Fan_Unmap_Regs(Fan_MemMap_t *Map)
+{
+	if (Map->Virt != NULL && Map->Virt != MAP_FAILED) {
+		(void) munmap(Map->Virt, Map->Length);
+	}
+
+	Map->Virt = NULL;
+}
+
+static volatile uint32_t *
+Fan_Reg_Ptr(Fan_MemMap_t *Map, uint32_t Phys_Base, uint32_t Offset)
+{
+	uintptr_t Phys_Addr = (uintptr_t)Phys_Base + Offset;
+	uintptr_t Map_Offset = Phys_Addr - Map->Phys_Base;
+
+	return (volatile uint32_t *)((uint8_t *)Map->Virt + Map_Offset);
+}
+
+static uint32_t
+Fan_Reg_Read(Fan_MemMap_t *Map, uint32_t Base_Addr, uint32_t Offset)
+{
+	return *Fan_Reg_Ptr(Map, Base_Addr, Offset);
+}
+
+static void
+Fan_Reg_Write(Fan_MemMap_t *Map, uint32_t Base_Addr, uint32_t Offset,
+	      uint32_t Value)
+{
+	*Fan_Reg_Ptr(Map, Base_Addr, Offset) = Value;
+}
+
+/*
+ * Reset the gate-interval timer and tach pulse counter.
+ * Clear T0INT and disable ENT so fan_tach_det does not re-open the
+ * counting window; pulse S00 CLEAR to reset the tach pulse counter.
+ * Does not affect fan PWM or rotation.
+ */
+static void
+Fan_Reset_Tach_Count(Fan_MemMap_t *Map)
+{
+	uint32_t TCSR;
+
+	TCSR = Fan_Reg_Read(Map, FAN_BASE_S02, FAN_OFF_TCSR0);
+	Fan_Reg_Write(Map, FAN_BASE_S02, FAN_OFF_TCSR0,
+		      (TCSR | FAN_T0INT_MASK) & ~FAN_ENT_MASK);
+	Fan_Reg_Write(Map, FAN_BASE_S00, FAN_OFF_CLEAR, FAN_CLEAR_MASK);
+	Fan_Reg_Write(Map, FAN_BASE_S00, FAN_OFF_CLEAR, 0U);
+}
+
+/*
+ * Poll the AXI timer until the gate completes (T0INT set).
+ *
+ * The fan_tach IP uses the S02 AXI timer as a gate: tach pulses are
+ * counted only while the timer runs.  When the programmed gate expires,
+ * hardware sets T0INT (bit 8) in TCSR0.  This routine polls that bit
+ * instead of sleeping for a fixed interval so the sample ends as soon as
+ * the gate ends.
+ */
+static int
+Fan_Wait_Gate_Done(Fan_MemMap_t *Map)
+{
+	uint32_t Poll_Index;
+
+	for (Poll_Index = 0; Poll_Index < FAN_GATE_POLL_MAX; Poll_Index++) {
+		/* T0INT set means the gate-interval timer has expired */
+		if (Fan_Reg_Read(Map, FAN_BASE_S02, FAN_OFF_TCSR0) & FAN_T0INT_MASK) {
+			return 0;
+		}
+
+		(void) usleep(FAN_POLL_MS * 1000U);
+	}
+
+	SC_ERR("timeout waiting for fan_tach gate-interval timer");
+	return -1;
+}
+
+/*
+ * Arm the gate-interval timer, wait for completion, and read COUNT.
+ */
+static int
+Fan_Tach_Sample(Fan_MemMap_t *Map, uint32_t Timer_Load, uint32_t *Count)
+{
+	if (Count == NULL) {
+		return -1;
+	}
+
+	/* COUNT_THRESH filters glitches shorter than ~0.32 us (32 clocks @ 100 MHz). */
+	Fan_Reg_Write(Map, FAN_BASE_S01, FAN_OFF_COUNT_THRESH,
+		      FAN_COUNT_THRESH & FAN_COUNT_MASK);
+
+	Fan_Reg_Write(Map, FAN_BASE_S02, FAN_OFF_TLR0, Timer_Load);
+	Fan_Reg_Write(Map, FAN_BASE_S02, FAN_OFF_TCSR0, FAN_TCSR_LOAD);
+	Fan_Reg_Write(Map, FAN_BASE_S02, FAN_OFF_TCSR0, FAN_TCSR_START);
+
+	if (Fan_Wait_Gate_Done(Map) != 0) {
+		return -1;
+	}
+
+	*Count = Fan_Reg_Read(Map, FAN_BASE_S01, FAN_OFF_COUNT) & FAN_COUNT_MASK;
+
+	return 0;
+}
+
+/*
+ * Read pwm-fan duty cycle and tachometer RPM.
+ *
+ * Takes one tach reading over a gate, converts the pulse count to RPM,
+ * and prints the current PWM duty cycle and fan speed.
+ */
+int
+Fan_Op(void)
+{
+	Fan_MemMap_t Mem_Map = { 0 };
+	int PWM_Duty = -1;
+	uint32_t Pulse_Count = 0;
+	uint32_t Timer_Load;
+	uint32_t Fan_RPM;
+
+	/*
+	 * The platform device appears when the SC bitstream includes fan_tach.
+	 * Without it, /dev/mem accesses to the register bases can stall the CPU.
+	 */
+	if (access(FAN_TACH_PLAT_SYSFS, F_OK) != 0) {
+		SC_ERR("fan_tach IP not present ('%s' not found)",
+		    FAN_TACH_PLAT_SYSFS);
+		return -1;
+	}
+
+	/* Read current fan PWM duty from pwm-fan hwmon sysfs */
+	if (Fan_Read_PWM(&PWM_Duty) != 0) {
+		return -1;
+	}
+
+	/* Round down gate_sec * timer_clk to TLR0 tick counts */
+	Timer_Load = (uint32_t)(FAN_WINDOW_SEC * (double)FAN_TIMER_CLK_HZ);
+
+	/* Map fan_tach S00/S01/S02 registers via /dev/mem */
+	if (Fan_Map_Regs(&Mem_Map) != 0) {
+		return -1;
+	}
+
+	/* Reset stale COUNT and leave timer disabled before arming */
+	Fan_Reset_Tach_Count(&Mem_Map);
+
+	if (Fan_Tach_Sample(&Mem_Map, Timer_Load, &Pulse_Count) != 0) {
+		Fan_Reset_Tach_Count(&Mem_Map);
+		Fan_Unmap_Regs(&Mem_Map);
+		return -1;
+	}
+
+	Fan_Reset_Tach_Count(&Mem_Map);
+	Fan_Unmap_Regs(&Mem_Map);
+
+	/* RPM = (pulses / PPR) / gate_sec * 60 */
+	Fan_RPM = (Pulse_Count * 60U) /
+	    (FAN_PULSES_PER_REV * (uint32_t)FAN_WINDOW_SEC);
+
+	SC_INFO("fan tach: gate COUNT=%u", Pulse_Count);
+	SC_PRINT("PWM(0-255):\t\t%d", PWM_Duty);
+	SC_PRINT("Tachometer(RPM):\t%u", Fan_RPM);
 
 	return 0;
 }

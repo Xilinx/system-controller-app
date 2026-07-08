@@ -534,6 +534,7 @@ int Get_Measured_Clock(char *, char *);
 int Get_Measured_Clock_Vendor(Clock_t *);
 int Get_Silicon_Revision(char *);
 int Get_Temperature(Temperature_t *);
+int Fan_Op(void);
 int Set_JTAGSelect(char *);
 int Parse_JSON(const char *, Plat_Devs_t *);
 int QSFP_ModuleSelect(SFP_t *, int);

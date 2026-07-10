@@ -3,7 +3,7 @@
 
 	"VEK386" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "SFP", "FMC"]
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "SFP", "FMC", "BIT"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -31,6 +31,7 @@
 				"Default_Design" : "VEK385_SiT95211",
 				"I2C_Bus" : "/dev/i2c-7",
 				"I2C_Address" : "0x69",
+				"FPGA_Counter_Reg" : ["0xB0000000", "0xB0010000", "0xB0020000", "0x0", "0x0", "0x0", "0x0", "0x0", "0x0", "0xB0030000", "0x0", "0x0"]
 			},
 			"SiT95314_CLK" : {
 				"Name" : "SiT95314_CLK",
@@ -40,6 +41,7 @@
 				"Default_Design" : "VEK385_SiT95314",
 				"I2C_Bus" : "/dev/i2c-8",
 				"I2C_Address" : "0x69",
+				"FPGA_Counter_Reg" : ["0x0", "0x0", "0xB0040000", "0x0"]
 			}
 		},
 		"Temperature" : {
@@ -129,6 +131,191 @@
 				"Default_Volt" : 1.2,
 				"Access_Label" : "I2C0_SW_SEL",
 				"Access_Level" : 0
+			}
+		},
+		"Boot Config" : {
+			"PDI" : "system_wrapper.pdi",
+			"ImageID" : "0x18700001",
+			"UniqueID_Rev0" : "0x779d06e3"
+		},
+		"BITs" : {
+			"BIT_IDCODE_VERIFY" : {
+				"Name" : "IDCODE Verify",
+				"Description" : "This test verifies Versal silicon device ID code. The test failure means it is not a compatible device.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "idcode_verify.tcl 0x01"
+					}
+				}
+			},
+			"BIT_EFUSE_VERIFY" : {
+				"Name" : "EFUSE Verify",
+				"Description" : "This test verifies the eFuse data matches the factory defaults. The test failure might be due to a non-compatible device or some eFuses have been set.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "read_efuse.tcl"
+					}
+				}
+			},
+			"BIT_CLOCKS_OUTPUT_TEST" : {
+				"Name" : "Clocks Output Test",
+				"Description" : "This test verifies the clock output frequencies by measuring the clocks at the Versal with clock counters. The test will fail in case the clock settings are different than default values.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x1"
+					}
+				}
+			},
+			"BIT_RTC_CLOCK_VERIFY" : {
+				"Name" : "RTC Clock Verify",
+				"Description" : "This non-destructive test verifies real time clock (RTC) by checking the time increment. The possible reason of failures might be because of oscillator, etc.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x2"
+					}
+				}
+			},
+			"BIT_DDRMC_1_CAL_TEST" : {
+				"Name" : "DDRMC_1 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 1 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_1_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_2_CAL_TEST" : {
+				"Name" : "DDRMC_2 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 2 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_2_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_3_CAL_TEST" : {
+				"Name" : "DDRMC_3 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 3 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_3_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_4_CAL_TEST" : {
+				"Name" : "DDRMC_4 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 4 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_4_Test"
+					}
+				}
+			},
+			"BIT_DDRMC_5_CAL_TEST" : {
+				"Name" : "DDRMC_5 Cal Test",
+				"Description" : "This test verifies Versal DDR memory controller 5 successfully completed calibration.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "DDRMC_5_Test"
+					}
+				}
+			},
+			"BIT_DRAM_MEM_TEST" : {
+				"Name" : "DRAM Mem Test",
+				"Description" : "This test verifies DRAM access by 8MB write, read and compare with cache on/off. The patterns used are 0s, 1's, 0xAAAA5555, row, col, bank.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x4"
+					}
+				}
+			},
+			"BIT_OSPI_TEST" : {
+				"Name" : "OSPI Test",
+				"Description" : "This test verifies OSPI Flash read/write (non-destructive). The test operation consists of save first sector (4K byte) data, erase, write random data, read, compare and restore the original data. Warning!! This might corrupt OSPI memory in case the test fails.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x5"
+					}
+				}
+			},
+			"BIT_PL_UART_TEST" : {
+				"Name" : "PL UART Test",
+				"Description" : "This test prints a 'Hello World!' message to the PL UART and automatically verifies that the message was successfully output.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x6"
+					}
+				}
+			},
+			"BIT_LEDS_TEST" : {
+				"Name" : "LEDs Test",
+				"Description" : "This test verifies board LEDs (DS4-DS7). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x107",
+						"Instruction" : "\n1- Look for LEDs (DS4-DS7) on the board.\n2- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n3- Click 'OK' when you are ready.\n4- Image location=1972,909, size=63,32.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x207",
+						"Instruction" : "\n1- Did you see the LEDs blinking and sequencing?\n2- Click 'Pass' if you observed it.\n3- Image location=1972,909, size=63,32.\n"
+					}
+				}
+			},
+			"BIT_BUTTONS_TEST" : {
+				"Name" : "Buttons Test",
+				"Description" : "This test verifies push buttons (SW6, SW7). See the buttons on the board as displayed on the image to locate buttons. The test waits for 60 secs to press each button. The test fails if the buttons are not pressed in any order within the time limit.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x108",
+						"Instruction" : "\n1- Look for push buttons SW6 and SW7 on the board \n2- After clicking 'OK' press push buttons SW7 and SW6 in any order.\n3- Click 'OK' when ready.\n4- Image location=1940,1169, size=77,60.\n5- Image location=1616,1728, size=58,81.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x208",
+						"Instruction" : "\nTest Complete\n\nClick 'OK'.\n"
+					}
+				}
+			},
+			"BIT_DIP_SWITCHES_TEST" : {
+				"Name" : "DIP Switches Test",
+				"Description" : "This test verifies DIP switches (SW5). Look at the image displayed and locate the DIP switches on the board. The test waits for about 60 secs to toggle DIP switches. The test fails if the DIP switches are not toggled in the order within the time limit.",
+				"Manual" : 1,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x109",
+						"Instruction" : "\n1- Look for DIP switches (SW5) on the board\n2- After clicking 'OK' turn On and then turn Off DIP Switches (SW5) \n3- Click 'OK' when you are ready.\n4- Image location=2047,1510, size=99,113.\n"
+					},
+					"Level 1" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x209",
+						"Instruction" : "\nTest Complete\n\nClick 'Ok'\n"
+					}
+				}
 			}
 		}
 	}

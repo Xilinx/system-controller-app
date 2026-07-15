@@ -35,11 +35,6 @@ if {$action == 0 || $action == 1} {
     # Select 'device-under-test' target to load the default PDI
     dut_connect $dut
 
-    # XXX- need to revisit this workaround when full labtools support is available for T50.
-    if {[string length [targets -nocase -filter {name =~ "*A78*"}]] != 0} {
-        rst -system
-    }
-
     # Download the default PDI
     load_default_pdi $dut [lindex $argv 1] [lindex $argv 2]
 

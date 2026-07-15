@@ -1,7 +1,7 @@
 #! /bin/bash
 
 #
-# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2023 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -18,6 +18,9 @@ if [ ! -f $PDI ]; then
    exit -1
 fi
 
-read -r image_id unique_id <<<$(bootgen -arch versal -read $PDI | grep -A1 "name (0x10) : " | grep -A1 -E "pl_cfi|CONFIG_MASTER" | tail -n 1 | awk '{print $4 " " $8}')
+for arch in versal versal_2ve_2vm; do
+   read -r image_id unique_id <<<$(bootgen -arch $arch -read $PDI 2>/dev/null | grep -A1 "name (0x10) : " | grep -A1 -E "pl_cfi|CONFIG_MASTER" | tail -n 1 | awk '{print $4 " " $8}')
+   [ -n "$image_id" ] && break
+done
 
 echo $image_id $unique_id

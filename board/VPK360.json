@@ -215,6 +215,17 @@
 					}
 				}
 			},
+			"BIT_PL_UART_TEST" : {
+				"Name" : "PL UART Test",
+				"Description" : "This test prints a 'Hello World!' message to the PL UART and automatically verifies that the message was successfully output.",
+				"Manual" : 0,
+				"BIT Levels" : {
+					"Level 0" : {
+						"Plat_BIT_Op" : "XSDB_BIT",
+						"TCL_File" : "versal_bit_download.tcl 0x6"
+					}
+				}
+			},
 			"BIT_LEDS_TEST" : {
 				"Name" : "LEDs Test",
 				"Description" : "This test verifies board LEDs (DS13-DS20). Look at the image displayed to locate LEDs on the board. The test takes about 30 secs. Notice the LEDs blinking.",

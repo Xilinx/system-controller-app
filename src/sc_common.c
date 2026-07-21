@@ -44,13 +44,121 @@ Appfile(char *Filename)
 	return SC_APP_File;
 }
 
+#define EEPROM_END_OF_FIELDS	0xC1
+#define EEPROM_BOARD_AREA	0x08
+#define EEPROM_BOARD_FIELDS_START 0x0E
+/*
+ * Field index within board area in EEPROM that are represented as strings (from EEPROM_BOARD_FIELDS_START):
+ * 0: Manufacturer, 1: Product Name, 2: Serial Number, 3: Part Number,
+ * 4: FRU ID, 5: Revision
+ */
+#define EEPROM_BOARD_NAME_INDEX	1
+#define EEPROM_BOARD_REVISION_INDEX 5
+
+/*
+ * Read string field Index by walking type/length fields from Start.
+ */
+static int
+EEPROM_Read_Field(const char *Buffer, int Start, int Index, int Area_End,
+	       char *Field, size_t Field_Size)
+{
+	int Offset = Start;
+	int Field_Num = 0;
+	unsigned char Type_Length;
+	int Length;
+	int Field_Type;
+
+	Field[0] = '\0';
+
+	while (Offset < Area_End && Offset < 256) {
+		Type_Length = (unsigned char)Buffer[Offset];
+		if (Type_Length == EEPROM_END_OF_FIELDS) {
+			SC_INFO("EEPROM field %d not found: end of fields", Index);
+			return -1;
+		}
+
+		/* Unused/padding bytes; skip without advancing the field index. */
+		if (Type_Length == 0x00 || Type_Length == 0xFF) {
+			Offset++;
+			continue;
+		}
+
+		Field_Type = Type_Length & 0xC0;
+		Length = Type_Length & 0x3F;
+		if (Field_Type == 0x80) {
+			SC_INFO("EEPROM field parsing: length in ASCII is not supported");
+			return -1;
+		}
+
+		if (Field_Num == Index) {
+			/* Board area strings are text strings (type 0xC0); length is in bytes. */
+			if (Field_Type != 0xC0) {
+				SC_INFO("EEPROM field %d is not a text string", Index);
+				return -1;
+			}
+
+			if (Length >= (int)Field_Size) {
+				Length = (int)Field_Size - 1;
+			}
+
+			(void) memcpy(Field, &Buffer[Offset + 1], Length);
+			Field[Length] = '\0';
+			return 0;
+		}
+
+		/* Advance past this field (1 type/length byte + Length data bytes) to the next field. */
+		Offset += 1 + Length;
+		Field_Num++;
+	}
+
+	SC_INFO("EEPROM field %d not found", Index);
+	return -1;
+}
+
+static int
+Run_SC_Board_ID(const char *Option, char *Output, size_t Output_Size)
+{
+	FILE *FP;
+	char Buffer[LSTRLEN_MAX];
+	char *SP;
+
+	snprintf(Buffer, sizeof(Buffer), "%s %s 2>/dev/null", SC_BOARD_ID, Option);
+	FP = popen(Buffer, "r");
+	if (FP == NULL) {
+		SC_INFO("failed to invoke '%s %s': %m", SC_BOARD_ID, Option);
+		return -1;
+	}
+
+	if (fgets(Output, Output_Size, FP) == NULL) {
+		SC_INFO("failed to read output from '%s %s'", SC_BOARD_ID, Option);
+		(void) pclose(FP);
+		return -1;
+	}
+
+	if (pclose(FP) != 0) {
+		SC_INFO("'%s %s' command failed", SC_BOARD_ID, Option);
+		return -1;
+	}
+
+	if (Output[0] == '\0') {
+		SC_INFO("'%s %s' returned empty output", SC_BOARD_ID, Option);
+		return -1;
+	}
+
+	for (SP = Output; *SP != '\0'; SP++) {
+		*SP = (char)toupper((unsigned char)*SP);
+	}
+
+	return 0;
+}
+
 static int
 Get_Product_Info(OnBoard_EEPROM_t *EEPROM, char *Product_Name, char *Product_Revision)
 {
 	int FD;
 	char In_Buffer[SYSCMD_MAX];
 	char Out_Buffer[LSTRLEN_MAX];
-	int Offset, Length;
+	int Board_Area_End;
 	int Found = 0;
 
 	/*
@@ -71,6 +179,20 @@ Get_Product_Info(OnBoard_EEPROM_t *EEPROM, char *Product_Name, char *Product_Rev
 		return 0;
 	}
 
+	/*
+	 * Use sc-board-id utility to get board name and revision to avoid direct EEPROM access.
+	 */
+	if (access(SC_BOARD_ID, X_OK) == 0) {
+		if (Run_SC_Board_ID("--name", Product_Name, LSTRLEN_MAX) == 0 &&
+		    Run_SC_Board_ID("--func-rev", Product_Revision, LSTRLEN_MAX) == 0) {
+			SC_INFO("Board identity from %s", SC_BOARD_ID);
+			SC_INFO("Product Name: %s", Product_Name);
+			SC_INFO("Product Revision: %s", Product_Revision);
+			return 0;
+		}
+	}
+
+	SC_INFO("failed to obtain board info from '%s', access EEPROM directly", SC_BOARD_ID);
 	FD = open(EEPROM->Path, O_RDWR);
 	if (FD < 0) {
 		SC_INFO("unable to open EEPROM '%s': %m", EEPROM->Path);
@@ -86,16 +208,21 @@ Get_Product_Info(OnBoard_EEPROM_t *EEPROM, char *Product_Name, char *Product_Rev
 
 	(void) close(FD);
 
-	Offset = 0x15;
-	Length = (In_Buffer[Offset] & 0x3F);
-	snprintf(Product_Name, Length + 1, "%s", &In_Buffer[Offset + 1]);
+	Board_Area_End = EEPROM_BOARD_AREA + ((unsigned char)In_Buffer[EEPROM_BOARD_AREA + 1] * 8);
+	if (EEPROM_Read_Field(In_Buffer, EEPROM_BOARD_FIELDS_START, EEPROM_BOARD_NAME_INDEX,
+			      Board_Area_End, Product_Name, LSTRLEN_MAX) != 0) {
+		SC_INFO("Board EEPROM product name is missing or invalid");
+		return -1;
+	}
+
 	SC_INFO("Product Name: %s", Product_Name);
+	if (EEPROM_Read_Field(In_Buffer, EEPROM_BOARD_FIELDS_START, EEPROM_BOARD_REVISION_INDEX,
+			      Board_Area_End, Product_Revision, LSTRLEN_MAX) != 0) {
+		SC_INFO("Board EEPROM product revision is missing or invalid");
+		return -1;
+	}
 
-	Offset = 0x43;
-	Length = (In_Buffer[Offset] & 0x3F);
-	snprintf(Product_Revision, Length + 1, "%s", &In_Buffer[Offset + 1]);
 	SC_INFO("Product Revision: %s", Product_Revision);
-
 	return 0;
 }
 
@@ -143,7 +270,7 @@ Board_Identification(char *Board_Name, char *Board_Revision)
 	Plat_Devs = (Plat_Devs_t *)calloc(1, sizeof(Plat_Devs_t));
 
 	if (Find_OnBoard_EEPROM(&OnBoard_EEPROM) != 0) {
-		return -1;
+		SC_INFO("onboard EEPROM path not found");
 	}
 
 	if (Get_Product_Info(&OnBoard_EEPROM, Board_Name, Board_Revision) != 0) {

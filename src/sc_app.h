@@ -46,6 +46,7 @@
 #define CUSTOM_CFS_PATH		DATADIR"/clock_files/"
 #define CUSTOM_PDIS_PATH	DATADIR"/PDIs/"
 #define ONBOARD_EEPROM_PATH	"/sys/bus/i2c/devices/*/eeprom_cc*"
+#define SC_BOARD_ID		"/bin/sc-board-id"
 #define RAFT_CLI	"/usr/share/raft/examples/python/pmtool/pm-cmd.py"
 #define GPIO_DONE	"VERSAL_DONE"
 

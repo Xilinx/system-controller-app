@@ -1,13 +1,14 @@
 #! /usr/bin/env python3
 
 #
-# Copyright (c) 2025 Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (c) 2025 - 2026 Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 import subprocess
 import argparse
+import os
 
 SI5518_Script = "/usr/share/system-controller-app/script/SI5518.py"
 
@@ -40,10 +41,14 @@ parser.add_argument('-s', '--setclock',
 def main(args):
     Command = ["sc_app -c board"]
     Result = subprocess.run(Command, capture_output=True, text=True, shell=True)
-    #print(Result.stdout)
-    if "VRK160\n" != Result.stdout:
-        print("ERROR: script only supports VRK160")
+    print(f"WARNING: Script {os.path.basename(__file__)} is deprecated and will be removed in future releases. Please use BEAM tool browser interface to program Si5518 clock chip.")
+    if Result.stdout not in ("VRK160\n", "VRK165\n"):
+        print("ERROR: script only supports VRK160 and VRK165")
         exit(-1)
+
+    if "VRK165\n" == Result.stdout:
+        Board = "VRK165"
+        Default_Design = "VRK165_SI5518"
 
     Command = ["python3", SI5518_Script, Board, str(I2C_Bus), str(I2C_Addr), Default_Design]
     if args.getclock:

@@ -3,7 +3,7 @@
 
 	"VPK360" : {
 		"FEATURE" : {
-			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "BIT"]
+			"List" : ["eeprom", "bootmode", "clock", "temp", "gpio", "FMC", "SFP", "BIT"]
 		},
 		"BOOTMODES" : {
 			"Mode_Lines" : ["SYSCTLR_VERSAL_MODE0", "SYSCTLR_VERSAL_MODE1",
@@ -91,19 +91,55 @@
 			"VERSAL_DONE_RO" : "SYSCTRL_MIO29_DUT_DONE",
 			"SYSCTLR_POR_B_LS" : "SYSCTRL_MIO30_DUT_POR",
 			"SYSCTLR_VERSAL_POR_B_READBACK_RO" : "SYSCTRL_MIO46_DUT_POR_Rd",
-			"UART_MUXSEL0" : "SYSCTRL_MIO48_UART_MUXsel0",
-			"UART_MUXSEL1" : "SYSCTRL_MIO49_UART_MUXsel1",
-			"FAN_PWM" : "SYSCTRL_MIO47_FAN_PWM",
-			"FAN_TACH_RO" : "SYSCTRL_HPA03P_FAN_TACH",
 			"I2C0_SW_SEL" : "SYSCTRL_MIO65_I2C0_SW_SEL",
 			"EEPROM_WC_B" : "SYSCTRL_HPA03N_EEPROM_WC_B",
 			"PMU_RST" : "SYSCTRL_MIO35_PMU_RST",
-			"PS_PGOOD_RO" : "SYSCTRL_PS_PGOOD",
-			"PL_PGOOD_RO" : "SYSCTRL_PL_PGOOD",
-			"PWRGD_FPD_LPD_RO" : "SYSCTRL_PWRGD_FPD_LPD_M2C",
-			"PWRGD_PL_RO" : "SYSCTRL_PWRGD_PL_M2C",
+			"FMC_HPC_PRSNT_M2C_B_RO" : "FMC_HPC_PRSNT_M2C_B",
+			"FMC_HPC_HSPC_PRSNT_M2C_B_RO" : "FMC_HPC_HSPC_PRSNT_M2C_B",
 			"FMC_LPC_PRSNT_M2C_B_RO" : "FMC_LPC_PRSNT_M2C_B",
-			"FMC_HPC_PRSNT_M2C_B_RO" : "FMC_HPC_PRSNT_M2C_B"
+			"FMC_LPC_HSPC_PRSNT_M2C_B_RO" : "FMC_LPC_HSPC_PRSNT_M2C_B"
+		},
+		"FMCs" : {
+			"FMC_1" : {
+				"Name" : "FMC_LPC",
+				"I2C_Bus" : "/dev/i2c-3",
+				"I2C_Address" : "0x50",
+				"Presence_Labels" : ["FMC_LPC_PRSNT_M2C_B", "FMC_LPC_HSPC_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VR_1V2_VADJ_FMC",
+				"Default_Volt" : 1.2,
+				"Access_Label" : "I2C0_SW_SEL",
+				"Access_Level" : 0
+			},
+			"FMC_2" : {
+				"Name" : "FMC_HPC",
+				"I2C_Bus" : "/dev/i2c-4",
+				"I2C_Address" : "0x50",
+				"Presence_Labels" : ["FMC_HPC_PRSNT_M2C_B", "FMC_HPC_HSPC_PRSNT_M2C_B"],
+				"Supported_Volts" : [1.2],
+				"Voltage_Regulator" : "VR_1V2_VADJ_FMC",
+				"Default_Volt" : 1.2,
+				"Access_Label" : "I2C0_SW_SEL",
+				"Access_Level" : 0
+			}
+		},
+		"SFPs" : {
+			"QSFP1" : {
+				"Name" : "QSFP1",
+				"Type" : "qsfp",
+				"I2C_Bus" : "/dev/i2c-15",
+				"I2C_Address" : "0x50",
+				"Access_Label" : "QSFP1_MODSELL",
+				"Access_Level" : 0
+			},
+			"QSFP2" : {
+				"Name" : "QSFP2",
+				"Type" : "qsfp",
+				"I2C_Bus" : "/dev/i2c-16",
+				"I2C_Address" : "0x50",
+				"Access_Label" : "QSFP2_MODSELL",
+				"Access_Level" : 0
+			}
 		},
 		"Boot Config" : {
 			"PDI" : "system_wrapper.pdi",

@@ -1130,7 +1130,7 @@ FMCAutoVadj_Op(void)
 	}
 
 	/* Some boards may not have a software-controllable voltage regulator */
-	if (FMCs->FMC[0].Voltage_Regulator == 0) {
+	if (FMCs->FMC[0].Voltage_Regulator == NULL) {
 		SC_PRINT("NOTE: FMC is not powered by a software-controllable voltage regulator");
 		return 0;
 	}

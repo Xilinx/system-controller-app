@@ -1182,7 +1182,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 	int Sub_Item;
 
 	SC_INFO("******************** FMCs ********************");
-	*FMCs = (FMCs_t *)malloc(sizeof(FMCs_t));
+	*FMCs = (FMCs_t *)calloc(1, sizeof(FMCs_t));
 
 	(*Index)++;
 	(*FMCs)->Numbers = Tokens[*Index].size;

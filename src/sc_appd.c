@@ -3848,7 +3848,7 @@ int FMC_Ops(void)
 	if (Command.CmdId == LISTFMCVOLTAGE) {
 		for (int i = 0; i < FMCs->Numbers; i++) {
 			FMC = &FMCs->FMC[i];
-			if (FMC->Voltage_Regulator == 0) {
+			if (FMC->Voltage_Regulator == NULL) {
 				continue;
 			}
 

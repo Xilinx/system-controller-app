@@ -105,9 +105,6 @@
 				"I2C_Bus" : "/dev/i2c-3",
 				"I2C_Address" : "0x50",
 				"Presence_Labels" : ["FMC_LPC_PRSNT_M2C_B", "FMC_LPC_HSPC_PRSNT_M2C_B"],
-				"Supported_Volts" : [1.2],
-				"Voltage_Regulator" : "VR_1V2_VADJ_FMC",
-				"Default_Volt" : 1.2,
 				"Access_Label" : "I2C0_SW_SEL",
 				"Access_Level" : 0
 			},
@@ -116,9 +113,6 @@
 				"I2C_Bus" : "/dev/i2c-4",
 				"I2C_Address" : "0x50",
 				"Presence_Labels" : ["FMC_HPC_PRSNT_M2C_B", "FMC_HPC_HSPC_PRSNT_M2C_B"],
-				"Supported_Volts" : [1.2],
-				"Voltage_Regulator" : "VR_1V2_VADJ_FMC",
-				"Default_Volt" : 1.2,
 				"Access_Label" : "I2C0_SW_SEL",
 				"Access_Level" : 0
 			}

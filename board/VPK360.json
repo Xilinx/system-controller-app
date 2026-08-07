@@ -265,12 +265,12 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x107",
-						"Instruction" : "\n1- Look for LEDs (DS13-DS20) on the board.\n2- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n3- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for LEDs (DS13-DS20) on the board.\n2- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n3- Click 'OK' when you are ready.\n4- Image location=3627,1632, size=88,172.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x207",
-						"Instruction" : "\n1- Did you see the LEDs blinking and sequencing?\n2- Click 'Pass' if you observed it.\n"
+						"Instruction" : "\n1- Did you see the LEDs blinking and sequencing?\n2- Click 'Pass' if you observed it.\n3- Image location=3627,1632, size=88,172.\n"
 					}
 				}
 			},
@@ -282,7 +282,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x108",
-						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for push buttons SW11, SW12, SW13, SW14, and SW15 on the board.\n3- After clicking 'OK' press push buttons SW11, SW12, SW13, SW14, and SW15 in any order.\n4- Click 'OK' when ready.\n"
+						"Instruction" : "\n1- Connect to the 1st com port, baud rate 115200, to see output of the test.\n2- Look for push buttons SW11, SW12, SW13, SW14, and SW15 on the board.\n3- After clicking 'OK' press push buttons SW11, SW12, SW13, SW14, and SW15 in any order.\n4- Click 'OK' when ready.\n5- Image location=3590,440, size=290,425.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -299,7 +299,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x109",
-						"Instruction" : "\n1- Look for DIP switches (SW16) on the board.\n2- After clicking 'OK' turn On and then turn Off all DIP Switches (SW16).\n3- Click 'OK' when you are ready.\n"
+						"Instruction" : "\n1- Look for DIP switches (SW16) on the board.\n2- After clicking 'OK' turn On and then turn Off all DIP Switches (SW16).\n3- Click 'OK' when you are ready.\n4- Image location=3695,1325, size=195,170.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",

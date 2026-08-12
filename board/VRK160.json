@@ -182,7 +182,8 @@
 		"Boot Config" : {
 			"PDI" : "system_wrapper.pdi",
 			"ImageID" : "0x18700001",
-			"UniqueID_Rev0" : "0x363ea65d"
+			"UniqueID_Rev0" : "0x363ea65d",
+			"UniqueID_Rev1" : "0xe2d35042"
 		},
 		"BITs" : {
 			"BIT_IDCODE_VERIFY" : {

@@ -92,7 +92,7 @@ Parse_JSON(const char *Board_File, Plat_Devs_t *Dev_Parse) {
 	Char_Len = ftell(FP);
 	rewind(FP);
 
-	Json_File = (char *)malloc(Char_Len * sizeof(char));
+	Json_File = (char *)calloc(Char_Len, sizeof(char));
 	if (Char_Len != fread(Json_File, sizeof(char), Char_Len, FP)) {
 		SC_ERR("failed to read file %s: %m", Board_File);
 		return -1;
@@ -231,14 +231,14 @@ Parse_Feature(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	int Item = 0;
 
 	SC_INFO("********************* FEATURES *********************");
-	*Features = (FeatureList_t *)malloc(sizeof(FeatureList_t));
+	*Features = (FeatureList_t *)calloc(1, sizeof(FeatureList_t));
 
 	*Index += 2;
 	Check_Attribute("List", "FEATURE");
 	(*Features)->Numbers = Tokens[*Index].size;
 	SC_INFO("Number of Features: %i\n", (*Features)->Numbers);
 	SC_INFO("Features:");
-	char **Feature_List = (char **)malloc((*Features)->Numbers * sizeof(char *));
+	char **Feature_List = (char **)calloc((*Features)->Numbers, sizeof(char *));
 	while (Item < (*Features)->Numbers) {
 		(*Index)++;
 		Value_Str = strndup(Json_File + Tokens[*Index].start,
@@ -262,7 +262,7 @@ Parse_BootMode(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	int Boot_Items = 0;
 
 	SC_INFO("********************* BOOTMODES *********************");
-	*Boots = (BootModes_t *)malloc(sizeof(BootModes_t));
+	*Boots = (BootModes_t *)calloc(1, sizeof(BootModes_t));
 
 	*Index += 2;
 	Check_Attribute("Mode_Lines", "BOOTMODES");
@@ -271,7 +271,7 @@ Parse_BootMode(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	SC_INFO("Mode_Line_Numbers: %d", (*Boots)->Mode_Line_Numbers);
 	(*Index)++;
 	SC_INFO("Mode Lines:");
-	char **Boot_Mode_Lines = (char **)malloc(Mode_Lines_Qty * sizeof(char *));
+	char **Boot_Mode_Lines = (char **)calloc(Mode_Lines_Qty, sizeof(char *));
 	for (int i = 0; i < Mode_Lines_Qty; i++) {
 		Value_Str = strndup(Json_File + Tokens[*Index + i].start,
 				    Tokens[*Index + i].end - Tokens[*Index + i].start);
@@ -314,14 +314,14 @@ Parse_JTAGSelect(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	int JTAG_Items = 0;
 
 	SC_INFO("********************* JTAGSELECTS *********************");
-	*JTAGs = (JTAGSelects_t *)malloc(sizeof(JTAGSelects_t));
+	*JTAGs = (JTAGSelects_t *)calloc(1, sizeof(JTAGSelects_t));
 
 	*Index += 2;
 	Check_Attribute("Select_Lines", "JTAGSELECTS");
 	int Select_Lines_Qty = Tokens[*Index].size;
 	(*Index)++;
 	SC_INFO("Select Lines:");
-	char **JTAG_Select_Lines = (char **)malloc(Select_Lines_Qty * sizeof(char *));
+	char **JTAG_Select_Lines = (char **)calloc(Select_Lines_Qty, sizeof(char *));
 	for (int i = 0; i < Select_Lines_Qty; i++) {
 		Value_Str = strndup(Json_File + Tokens[*Index + i].start,
 				    Tokens[*Index + i].end - Tokens[*Index + i].start);
@@ -422,7 +422,7 @@ Parse_Clock(const char *Json_File, jsmntok_t *Tokens, int *Index, Clocks_t **CLK
 			SC_INFO("Number of Clock File Extensions: %d",
 				(*CLKs)->Clock[Clk_Items].Extension_Numbers);
 			SC_INFO("Extensions:");
-			char **Extension_List = (char **)malloc((*CLKs)->Clock[Clk_Items].Extension_Numbers * sizeof(char *));
+			char **Extension_List = (char **)calloc((*CLKs)->Clock[Clk_Items].Extension_Numbers, sizeof(char *));
 			int Item = 0;
 			while (Item < (*CLKs)->Clock[Clk_Items].Extension_Numbers) {
 				(*Index)++;
@@ -549,7 +549,7 @@ Parse_INA226(const char *Json_File, jsmntok_t *Tokens, int *Index, INA226s_t **I
 	int INA226_Items = 0;
 
 	SC_INFO("********************* INA226 *********************");
-	*INAs = (INA226s_t *)malloc(sizeof(INA226s_t));
+	*INAs = (INA226s_t *)calloc(1, sizeof(INA226s_t));
 
 	(*Index)++;
 	(*INAs)->Numbers = Tokens[*Index].size;
@@ -619,7 +619,7 @@ Parse_PowerDomain(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	int PwrDom_Items = 0;
 
 	SC_INFO("******************* POWER DOMAIN *******************");
-	*PowerDoms = (Power_Domains_t *)malloc(sizeof(Power_Domains_t));
+	*PowerDoms = (Power_Domains_t *)calloc(1, sizeof(Power_Domains_t));
 
 	(*Index)++;
 	(*PowerDoms)->Numbers = Tokens[*Index].size;
@@ -778,7 +778,7 @@ Parse_Temperature(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	char *Value_Str;
 
 	SC_INFO("********************* Temperature *********************");
-	*Temperature = (Temperature_t *)malloc(sizeof(Temperature_t));
+	*Temperature = (Temperature_t *)calloc(1, sizeof(Temperature_t));
 
 	*Index += 2;
 	Check_Attribute("Name", "Temperature");
@@ -806,7 +806,7 @@ Parse_DIMM(const char *Json_File, jsmntok_t *Tokens, int *Index, DIMMs_t **DIMMs
 	int DIMM_Items = 0;
 
 	SC_INFO("********************* DIMM *********************");
-	*DIMMs = (DIMMs_t *)malloc(sizeof(DIMMs_t));
+	*DIMMs = (DIMMs_t *)calloc(1, sizeof(DIMMs_t));
 
 	(*Index)++;
 	(*DIMMs)->Numbers = Tokens[*Index].size;
@@ -860,7 +860,7 @@ Parse_GPIO(const char *Json_File, jsmntok_t *Tokens, int *Index, GPIOs_t **GPIOs
 	int Items = 0;
 
 	SC_INFO("********************* GPIOS *********************");
-	*GPIOs = (GPIOs_t *)malloc(sizeof(GPIOs_t));
+	*GPIOs = (GPIOs_t *)calloc(1, sizeof(GPIOs_t));
 
 	(*Index)++;
 	(*GPIOs)->Numbers = Tokens[*Index].size;
@@ -916,7 +916,7 @@ Parse_GPIO_Group(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	int Line_Items;
 
 	SC_INFO("********************* GPIO Groups *********************");
-	*GPIO_Groups = (GPIO_Groups_t *)malloc(sizeof(GPIO_Groups_t));
+	*GPIO_Groups = (GPIO_Groups_t *)calloc(1, sizeof(GPIO_Groups_t));
 
 	(*Index)++;
 	(*GPIO_Groups)->Numbers = Tokens[*Index].size;
@@ -955,7 +955,7 @@ Parse_GPIO_Group(const char *Json_File, jsmntok_t *Tokens, int *Index,
 		SC_INFO("Number of GPIO Lines: %d", Line_Items);
 		(*Index)++;
 		SC_INFO("GPIO Lines:");
-		char **GPIO_Lines = (char **)malloc(Line_Items * sizeof(char *));
+		char **GPIO_Lines = (char **)calloc(Line_Items, sizeof(char *));
 		for (int i = 0; i < Line_Items; i++) {
 			Value_Str = strndup(Json_File + Tokens[*Index + i].start,
 					    Tokens[*Index + i].end - Tokens[*Index + i].start);
@@ -981,7 +981,7 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 	int Direcs = 0;
 
 	SC_INFO("********************* IO EXP *********************");
-	*IEs = (IO_Exp_t *)malloc(sizeof(IO_Exp_t));
+	*IEs = (IO_Exp_t *)calloc(1, sizeof(IO_Exp_t));
 
 	*Index += 2;
 	Check_Attribute("Name", "IO Exp");
@@ -995,7 +995,7 @@ Parse_IO_EXP(const char *Json_File, jsmntok_t *Tokens, int *Index, IO_Exp_t **IE
 	Check_Attribute("Labels", "IO Exp");
 	(*IEs)->Numbers = Tokens[*Index].size;
 	Validate_Item_Size((*IEs)->Numbers, "IO Exp", "IO Exp", ITEMS_MAX);
-	char **IE_Labels = (char **)malloc((*IEs)->Numbers * sizeof(char *));
+	char **IE_Labels = (char **)calloc((*IEs)->Numbers, sizeof(char *));
 	SC_INFO("Number of IO Exps: %i", (*IEs)->Numbers);
 	SC_INFO("Labels -");
 	while (Label < (*IEs)->Numbers) {
@@ -1050,7 +1050,7 @@ Parse_DaughterCard(const char *Json_File, jsmntok_t *Tokens, int *Index,
 	char *Value_Str;
 
 	SC_INFO("*************** Daughter Card ****************");
-	*DCs = (Daughter_Card_t *)malloc(sizeof(Daughter_Card_t));
+	*DCs = (Daughter_Card_t *)calloc(1, sizeof(Daughter_Card_t));
 
 	*Index += 2;
 	Check_Attribute("Name", "Daughter Card");
@@ -1218,8 +1218,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 		(*FMCs)->FMC[Item].Label_Numbers = Tokens[*Index].size;
 		SC_INFO("Number of Presence Labels: %i\n", (*FMCs)->FMC[Item].Label_Numbers);
 		SC_INFO("Presence Labels:");
-		char **Presence_Labels = (char **)malloc((*FMCs)->FMC[Item].Label_Numbers *
-							sizeof(char *));
+		char **Presence_Labels = (char **)calloc((*FMCs)->FMC[Item].Label_Numbers, sizeof(char *));
 		Sub_Item = 0;
 		while (Sub_Item < (*FMCs)->FMC[Item].Label_Numbers) {
 			(*Index)++;
@@ -1243,8 +1242,7 @@ Parse_FMC(const char *Json_File, jsmntok_t *Tokens, int *Index, FMCs_t **FMCs)
 			(*FMCs)->FMC[Item].Volt_Numbers = Tokens[*Index].size;
 			SC_INFO("Number of Supported Voltages: %i\n", (*FMCs)->FMC[Item].Volt_Numbers);
 			SC_INFO("Supported Voltages:");
-			float *Supported_Volts = (float *)malloc((*FMCs)->FMC[Item].Volt_Numbers *
-								 sizeof(float));
+			float *Supported_Volts = (float *)calloc((*FMCs)->FMC[Item].Volt_Numbers, sizeof(float));
 			Sub_Item = 0;
 			while (Sub_Item < (*FMCs)->FMC[Item].Volt_Numbers) {
 				(*Index)++;
@@ -1385,7 +1383,7 @@ Parse_BIT(const char *Json_File, jsmntok_t *Tokens, int *Index, BITs_t **BITs)
 	BIT_t *Temp;
 
 	SC_INFO("********************* BITs *****************");
-	*BITs = (BITs_t *)malloc(sizeof(BITs_t));
+	*BITs = (BITs_t *)calloc(1, sizeof(BITs_t));
 
 	(*Index)++;
 	(*BITs)->Numbers = Tokens[*Index].size;
@@ -1519,7 +1517,7 @@ Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constrain
 	Constraint_Phases_t *Pre_Phases_Data;
 
 	SC_INFO("******************* Constraints ******************");
-	*Constraints = (Constraints_t *)malloc(sizeof(Constraints_t));
+	*Constraints = (Constraints_t *)calloc(1, sizeof(Constraints_t));
 
 	(*Index)++;
 	(*Constraints)->Numbers = Tokens[*Index].size;
@@ -1576,7 +1574,7 @@ Parse_Constraint(const char *Json_File, jsmntok_t *Tokens, int *Index, Constrain
 		}
 
 		Check_Attribute("Pre_Phases", "Constraints");
-		Pre_Phases_Data = (Constraint_Phases_t *)malloc(sizeof(Constraint_Phases_t));
+		Pre_Phases_Data = (Constraint_Phases_t *)calloc(1, sizeof(Constraint_Phases_t));
 		Pre_Phases_Data->Numbers = Tokens[*Index].size;
 		SC_INFO("Number of Pre_Phases: %i", Pre_Phases_Data->Numbers);
 		Sub_Item = 0;

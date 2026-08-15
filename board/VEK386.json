@@ -274,12 +274,12 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x107",
-						"Instruction" : "\n1- Look for LEDs (DS4-DS7) on the board.\n2- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n3- Click 'OK' when you are ready.\n4- Image location=1972,909, size=63,32.\n"
+						"Instruction" : "\n1- Look for LEDs (DS4-DS7) on the board.\n2- After clicking 'OK' observe LEDs blinking, then turn on/off in sequence.\n3- Click 'OK' when you are ready.\n4- Image location=3978,1852, size=169,114.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x207",
-						"Instruction" : "\n1- Did you see the LEDs blinking and sequencing?\n2- Click 'Pass' if you observed it.\n3- Image location=1972,909, size=63,32.\n"
+						"Instruction" : "\n1- Did you see the LEDs blinking and sequencing?\n2- Click 'Pass' if you observed it.\n3- Image location=3978,1852, size=169,114.\n"
 					}
 				}
 			},
@@ -291,7 +291,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x108",
-						"Instruction" : "\n1- Look for push buttons SW6 and SW7 on the board \n2- After clicking 'OK' press push buttons SW7 and SW6 in any order.\n3- Click 'OK' when ready.\n4- Image location=1940,1169, size=77,60.\n5- Image location=1616,1728, size=58,81.\n"
+						"Instruction" : "\n1- Look for push buttons SW6 and SW7 on the board \n2- After clicking 'OK' press push buttons SW7 and SW6 in any order.\n3- Click 'OK' when ready.\n4- Image location=3320,3421, size=141,210.\n5- Image location=4232,2484, size=200,123.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
@@ -308,7 +308,7 @@
 					"Level 0" : {
 						"Plat_BIT_Op" : "XSDB_BIT",
 						"TCL_File" : "versal_bit_download.tcl 0x109",
-						"Instruction" : "\n1- Look for DIP switches (SW5) on the board\n2- After clicking 'OK' turn On and then turn Off DIP Switches (SW5) \n3- Click 'OK' when you are ready.\n4- Image location=2047,1510, size=99,113.\n"
+						"Instruction" : "\n1- Look for DIP switches (SW5) on the board\n2- After clicking 'OK' turn On and then turn Off DIP Switches (SW5) \n3- Click 'OK' when you are ready.\n4- Image location=4212,2564, size=219,241.\n"
 					},
 					"Level 1" : {
 						"Plat_BIT_Op" : "XSDB_BIT",

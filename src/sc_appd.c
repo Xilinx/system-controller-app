@@ -951,11 +951,9 @@ EEPROM_Ops(void)
 	switch (Target) {
 	case EEPROM_SUMMARY:
 		SC_PRINT("Language: %d", In_Buffer[0xA]);
-		if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		if (Print_Silicon_Info() != 0) {
 			return -1;
 		}
-
-		SC_PRINT("Silicon Revision: %s", Silicon_Revision);
 
 		/* Base build date for manufacturing is 1/1/1996 */
 		SC_INFO("Manufacturing date: [0xD] = %#x, [0xC] = %#x, [0xB] = %#x",

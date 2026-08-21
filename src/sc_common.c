@@ -428,6 +428,129 @@ Identify_PDI(char *Revision)
 	return 0;
 }
 
+static int
+Silicon_File_Complete(void)
+{
+	FILE *FP;
+	char Buffer[STRLEN_MAX];
+	int LineCount = 0;
+
+	FP = fopen(SILICONFILE, "r");
+	if (FP == NULL) {
+		return 0;
+	}
+
+	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
+		LineCount++;
+	}
+
+	(void) fclose(FP);
+	return (LineCount >= 4);
+}
+
+/*
+ * Identify silicon revision, IDCODE, and DNA via XSDB.
+ *
+ * Runs silicon_info.tcl on the DUT, stores lines 2-4 in the silicon file,
+ * and preserves line 1 (PDI revision) from Silicon_Revision. Requires the
+ * silicon file to exist and Silicon_Revision to be set before invocation.
+ */
+int
+Silicon_Identification(void)
+{
+	FILE *FP;
+	char System_Cmd[SYSCMD_MAX];
+	char Buffer[STRLEN_MAX];
+	char Lines[3][STRLEN_MAX];
+	int LineCount = 0;
+	int Ret = 0;
+	int i;
+
+	if (access(SILICONFILE, F_OK) != 0) {
+		SC_ERR("silicon file %s is missing", SILICONFILE);
+		return -1;
+	}
+
+	if (Silicon_Revision[0] == '\0') {
+		SC_ERR("silicon revision is not available");
+		return -1;
+	}
+
+	(void) memset(Lines, 0, sizeof(Lines));
+
+	if (Set_JTAGSelect("SC") != 0) {
+		return -1;
+	}
+
+	(void) sprintf(System_Cmd, "cd %s; %s; %s %s %s 2>&1",
+		       SCRIPT_PATH, XSDB_ENV, XSDB_CMD, SILICON_INFO_TCL,
+		       Board_Name);
+
+	SC_INFO("Command: %s", System_Cmd);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to invoke xsdb");
+		Ret = -1;
+		goto Out;
+	}
+
+	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
+		SC_INFO("XSDB Output: %s", Buffer);
+		if (strncmp(Buffer, "ERROR:", 6) == 0) {
+			(void) strtok(Buffer, "\n");
+			SC_ERR("%s", Buffer);
+			(void) pclose(FP);
+			Ret = -1;
+			goto Out;
+		}
+
+		(void) strtok(Buffer, "\n");
+		if (Buffer[0] == '\0') {
+			continue;
+		}
+
+		(void) strcpy(Lines[LineCount], Buffer);
+		LineCount++;
+	}
+
+	if ((pclose(FP) != 0) || (LineCount != 3)) {
+		SC_ERR("failed to identify silicon");
+		Ret = -1;
+		goto Out;
+	}
+
+	FP = fopen(SILICONFILE, "w");
+	if (FP == NULL) {
+		SC_ERR("failed to write file %s: %m", SILICONFILE);
+		Ret = -1;
+		goto Out;
+	}
+
+	(void) strcpy(Buffer, Silicon_Revision);
+	(void) strtok(Buffer, "\n");
+	if (fprintf(FP, "%s\n", Buffer) < 0) {
+		(void) fclose(FP);
+		SC_ERR("failed to store silicon revision");
+		Ret = -1;
+		goto Out;
+	}
+
+	for (i = 0; i < 3; i++) {
+		if (fprintf(FP, "%s\n", Lines[i]) < 0) {
+			(void) fclose(FP);
+			SC_ERR("failed to store silicon information");
+			Ret = -1;
+			goto Out;
+		}
+	}
+
+	(void) fclose(FP);
+
+Out:
+	(void) Set_JTAGSelect("Current");
+	return Ret;
+}
+
 int
 Get_Silicon_Revision(char *Revision)
 {
@@ -442,10 +565,10 @@ Get_Silicon_Revision(char *Revision)
 			if (FP == NULL) {
 				SC_ERR("failed to read file %s: %m", SILICONFILE);
 				return -1;
-			 }
+			}
 
 			if (fgets(Buffer, sizeof(Buffer), FP) == NULL) {
-				fclose(FP);
+				(void) fclose(FP);
 				SC_ERR("file '%s' is empty", SILICONFILE);
 				return -1;
 			}
@@ -479,21 +602,65 @@ Get_Silicon_Revision(char *Revision)
 			if (FP == NULL) {
 				SC_ERR("failed to write file %s: %m", SILICONFILE);
 				return -1;
-			 }
+			}
 
 			if (fputs(Revision, FP) == EOF) {
-				fclose(FP);
+				(void) fclose(FP);
 				SC_ERR("failed to store silicon revision");
 				return -1;
 			}
 		}
 
-		fclose(FP);
+		(void) fclose(FP);
 		SC_INFO("Silicon Revision: %s", Revision);
 	}
 
 	if (Identify_PDI(Revision) != 0) {
 		SC_ERR("failed to identify PDI");
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Print silicon revision, IDCODE, and DNA for geteeprom summary.
+ *
+ * Ensures the PDI revision in line 1 of the silicon file is present,
+ * runs Silicon_Identification() if the file is incomplete, then prints
+ * lines 2-4 (Silicon Revision, IDCODE, and DNA).
+ */
+int
+Print_Silicon_Info(void)
+{
+	FILE *FP;
+	char System_Cmd[SYSCMD_MAX];
+	char Buffer[STRLEN_MAX];
+
+	if (Get_Silicon_Revision(Silicon_Revision) != 0) {
+		return -1;
+	}
+
+	if (!Silicon_File_Complete()) {
+		if (Silicon_Identification() != 0) {
+			return -1;
+		}
+	}
+
+	(void) sprintf(System_Cmd, "tail -3 %s", SILICONFILE);
+	FP = popen(System_Cmd, "r");
+	if (FP == NULL) {
+		SC_ERR("failed to read silicon info");
+		return -1;
+	}
+
+	while (fgets(Buffer, sizeof(Buffer), FP) != NULL) {
+		(void) strtok(Buffer, "\n");
+		SC_PRINT("%s", Buffer);
+	}
+
+	if (pclose(FP) != 0) {
+		SC_ERR("failed to read silicon info");
 		return -1;
 	}
 

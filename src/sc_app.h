@@ -498,6 +498,7 @@ typedef struct {
 #define PDI_LOAD_TCL	"versal_pdi_download.tcl"
 #define TCL_CMD_TCL	"versal_tcl_cmd.tcl"
 #define SFP_PRES_TCL	"sfp_presence.tcl"
+#define SILICON_INFO_TCL	"silicon_info.tcl"
 #define DEFAULT_PDI	"system_wrapper.pdi"
 #define READ_CLOCK_CMD	"read_clock"
 #define LOAD_DEFAULT_PDI_CMD	"load_default_pdi"
@@ -534,6 +535,7 @@ int Get_IDCODE(char *, int);
 int Get_Measured_Clock(char *, char *);
 int Get_Measured_Clock_Vendor(Clock_t *);
 int Get_Silicon_Revision(char *);
+int Print_Silicon_Info(void);
 int Get_Temperature(Temperature_t *);
 int Fan_Op(void);
 int Set_JTAGSelect(char *);
@@ -544,7 +546,7 @@ int Set_AltBootMode(int);
 int Set_BootMode(BootMode_t *, int);
 int Set_GPIO(char *, int);
 int Shell_Execute(char *);
-int Silicon_Identification(char *, int);
+int Silicon_Identification(void);
 int VCK190_QSFP_ModuleSelect(SFP_t *, int);
 int Vendor_Utility_Clock(Clock_t *, char *, char *, char *);
 int Voltages_Check(void *, void *);

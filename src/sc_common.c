@@ -445,7 +445,13 @@ Silicon_File_Complete(void)
 	}
 
 	(void) fclose(FP);
-	return (LineCount >= 4);
+
+	/*
+	 * A complete file holds the revision line and the three lines that
+	 * silicon_info.tcl emits.  Any other count is malformed and is
+	 * reported as incomplete so that the file is written again.
+	 */
+	return (LineCount == 4);
 }
 
 /*
@@ -574,6 +580,14 @@ Get_Silicon_Revision(char *Revision)
 			}
 
 			(void) strncpy(Revision, Buffer, STRLEN_MAX);
+
+			/*
+			 * Line 1 is written with a newline once
+			 * Silicon_Identification() has appended the xsdb
+			 * lines, and it has to be removed for the revision
+			 * to be matched by Identify_PDI() below.
+			 */
+			(void) strtok(Revision, "\n");
 		} else {
 			if (Check_Config_File("Silicon_Revision", Config_Var, &Found) != 0) {
 				return -1;
